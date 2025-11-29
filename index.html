@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gana con Graciela</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
+
+    <link rel="stylesheet" href="assets/css/vendor.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css" />
+
+    <style>
+        :root {
+            --lottery-primary: #ef4444;
+            --lottery-text-primary: #111827;
+            --lottery-text-secondary: #6b7280;
+            --lottery-bg-secondary: #f9fafb;
+        }
+        body { font-family: 'Roboto', sans-serif; background-color: #ffffff; }
+        
+        /* Efecto pulsante del botón */
+        @keyframes waves {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .animate-wave-pulse { animation: waves 2s infinite ease-out; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl overflow-hidden shadow-lg">
+                        <img src="https://cdn.inteliticket.com/platform/logos/690fb6cfa0634_graciela.png" alt="Logo" class="w-full h-full object-contain">
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Gana con Graciela</h1>
+                        <p class="text-xs text-gray-500 -mt-1">by @gracielavarelaaa</p>
+                    </div>
+                </div>
+                <button class="p-2 rounded-lg text-gray-700 hover:bg-gray-100">
+                    <iconify-icon icon="mingcute:menu-line" width="24"></iconify-icon>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-2xl md:text-4xl font-bold mb-2 text-gray-900">Equipa tu Navidad #2</h1>
+        </div>
+
+        <div class="rounded-3xl shadow-2xl overflow-hidden mb-8 border border-gray-200 bg-white">
+            
+            <div class="lottery-slider relative h-64 md:h-96">
+                <div>
+                    <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
+                </div>
+                </div>
+
+            <div class="p-4">
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <div class="flex flex-col items-center text-center p-3 rounded-2xl bg-gray-50 flex-1">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-2 bg-yellow-100">
+                            <iconify-icon icon="solar:calendar-mark-bold-duotone" class="text-yellow-600 text-2xl"></iconify-icon>
+                        </div>
+                        <p class="text-xs text-gray-500 font-medium">Fecha</p>
+                        <p class="font-bold text-gray-900">--</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-3 rounded-2xl bg-gray-50 flex-1">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-2 bg-green-100">
+                            <iconify-icon icon="solar:ticket-bold-duotone" class="text-green-600 text-2xl"></iconify-icon>
+                        </div>
+                        <p class="text-xs text-gray-500 font-medium">Boleto</p>
+                        <p class="font-bold text-gray-900">Bs. 700.00</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-3 rounded-2xl bg-gray-50 flex-1">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-2 bg-blue-100">
+                            <iconify-icon icon="solar:shop-minimalistic-bold-duotone" class="text-blue-600 text-2xl"></iconify-icon>
+                        </div>
+                        <p class="text-xs text-gray-500 font-medium">Lotería</p>
+                        <p class="font-bold text-gray-900">Super Gana</p>
+                    </div>
+                </div>
+
+                <div class="mb-4 px-2">
+                    <div class="w-full h-3 rounded-full bg-gray-100 overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-green-400 to-green-600" style="width: 35%;"></div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span class="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-800">35% disponibles</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden md:block rounded-3xl shadow-2xl p-8 text-center border border-gray-200 bg-white mb-8">
+            <h3 class="text-2xl font-bold mb-1 text-gray-900">¿Listo para Ganar?</h3>
+            <p class="mb-4 text-gray-500">Compra tus boletos ahora y participa</p>
+            
+            <button onclick="abrirModalCompra()" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg transform hover:scale-105 transition-all animate-wave-pulse flex items-center justify-center gap-2">
+                <iconify-icon icon="solar:cart-4-bold" width="28"></iconify-icon>
+                <span class="text-xl">Comprar Boletos</span>
+            </button>
+        </div>
+
+        <div class="fixed bottom-0 left-0 right-0 p-4 md:hidden z-40 bg-white/95 border-t border-gray-200 backdrop-blur-sm">
+            <button onclick="abrirModalCompra()" class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg animate-wave-pulse flex items-center justify-center gap-2">
+                <iconify-icon icon="solar:cart-4-bold" width="24"></iconify-icon>
+                <span class="text-lg">Comprar Boletos</span>
+            </button>
+        </div>
+
+    </div>
+
+    <div id="checkoutModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="cerrarModalCompra()"></div>
+        
+        <div class="relative min-h-screen md:min-h-0 flex items-center justify-center p-0 md:p-4">
+            <div class="bg-white w-full md:max-w-2xl h-full md:h-auto md:rounded-3xl shadow-2xl flex flex-col max-h-[90vh]">
+                
+                <div class="p-4 bg-gradient-to-r from-red-500 to-red-600 text-white flex justify-between items-center md:rounded-t-3xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                            <iconify-icon icon="solar:card-2-bold-duotone" width="20"></iconify-icon>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">Realizar Compra</h3>
+                            <p class="text-xs text-red-100">Paso 1: Datos</p>
+                        </div>
+                    </div>
+                    <button onclick="cerrarModalCompra()" class="text-white hover:bg-white/20 rounded-full p-1">
+                        <iconify-icon icon="mingcute:close-line" width="24"></iconify-icon>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto flex-1">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Ingresa tus datos</h2>
+                    
+                    <form id="compraForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                            <input type="text" class="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Tu nombre">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                            <input type="tel" class="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="0414...">
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 text-center">
+                            <p class="text-gray-500 text-sm">Próximamente: Selector de Tickets</p>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="p-4 border-t border-gray-100 bg-gray-50 md:rounded-b-3xl">
+                    <button class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-gray-800 transition">
+                        Continuar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js"></script>
+    
+    <script>
+        // Lógica simple para el modal
+        function abrirModalCompra() {
+            document.getElementById('checkoutModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Evita scroll en el fondo
+        }
+
+        function cerrarModalCompra() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Inicializar el carrusel
+        $(document).ready(function(){
+            $('.lottery-slider').slick({
+                dots: true,
+                arrows: false,
+                autoplay: true,
+                autoplaySpeed: 3000,
+                fade: true
+            });
+        });
+    </script>
+
+</body>
+</html>
