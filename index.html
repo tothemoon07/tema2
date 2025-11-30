@@ -9,8 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css" />
 
@@ -27,13 +26,11 @@
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
         .lottery-slider img { width: 100%; height: 100%; object-fit: contain; background-color: #f9fafb; }
-        .blur-content { filter: blur(3px); pointer-events: none; }
         
         /* Estilos para el Menú Lateral */
         #side-menu { transition: transform 0.3s ease-in-out; }
         .menu-open { transform: translateX(0) !important; }
         
-        /* Estilos para Sold Out */
         .sold-out-filter { filter: grayscale(100%); opacity: 0.8; pointer-events: none; }
     </style>
 </head>
@@ -90,22 +87,8 @@
                     <iconify-icon icon="solar:question-circle-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Contacto</span>
                 </a>
             </nav>
-
-            <div class="px-6 mt-8 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Redes Sociales</div>
-            <nav class="space-y-1 px-3">
-                <a href="#" class="flex items-center gap-4 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
-                    <iconify-icon icon="logos:instagram-icon" width="20"></iconify-icon> <span class="font-medium text-sm">Instagram</span>
-                </a>
-                <a href="#" class="flex items-center gap-4 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
-                    <iconify-icon icon="logos:twitter" width="20"></iconify-icon> <span class="font-medium text-sm">Twitter</span>
-                </a>
-                <a href="#" class="flex items-center gap-4 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
-                    <iconify-icon icon="logos:tiktok-icon" width="20"></iconify-icon> <span class="font-medium text-sm">TikTok</span>
-                </a>
-            </nav>
         </div>
     </div>
-
 
     <div class="w-full max-w-2xl mx-auto mt-20 px-4 space-y-6">
 
@@ -193,140 +176,27 @@
 
         <div id="view-raffles" class="hidden space-y-6">
             <h2 class="text-2xl font-black text-center text-gray-800">Nuestros Sorteos</h2>
-            <p class="text-center text-xs text-gray-500 -mt-4 mb-6">Conoce nuestros sorteos activos y participa</p>
-
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
                  <div class="aspect-video relative bg-gray-100">
                     <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
-                    <div class="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">
-                        ● EN CURSO
-                    </div>
+                    <div class="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">● EN CURSO</div>
                 </div>
                 <div class="p-5">
                     <h3 class="font-bold text-lg text-gray-900 mb-2">Equipa tu Navidad #2</h3>
                     <div class="flex gap-4 text-xs text-gray-500 mb-6">
                         <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-red-500"></iconify-icon> Bs. 700.00</span>
-                        <span class="flex items-center gap-1"><iconify-icon icon="solar:calendar-bold" class="text-blue-500"></iconify-icon> --</span>
                     </div>
-                    <button onclick="navigateTo('home')" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center justify-center gap-2">
-                        Participa ahora <span class="text-lg">🎄</span>
-                    </button>
+                    <button onclick="navigateTo('home')" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center justify-center gap-2">Participa ahora <span class="text-lg">🎄</span></button>
                 </div>
             </div>
-
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative">
-                <div class="sold-out-filter">
-                     <div class="aspect-video relative bg-gray-100">
-                        <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-gray-900 mb-2">Sorteo de Chavas #1</h3>
-                        <div class="flex gap-4 text-xs text-gray-500 mb-6">
-                            <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-gray-500"></iconify-icon> Bs. 400.00</span>
-                            <span class="flex items-center gap-1"><iconify-icon icon="solar:calendar-bold" class="text-gray-500"></iconify-icon> 11/11/2025</span>
-                        </div>
-                        <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed">
-                            Agotado
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                    <div class="bg-red-600 text-white font-black text-2xl px-6 py-2 transform -rotate-12 border-4 border-white shadow-2xl tracking-widest uppercase">
-                        Sold Out
-                    </div>
-                </div>
             </div>
-             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative">
-                <div class="sold-out-filter">
-                     <div class="aspect-video relative bg-gray-100">
-                        <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-gray-900 mb-2">Equipa tu Navidad #1</h3>
-                        <div class="flex gap-4 text-xs text-gray-500 mb-6">
-                            <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-gray-500"></iconify-icon> Bs. 580.00</span>
-                        </div>
-                        <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed">
-                            Agotado
-                        </button>
-                    </div>
-                </div>
-                <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                    <div class="bg-red-600 text-white font-black text-2xl px-6 py-2 transform -rotate-12 border-4 border-white shadow-2xl tracking-widest uppercase">
-                        Sold Out
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <div id="view-terms" class="hidden space-y-6">
-            <div class="text-center mb-6">
+             <div class="text-center mb-6">
                 <h2 class="text-2xl font-black text-gray-800">Términos y Condiciones</h2>
-                <p class="text-xs text-gray-500">Conoce las políticas y términos de uso de nuestra plataforma</p>
             </div>
-
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8 text-sm text-gray-600 leading-relaxed space-y-6">
-                
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2">Disponibilidad de números</h4>
-                    <p>Los números disponibles para cada sorteo estarán siempre publicados en la página oficial de <strong class="text-gray-900">Súper Gana</strong>.</p>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2">Entrega de tickets</h4>
-                    <p>Una vez confirmado tu pago, recibirás tus tickets de manera <strong class="text-gray-900">aleatoria</strong> en un plazo máximo de <strong class="text-gray-900">18 horas</strong>, ya que procesamos un alto volumen de operaciones diariamente.</p>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2">Quiénes pueden participar</h4>
-                    <p>Solo podrán participar personas naturales mayores de 18 años.</p>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2">Transparencia y difusión</h4>
-                    <p>Para garantizar la transparencia de cada sorteo, los ganadores aceptan aparecer en los contenidos audiovisuales relacionados con la entrega de premios, los cuales podrán ser publicados en nuestras redes sociales.</p>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2">Compras con Zelle</h4>
-                    <p>Si eliges pagar con <strong class="text-gray-900">Zelle</strong>, la compra mínima debe ser de <strong class="text-gray-900">20 tickets</strong> para que tu pedido pueda ser confirmado.</p>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2">Confirmación de compra</h4>
-                    <p>Una vez validado tu pago, recibirás un mensaje de confirmación con tu(s) número(s) asignado(s). Nuestro <strong class="text-gray-900">canal principal de comunicación es WhatsApp</strong>, y de forma secundaria también enviamos confirmación por correo electrónico.</p>
-                </div>
-
-                <div class="pt-4 border-t border-gray-100">
-                    <h4 class="font-bold text-gray-900 mb-2">Sobre la plataforma</h4>
-                    <p class="text-xs bg-gray-50 p-3 rounded-xl border border-gray-100">La plataforma tecnológica es desarrollada y mantenida por <strong class="text-gray-900">Mousett Latam</strong>. Esta plataforma funciona únicamente como una <strong class="text-gray-900">herramienta de gestión y soporte técnico</strong>, y no tiene responsabilidad directa sobre la organización ni ejecución de los sorteos.</p>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
-                <h3 class="font-bold text-gray-800 text-lg mb-1">¿Tienes Dudas?</h3>
-                <p class="text-xs text-gray-500 mb-6">Nuestro equipo de soporte está disponible para resolver tus consultas</p>
-                <div class="flex justify-center gap-4">
-                    <a href="#" class="flex flex-col items-center gap-2 group">
-                        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition">
-                            <iconify-icon icon="logos:whatsapp-icon" width="24"></iconify-icon>
-                        </div>
-                        <div class="text-center">
-                            <span class="block text-[10px] font-bold text-gray-800">WhatsApp</span>
-                            <span class="block text-[9px] text-gray-400">+584226389020</span>
-                        </div>
-                    </a>
-                    <a href="#" class="flex flex-col items-center gap-2 group">
-                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100 group-hover:bg-blue-100 transition">
-                            <iconify-icon icon="solar:phone-calling-bold-duotone" width="24"></iconify-icon>
-                        </div>
-                        <div class="text-center">
-                            <span class="block text-[10px] font-bold text-gray-800">Llamar</span>
-                            <span class="block text-[9px] text-gray-400">+584226389020</span>
-                        </div>
-                    </a>
-                </div>
+                <p>Información de términos y condiciones...</p>
             </div>
         </div>
 
@@ -336,7 +206,6 @@
                 MOUSE <span class="text-red-300">77</span>
             </div>
         </div>
-
     </div>
 
     <div id="floating-btn" class="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-40">
@@ -344,7 +213,6 @@
             <iconify-icon icon="solar:cart-4-bold" width="24"></iconify-icon> Comprar Boletos
         </button>
     </div>
-
 
     <div id="checkoutModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="cerrarModalCompra()"></div>
@@ -400,30 +268,128 @@
                 </div>
 
                 <div id="step-3" class="step-content hidden">
+                    <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4 mb-6 flex gap-3">
+                         <iconify-icon icon="solar:shield-warning-bold-duotone" class="text-yellow-500 text-xl flex-shrink-0 mt-0.5"></iconify-icon>
+                         <div>
+                             <h4 class="font-bold text-yellow-800 text-xs mb-1">Información importante</h4>
+                             <p class="text-[10px] text-yellow-700 leading-tight">Asegúrate de ingresar correctamente tus datos, ya que estos serán usados para la entrega del premio.</p>
+                         </div>
+                    </div>
+
                     <form class="space-y-4">
-                        <input type="text" id="input-name" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="Nombre y apellido *">
-                        <input type="number" id="input-cedula" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="Cédula *">
-                        <input type="tel" id="input-phone" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="WhatsApp *">
-                        <input type="email" id="input-email" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="Correo *">
+                        <div class="space-y-1">
+                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre y Apellido <span class="text-red-500">*</span></label>
+                             <input type="text" id="input-name" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="Ingresa tu nombre completo">
+                        </div>
+                        
+                        <div class="space-y-1">
+                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Cédula de Identidad <span class="text-red-500">*</span></label>
+                             <input type="number" id="input-cedula" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="Ingresa tu cédula">
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Teléfono WhatsApp <span class="text-red-500">*</span></label>
+                            <div class="flex gap-2">
+                                <div class="relative w-28">
+                                    <select class="w-full h-full border border-gray-200 bg-gray-50 rounded-xl p-3 pr-8 text-sm appearance-none outline-none focus:bg-white focus:border-red-500 transition font-bold text-gray-700">
+                                        <option value="+58">🇻🇪 +58</option>
+                                        <option value="+57">🇨🇴 +57</option>
+                                        <option value="+51">🇵🇪 +51</option>
+                                        <option value="+56">🇨🇱 +56</option>
+                                        <option value="+54">🇦🇷 +54</option>
+                                        <option value="+52">🇲🇽 +52</option>
+                                        <option value="+34">🇪🇸 +34</option>
+                                        <option value="+1">🇺🇸 +1</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
+                                        <iconify-icon icon="solar:alt-arrow-down-bold" width="12"></iconify-icon>
+                                    </div>
+                                </div>
+                                <input type="tel" id="input-phone" class="flex-1 border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="4121234567">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Correo Electrónico <span class="text-red-500">*</span></label>
+                             <input type="email" id="input-email" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="tu@correo.com">
+                        </div>
                     </form>
                 </div>
 
                 <div id="step-4" class="step-content hidden">
-                     <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-6 text-sm space-y-3">
-                        <div class="flex justify-between border-b border-blue-200 pb-2 border-dashed"><span class="text-gray-500">Banco</span><span class="font-bold">Venezuela (0102)</span></div>
-                        <div class="flex justify-between border-b border-blue-200 pb-2 border-dashed"><span class="text-gray-500">Teléfono</span><span class="font-bold">04243011181</span></div>
-                        <div class="flex justify-between border-b border-blue-200 pb-2 border-dashed"><span class="text-gray-500">Cédula</span><span class="font-bold">26729223</span></div>
-                        <div class="flex justify-between pt-1"><span class="text-gray-500">Monto</span><span class="font-black text-red-500 bg-white px-2 rounded" id="step4-total">Bs. 700.00</span></div>
+                     <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-6 text-sm space-y-4 shadow-sm">
+                        <div class="flex items-center gap-3 pb-3 border-b border-blue-100">
+                            <iconify-icon icon="solar:wallet-bold-duotone" class="text-blue-500 text-xl"></iconify-icon>
+                            <span class="font-bold text-blue-900">Pago Móvil</span>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-xs">Banco</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-gray-800">Venezuela (0102)</span>
+                                <button onclick="copiarTexto('0102')" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-xs">Teléfono</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-gray-800">04243011181</span>
+                                <button onclick="copiarTexto('04243011181')" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-xs">Cédula</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-gray-800">26729223</span>
+                                <button onclick="copiarTexto('26729223')" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-2 border-t border-blue-100 border-dashed">
+                            <span class="text-gray-500 text-xs">Monto a pagar</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-red-500 text-lg" id="step4-total">Bs. 700.00</span>
+                                <button onclick="copiarTexto(document.getElementById('step4-total').innerText)" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
+                            </div>
+                        </div>
                      </div>
                 </div>
 
                 <div id="step-5" class="step-content hidden">
+                    
+                    <div class="bg-green-50 border border-green-100 rounded-xl p-4 mb-6 flex gap-3">
+                         <iconify-icon icon="solar:bill-check-bold-duotone" class="text-green-500 text-xl flex-shrink-0 mt-0.5"></iconify-icon>
+                         <div>
+                             <h4 class="font-bold text-green-800 text-xs mb-1">Comprobante de pago</h4>
+                             <p class="text-[10px] text-green-700 leading-tight">Ingresa los datos del pago y sube la captura para verificar tu transacción más rápido.</p>
+                         </div>
+                    </div>
+
                     <form class="space-y-4">
-                        <input type="number" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="Referencia (6 dígitos) *">
-                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 cursor-pointer relative">
-                            <input type="file" class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onchange="previewImage(this)">
-                            <div id="upload-placeholder"><iconify-icon icon="solar:cloud-upload-bold-duotone" width="24" class="text-gray-400"></iconify-icon><p class="text-xs text-gray-500 mt-2">Subir Comprobante</p></div>
-                            <div id="file-preview" class="hidden"><p class="text-green-600 text-xs font-bold">¡Imagen cargada!</p></div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Referencia completa (6 dígitos) <span class="text-red-500">*</span></label>
+                            <input type="number" id="input-referencia" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="Ej: 123456">
+                        </div>
+                        
+                        <div class="space-y-1">
+                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Comprobante de pago <span class="text-red-500">*</span></label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 cursor-pointer relative transition group">
+                                <input type="file" id="input-comprobante" class="absolute inset-0 opacity-0 cursor-pointer z-20" accept="image/*" onchange="previewImage(this)">
+                                
+                                <div id="upload-placeholder" class="group-hover:scale-105 transition-transform">
+                                    <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-400">
+                                        <iconify-icon icon="solar:cloud-upload-bold-duotone" width="20"></iconify-icon>
+                                    </div>
+                                    <p class="text-xs text-gray-500 font-medium">Toca para subir imagen</p>
+                                </div>
+                                
+                                <div id="file-preview" class="hidden flex items-center justify-center gap-2">
+                                     <iconify-icon icon="solar:gallery-check-bold" class="text-green-500 text-xl"></iconify-icon>
+                                    <p class="text-green-600 text-xs font-bold">¡Imagen cargada correctamente!</p>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -466,102 +432,38 @@
     </div>
 
     <div id="checkTicketsModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300 flex items-center justify-center p-4">
-        
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="cerrarModalVerificar()"></div>
-        
         <div class="relative w-full max-w-md max-h-[90vh] h-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-10">
-            
-            <button onclick="cerrarModalVerificar()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-50 z-20 transition">
-                <iconify-icon icon="mingcute:close-line" width="24"></iconify-icon>
-            </button>
-
+            <button onclick="cerrarModalVerificar()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-50 z-20 transition"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
             <div class="flex-1 overflow-y-auto p-6 md:p-8 text-center custom-scroll">
-                
                 <h2 class="text-xl font-bold text-gray-800 mb-2 mt-4" id="consult-title">Consultar Boletos</h2>
                 <p class="text-xs text-gray-500 mb-8" id="consult-subtitle">Ingresa tu cédula para ver todas tus compras</p>
-
                 <div id="search-inputs">
-                    <div class="mb-6">
-                        <span class="text-red-500 font-bold text-sm bg-red-50 px-4 py-2 rounded-full">
-                            <iconify-icon icon="solar:list-bold" class="mr-1 relative top-0.5"></iconify-icon> Ver mis compras
-                        </span>
-                    </div>
-
-                    <div class="mb-6 text-left">
-                        <label class="text-xs font-bold text-gray-700 ml-1 mb-1 block">Cédula de Identidad</label>
-                        <input type="number" class="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 transition" placeholder="Escribe tu número de cédula">
-                    </div>
-
-                    <button onclick="simularBusquedaTickets()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 mb-8 flex items-center justify-center gap-2">
-                        <iconify-icon icon="solar:magnifer-bold"></iconify-icon> Buscar
-                    </button>
+                    <div class="mb-6"><span class="text-red-500 font-bold text-sm bg-red-50 px-4 py-2 rounded-full"><iconify-icon icon="solar:list-bold" class="mr-1 relative top-0.5"></iconify-icon> Ver mis compras</span></div>
+                    <div class="mb-6 text-left"><label class="text-xs font-bold text-gray-700 ml-1 mb-1 block">Cédula de Identidad</label><input type="number" class="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 transition" placeholder="Escribe tu número de cédula"></div>
+                    <button onclick="simularBusquedaTickets()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 mb-8 flex items-center justify-center gap-2"><iconify-icon icon="solar:magnifer-bold"></iconify-icon> Buscar</button>
                 </div>
-
                 <div id="ticket-results" class="hidden space-y-4">
-                    
-                    <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100 shadow-sm relative overflow-hidden">
+                     <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100 shadow-sm relative overflow-hidden">
                         <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
-                            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0">
-                                <iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-800 text-sm">#015521</h4>
-                                <p class="text-[10px] font-bold text-yellow-600 uppercase">Verificando Pago</p>
-                            </div>
-                            <div class="ml-auto text-right">
-                                <span class="text-xs text-gray-400">30/11/2025</span><br>
-                                <span class="font-black text-gray-900">Bs. 700.00</span>
-                            </div>
+                            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0"><iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon></div>
+                            <div><h4 class="font-bold text-gray-800 text-sm">#015521</h4><p class="text-[10px] font-bold text-yellow-600 uppercase">Verificando Pago</p></div>
+                            <div class="ml-auto text-right"><span class="text-xs text-gray-400">30/11/2025</span><br><span class="font-black text-gray-900">Bs. 700.00</span></div>
                         </div>
                         <p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p>
-                        <div class="flex flex-wrap gap-2">
-                            <span class="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded">0421</span>
-                        </div>
+                        <div class="flex flex-wrap gap-2"><span class="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded">0421</span></div>
                     </div>
-
-                    <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100 shadow-sm relative overflow-hidden">
-                        <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
-                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 flex-shrink-0">
-                                <iconify-icon icon="solar:verified-check-bold" width="20"></iconify-icon>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-800 text-sm">#009842</h4>
-                                <p class="text-[10px] font-bold text-green-600 uppercase">Pago Verificado</p>
-                            </div>
-                            <div class="ml-auto text-right">
-                                <span class="text-xs text-gray-400">15/10/2025</span><br>
-                                <span class="font-black text-gray-900">Bs. 1,400.00</span>
-                            </div>
-                        </div>
-                        <p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p>
-                        <div class="flex flex-wrap gap-2">
-                             <span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">8812</span>
-                             <span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">9934</span>
-                        </div>
-                    </div>
-
                 </div>
-                
                 <div class="border-t border-gray-100 pt-6 mb-2">
                     <h3 class="font-bold text-gray-800 text-base mb-1">¿Necesitas Ayuda?</h3>
                     <p class="text-[10px] text-gray-500 mb-4">Nuestro equipo de soporte está disponible para asistirte</p>
                     <div class="flex justify-center gap-3">
-                        <a href="#" class="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-100 hover:bg-green-100 transition group">
-                            <iconify-icon icon="logos:whatsapp-icon" width="20"></iconify-icon>
-                            <span class="text-[10px] font-bold text-gray-700">WhatsApp</span>
-                        </a>
-                        <a href="#" class="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition group">
-                            <iconify-icon icon="solar:phone-calling-bold-duotone" width="20" class="text-blue-600"></iconify-icon>
-                            <span class="text-[10px] font-bold text-gray-700">Llamar</span>
-                        </a>
+                        <a href="#" class="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-100 hover:bg-green-100 transition group"><iconify-icon icon="logos:whatsapp-icon" width="20"></iconify-icon><span class="text-[10px] font-bold text-gray-700">WhatsApp</span></a>
+                        <a href="#" class="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition group"><iconify-icon icon="solar:phone-calling-bold-duotone" width="20" class="text-blue-600"></iconify-icon><span class="text-[10px] font-bold text-gray-700">Llamar</span></a>
                     </div>
                 </div>
-
             </div>
-            
-            <div class="p-3 border-t border-gray-100 bg-gray-50 flex-shrink-0 text-center">
-                <button onclick="cerrarModalVerificar()" class="text-gray-400 text-xs hover:text-gray-600 font-medium w-full py-2">Cerrar ventana</button>
-            </div>
+            <div class="p-3 border-t border-gray-100 bg-gray-50 flex-shrink-0 text-center"><button onclick="cerrarModalVerificar()" class="text-gray-400 text-xs hover:text-gray-600 font-medium w-full py-2">Cerrar ventana</button></div>
         </div>
     </div>
 
@@ -574,43 +476,24 @@
             $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
         });
         
-        // --- LOGICA DEL MENÚ Y VISTAS ---
-        
-        // Función para ABRIR/CERRAR el menú (botón hamburguesa)
+        // --- LOGICA DEL MENÚ ---
         function toggleMenu() {
             const menu = document.getElementById('side-menu');
             const overlay = document.getElementById('menu-overlay');
-            
-            if (menu.classList.contains('menu-open')) {
-                closeMenu(); // Si está abierto, lo cerramos
-            } else {
-                menu.classList.add('menu-open');
-                overlay.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            }
+            if (menu.classList.contains('menu-open')) { closeMenu(); } 
+            else { menu.classList.add('menu-open'); overlay.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
         }
-
-        // Función para FORZAR EL CIERRE del menú (usada al navegar)
         function closeMenu() {
-            const menu = document.getElementById('side-menu');
-            const overlay = document.getElementById('menu-overlay');
-            
-            menu.classList.remove('menu-open');
-            overlay.classList.add('hidden');
+            document.getElementById('side-menu').classList.remove('menu-open');
+            document.getElementById('menu-overlay').classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
-
         function menuAction(action) {
-            // IMPORTANTE: Siempre cerramos el menú al navegar
             closeMenu();
-
-            // Ocultamos todas las vistas
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-raffles').classList.add('hidden');
             document.getElementById('view-terms').classList.add('hidden');
-            // Botón flotante solo en home
             document.getElementById('floating-btn').classList.add('hidden');
-
             window.scrollTo(0,0);
 
             if (action === 'home') {
@@ -621,24 +504,17 @@
             } else if (action === 'terms') {
                 document.getElementById('view-terms').classList.remove('hidden');
             } else if (action === 'contact') {
-                // Ir a home y scroll al final
                 document.getElementById('view-home').classList.remove('hidden');
                 document.getElementById('floating-btn').classList.remove('hidden');
-                setTimeout(() => {
-                    document.getElementById('contact-section-home').scrollIntoView({ behavior: 'smooth' });
-                }, 100);
+                setTimeout(() => { document.getElementById('contact-section-home').scrollIntoView({ behavior: 'smooth' }); }, 100);
             } else if (action === 'verify') {
                 document.getElementById('view-home').classList.remove('hidden'); 
                 abrirModalVerificar();
             }
         }
+        function navigateTo(view) { menuAction(view); }
 
-        // Esta función la usa el botón "Participa ahora"
-        function navigateTo(view) {
-            menuAction(view);
-        }
-
-        // --- FUNCIONES MODALES EXISTENTES ---
+        // --- FUNCIONES MODALES ---
         function abrirModalCompra() { 
             document.getElementById('checkoutModal').classList.remove('hidden'); 
             document.body.style.overflow = 'hidden'; 
@@ -651,16 +527,136 @@
         function abrirModalVerificar() {
             document.getElementById('checkTicketsModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
-            
             document.getElementById('search-inputs').classList.remove('hidden');
             document.getElementById('ticket-results').classList.add('hidden');
-            document.getElementById('consult-title').innerText = "Consultar Boletos";
-            document.getElementById('consult-subtitle').innerText = "Ingresa tu cédula para ver todas tus compras";
         }
         function cerrarModalVerificar() {
             document.getElementById('checkTicketsModal').classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
+
+        // --- VALIDACIÓN PASO 5 y COPIAR ---
+        
+        function copiarTexto(texto) {
+            navigator.clipboard.writeText(texto).then(() => {
+                const Toast = Swal.mixin({
+                    toast: true, position: 'top-end', showConfirmButton: false, timer: 1500,
+                    didOpen: (toast) => { toast.onmouseenter = Swal.stopTimer; toast.onmouseleave = Swal.resumeTimer; }
+                });
+                Toast.fire({ icon: 'success', title: 'Copiado al portapapeles' });
+            });
+        }
+
+        // Esta función se llama dentro de nextStep() en logic.js para validar
+        // Como logic.js es externo, aquí reescribo una versión simplificada de nextStep 
+        // para asegurar que funcione en este archivo único si logic.js no tiene la validación.
+        // NOTA: Si usas logic.js, asegúrate que llame a esta lógica. 
+        // Aquí sobreescribo la logica de steps para que funcione todo en este archivo:
+
+        let currentStep = 1;
+        
+        function updateModalHeader() {
+            const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "Realiza el Pago", "Comprobante de Pago"];
+            const icons = ["solar:card-2-bold-duotone", "solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:wallet-money-bold-duotone", "solar:upload-track-bold-duotone"];
+            
+            document.getElementById('header-title').innerText = titles[currentStep - 1];
+            document.getElementById('header-step').innerText = `Paso ${currentStep} de 5`;
+            document.getElementById('header-icon').setAttribute('icon', icons[currentStep - 1]);
+            document.getElementById('progress-bar').style.width = `${currentStep * 20}%`;
+
+            if(currentStep === 1) { document.getElementById('btn-back').disabled = true; document.getElementById('btn-back').classList.add('opacity-50'); }
+            else { document.getElementById('btn-back').disabled = false; document.getElementById('btn-back').classList.remove('opacity-50'); }
+
+            if(currentStep === 5) { document.getElementById('btn-next').innerHTML = `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>`; }
+            else { document.getElementById('btn-next').innerHTML = `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`; }
+        }
+
+        function nextStep() {
+            if (currentStep < 5) {
+                // Validación simple de pasos anteriores si quieres
+                if(currentStep === 4) {
+                    // Mostrar instrucciones antes de pasar al 5
+                    document.getElementById('payment-instructions').classList.remove('hidden');
+                    return; // Esperamos que den click en "Entendido"
+                }
+                
+                document.getElementById(`step-${currentStep}`).classList.add('hidden');
+                currentStep++;
+                document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+                updateModalHeader();
+            } else {
+                // ESTAMOS EN EL PASO 5 -> VALIDAR
+                const ref = document.getElementById('input-referencia').value;
+                const file = document.getElementById('input-comprobante').value;
+
+                if (!ref || ref.length < 4) {
+                    Swal.fire({ icon: 'error', title: 'Falta la referencia', text: 'Por favor ingresa el número de referencia del pago.' });
+                    return;
+                }
+                if (!file) {
+                    Swal.fire({ icon: 'error', title: 'Falta el comprobante', text: 'Por favor sube la captura de pantalla del pago.' });
+                    return;
+                }
+
+                // SI TODO ESTA BIEN:
+                document.getElementById(`step-5`).classList.add('hidden');
+                document.getElementById('modal-footer').classList.add('hidden');
+                document.getElementById('step-success').classList.remove('hidden');
+                
+                // Efecto confetti
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                document.getElementById(`step-${currentStep}`).classList.add('hidden');
+                currentStep--;
+                document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+                updateModalHeader();
+            }
+        }
+        
+        function dismissInstructions() {
+            document.getElementById('payment-instructions').classList.add('hidden');
+            // Avanzamos manualmente del 4 al 5
+            document.getElementById(`step-4`).classList.add('hidden');
+            currentStep = 5;
+            document.getElementById(`step-5`).classList.remove('hidden');
+            updateModalHeader();
+        }
+
+        // Lógica de cantidad
+        function selectQty(n) { document.getElementById('custom-qty').value = n; updateTotal(); }
+        function changeQty(n) { 
+            let val = parseInt(document.getElementById('custom-qty').value) || 0; 
+            val += n; if(val < 1) val = 1; 
+            document.getElementById('custom-qty').value = val; updateTotal(); 
+        }
+        function updateTotal() {
+            let val = parseInt(document.getElementById('custom-qty').value) || 1;
+            let price = 700; 
+            let total = val * price;
+            // Formato moneda
+            let text = "Bs. " + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('step2-total').innerText = text;
+            document.getElementById('step4-total').innerText = text;
+            document.getElementById('success-total').innerText = text;
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('upload-placeholder').classList.add('hidden');
+                document.getElementById('file-preview').classList.remove('hidden');
+            }
+        }
+        
+        // Simular búsqueda
+        function simularBusquedaTickets() {
+             document.getElementById('search-inputs').classList.add('hidden');
+             document.getElementById('ticket-results').classList.remove('hidden');
+        }
+
     </script>
 </body>
 </html>
