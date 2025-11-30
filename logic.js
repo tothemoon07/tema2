@@ -4,15 +4,20 @@ const totalSteps = 5;
 let cantidadBoletos = 1;
 let totalPagar = PRECIO_UNITARIO;
 let timerInterval;
+let paymentInstructionsShown = false; // Control del cartel azul
 
 document.addEventListener('DOMContentLoaded', () => { updateUI(); });
 
 function nextStep() {
     if (currentStep < totalSteps) {
         if (currentStep === 3 && !validarDatos()) return;
+        
         currentStep++;
+        
+        // Timer inicia al entrar al paso 3
+        if (currentStep === 3) startTimer();
+        
         updateUI();
-        if (currentStep === 4) startTimer();
     } else {
         mostrarExito();
     }
@@ -26,8 +31,30 @@ function prevStep() {
 }
 
 function updateUI() {
-    document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
-    document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+    // Resetear visibilidad y desenfoque
+    document.querySelectorAll('.step-content').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('blur-content');
+    });
+
+    // Mostrar paso actual
+    const currentContent = document.getElementById(`step-${currentStep}`);
+    currentContent.classList.remove('hidden');
+
+    // --- LÓGICA CARTEL INSTRUCCIONES (PASO 4) ---
+    const instructionsOverlay = document.getElementById('payment-instructions');
+    const modalFooter = document.getElementById('modal-footer');
+
+    if (currentStep === 4 && !paymentInstructionsShown) {
+        instructionsOverlay.classList.remove('hidden'); // Mostrar cartel
+        modalFooter.classList.add('hidden');            // Ocultar botones
+        currentContent.classList.add('blur-content');   // Desenfocar datos
+    } else {
+        instructionsOverlay.classList.add('hidden');    // Ocultar cartel
+        modalFooter.classList.remove('hidden');         // Mostrar botones
+    }
+
+    // Barra de progreso
     document.getElementById('progress-bar').style.width = `${(currentStep / totalSteps) * 100}%`;
     
     const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "Realizar Pago", "Comprobante"];
@@ -48,8 +75,15 @@ function updateUI() {
         btnNext.className = "px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center gap-2";
     }
 
+    // Timer visible desde paso 3 en adelante (excepto éxito)
     const timer = document.getElementById('timer-container');
-    currentStep >= 4 ? timer.classList.remove('hidden') : timer.classList.add('hidden');
+    (currentStep >= 3 && currentStep < 6) ? timer.classList.remove('hidden') : timer.classList.add('hidden');
+}
+
+// Función para cerrar el cartel de instrucciones
+function dismissInstructions() {
+    paymentInstructionsShown = true;
+    updateUI();
 }
 
 function selectQty(qty) {
@@ -118,6 +152,20 @@ function mostrarExito() {
         let ticket = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         container.innerHTML += `<span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">${ticket}</span>`;
     }
+
+    // LANZAR CONFETI
+    lanzarConfeti();
+}
+
+function lanzarConfeti() {
+    var myCanvas = document.getElementById('confetti-canvas');
+    var myConfetti = confetti.create(myCanvas, { resize: true, useWorker: true });
+    myConfetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']
+    });
 }
 
 function previewImage(input) {
