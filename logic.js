@@ -153,21 +153,38 @@ function mostrarExito() {
         container.innerHTML += `<span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">${ticket}</span>`;
     }
 
-    // LANZAR CONFETI
-    lanzarConfeti();
+    // --- CÁLCULO DEL ORIGEN DEL CONFETI ---
+    // 1. Encontramos el contenedor del mensaje de éxito
+    const successMessageContainer = document.getElementById('success-message-container');
+    
+    if (successMessageContainer) {
+        // 2. Obtenemos su posición y dimensiones en la pantalla
+        const rect = successMessageContainer.getBoundingClientRect();
+        
+        // 3. Calculamos el centro exacto del elemento
+        const centerX = rect.left + (rect.width / 2);
+        const centerY = rect.top + (rect.height / 2);
+
+        // 4. Normalizamos las coordenadas (de 0.0 a 1.0) para la librería de confeti
+        // Se divide por el ancho y alto total de la ventana
+        const originX = centerX / window.innerWidth;
+        const originY = centerY / window.innerHeight;
+
+        // 5. Lanzamos el confeti desde ese origen calculado
+        lanzarConfeti(originX, originY);
+    }
 }
 
-function lanzarConfeti() {
-    // Buscamos el canvas en el body
+// Función actualizada para recibir coordenadas
+function lanzarConfeti(x, y) {
     var myCanvas = document.getElementById('confetti-canvas');
     var myConfetti = confetti.create(myCanvas, { resize: true, useWorker: true });
-    
-    // Configuración para pantalla completa
     myConfetti({
-        particleCount: 200, // Más partículas
-        spread: 160,       // Mayor dispersión
-        origin: { y: 0.5 }, // Desde el centro
-        zIndex: 9999,       // Asegurar que esté por encima del modal (que suele ser z-50)
+        particleCount: 200,
+        spread: 180,        // Mayor dispersión para que llene más
+        startVelocity: 40,  // Un poco más rápido al inicio
+        origin: { x: x, y: y }, // Usamos las coordenadas calculadas
+        zIndex: 9999,
         colors: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']
     });
 }
@@ -179,15 +196,9 @@ function previewImage(input) {
     }
 }
 
-// NUEVA FUNCIÓN: Simular Búsqueda
 function simularBusquedaTickets() {
-    // Ocultar inputs
     document.getElementById('search-inputs').classList.add('hidden');
-    
-    // Mostrar resultados
     document.getElementById('ticket-results').classList.remove('hidden');
-    
-    // Cambiar texto del encabezado
     document.getElementById('consult-title').innerText = "Tus Compras";
     document.getElementById('consult-subtitle').innerText = "Resultados para la cédula ingresada";
 }
