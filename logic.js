@@ -153,40 +153,35 @@ function mostrarExito() {
         container.innerHTML += `<span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">${ticket}</span>`;
     }
 
-    // --- CÁLCULO DEL ORIGEN DEL CONFETI ---
-    // 1. Encontramos el contenedor del mensaje de éxito
-    const successMessageContainer = document.getElementById('success-message-container');
-    
-    if (successMessageContainer) {
-        // 2. Obtenemos su posición y dimensiones en la pantalla
-        const rect = successMessageContainer.getBoundingClientRect();
-        
-        // 3. Calculamos el centro exacto del elemento
-        const centerX = rect.left + (rect.width / 2);
-        const centerY = rect.top + (rect.height / 2);
-
-        // 4. Normalizamos las coordenadas (de 0.0 a 1.0) para la librería de confeti
-        // Se divide por el ancho y alto total de la ventana
-        const originX = centerX / window.innerWidth;
-        const originY = centerY / window.innerHeight;
-
-        // 5. Lanzamos el confeti desde ese origen calculado
-        lanzarConfeti(originX, originY);
-    }
+    // LANZAR CONFETI: Ahora se lanza desde el centro de la pantalla
+    lanzarConfeti();
 }
 
-// Función actualizada para recibir coordenadas
-function lanzarConfeti(x, y) {
+// Función actualizada para una gran explosión desde el centro
+function lanzarConfeti() {
     var myCanvas = document.getElementById('confetti-canvas');
     var myConfetti = confetti.create(myCanvas, { resize: true, useWorker: true });
-    myConfetti({
-        particleCount: 200,
-        spread: 180,        // Mayor dispersión para que llene más
-        startVelocity: 40,  // Un poco más rápido al inicio
-        origin: { x: x, y: y }, // Usamos las coordenadas calculadas
-        zIndex: 9999,
+    
+    // Configuración de la explosión
+    const explosionConfig = {
+        particleCount: 200, // Cantidad de partículas
+        spread: 160,        // Dispersión amplia
+        origin: { y: 0.5 }, // Desde el centro vertical (x es 0.5 por defecto)
+        zIndex: 9999,       // Asegurar que esté por encima del modal
         colors: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']
-    });
+    };
+
+    // Primera ráfaga
+    myConfetti(explosionConfig);
+
+    // Segunda ráfaga con un ligero retraso para un efecto más festivo
+    setTimeout(() => {
+        myConfetti({
+            ...explosionConfig,
+            particleCount: 150, // Un poco menos de partículas
+            startVelocity: 45,  // Un poco más de velocidad inicial
+        });
+    }, 250); // 250ms de retraso
 }
 
 function previewImage(input) {
