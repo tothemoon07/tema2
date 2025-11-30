@@ -15,9 +15,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css" />
 
     <style>
-        body { font-family: 'Roboto', sans-serif; background-color: #f9fafb; overscroll-behavior: none; }
+        /* Fondo gris para PC, blanco para el contenido */
+        body { font-family: 'Roboto', sans-serif; background-color: #f3f4f6; overscroll-behavior: none; }
         
-        /* Animación del botón */
         .animate-wave-pulse { animation: waves 2s infinite ease-out; }
         @keyframes waves {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
@@ -25,72 +25,89 @@
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
-        /* Quitar flechas de inputs numéricos */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
-        /* Scroll personalizado dentro del modal */
         .custom-scroll::-webkit-scrollbar { width: 5px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
         
-        /* Ajuste para que la imagen del slider se vea completa */
         .lottery-slider img { 
             width: 100%; 
             height: 100%; 
-            object-fit: contain; /* Cambiado a contain para ver la imagen completa sin recortes */
-            background-color: #f3f4f6;
+            object-fit: contain; 
+            background-color: #f9fafb;
+        }
+
+        /* Estilo para que la 'tarjeta' principal destaque en PC */
+        .app-container {
+            background-color: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+        
+        @media (min-width: 768px) {
+            .app-container {
+                min-height: auto;
+                border-radius: 24px;
+                margin-top: 2rem;
+                margin-bottom: 2rem;
+                overflow: hidden;
+                border: 1px solid #e5e7eb;
+            }
         }
     </style>
 </head>
-<body class="antialiased text-gray-900">
+<body class="antialiased text-gray-900 flex justify-center">
 
-    <header class="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200">
-        <nav class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100">
-                    <img src="https://cdn.inteliticket.com/platform/logos/690fb6cfa0634_graciela.png" class="w-full h-full object-contain">
+    <div class="w-full max-w-lg app-container relative">
+
+        <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
+            <nav class="px-4 h-16 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100">
+                        <img src="https://cdn.inteliticket.com/platform/logos/690fb6cfa0634_graciela.png" class="w-full h-full object-contain">
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold leading-tight">Gana con Graciela</h1>
+                        <p class="text-[10px] text-gray-500">by @gracielavarelaaa</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-base font-bold leading-tight">Gana con Graciela</h1>
-                    <p class="text-[10px] text-gray-500">by @gracielavarelaaa</p>
-                </div>
-            </div>
-            <button class="p-2 text-gray-600"><iconify-icon icon="mingcute:menu-line" width="24"></iconify-icon></button>
-        </nav>
-    </header>
+                <button class="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition"><iconify-icon icon="mingcute:menu-line" width="24"></iconify-icon></button>
+            </nav>
+        </header>
 
-    <div class="max-w-4xl mx-auto px-4 pt-24 pb-40 md:pb-12">
-        <h1 class="text-2xl font-bold text-center mb-6">Equipa tu Navidad #2</h1>
-
-        <div class="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
-            <div class="lottery-slider aspect-square md:aspect-video md:h-[450px] relative bg-gray-100">
+        <div class="px-0 pb-32 bg-white">
+            
+            <div class="lottery-slider aspect-square bg-gray-50 relative border-b border-gray-100">
                 <div><img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png"></div>
             </div>
 
-            <div class="p-5">
-                <div class="flex gap-2 mb-6 text-center">
-                    <div class="flex-1 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+            <div class="px-5 pt-6">
+                <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">Equipa tu Navidad #2</h1>
+
+                <div class="flex gap-2 mb-8 text-center">
+                    <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
                         <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-1 text-yellow-600"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
                         <p class="text-[9px] text-gray-400 font-bold uppercase">Fecha</p>
                         <p class="font-bold text-xs">--</p>
                     </div>
-                    <div class="flex-1 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                    <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
                         <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-1 text-green-600"><iconify-icon icon="solar:ticket-bold-duotone"></iconify-icon></div>
                         <p class="text-[9px] text-gray-400 font-bold uppercase">Boleto</p>
                         <p class="font-bold text-xs">Bs. 700.00</p>
                     </div>
-                    <div class="flex-1 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                    <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
                         <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-1 text-blue-600"><iconify-icon icon="solar:shop-minimalistic-bold-duotone"></iconify-icon></div>
                         <p class="text-[9px] text-gray-400 font-bold uppercase">Lotería</p>
                         <p class="font-bold text-xs">Super Gana</p>
                     </div>
                 </div>
 
-                <div class="px-1">
-                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
-                        <span>Progreso</span>
-                        <span>34.6%</span>
+                <div class="px-1 mb-4">
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-2">
+                        <span>Progreso de venta</span>
+                        <span class="text-green-600">34.6%</span>
                     </div>
                     <div class="h-3 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner">
                         <div class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[35%]"></div>
@@ -100,25 +117,19 @@
             </div>
         </div>
 
-        <div class="hidden md:block mt-8 text-center bg-white p-8 rounded-3xl shadow-lg border border-gray-100">
-            <h3 class="text-xl font-bold mb-4">¿Listo para Ganar?</h3>
-            <button onclick="abrirModalCompra()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-12 rounded-2xl shadow-lg shadow-red-200 transform hover:scale-105 transition-all flex items-center justify-center gap-2 mx-auto">
+        <div class="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-30">
+            <button onclick="abrirModalCompra()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 animate-wave-pulse flex items-center justify-center gap-2 active:scale-95 transition transform">
                 <iconify-icon icon="solar:cart-4-bold" width="24"></iconify-icon> Comprar Boletos
             </button>
         </div>
-    </div>
 
-    <div class="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-30">
-        <button onclick="abrirModalCompra()" class="w-full bg-red-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 animate-wave-pulse flex items-center justify-center gap-2 active:scale-95 transition">
-            <iconify-icon icon="solar:cart-4-bold" width="24"></iconify-icon> Comprar Boletos
-        </button>
     </div>
 
     <div id="checkoutModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300 flex items-center justify-center p-4">
         
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="/* cerrarModalCompra() */"></div>
         
-        <div class="relative w-full max-w-md max-h-[90vh] h-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-10 transform transition-all">
+        <div class="relative w-full max-w-md max-h-[85vh] h-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-10 transform transition-all">
             
             <div class="bg-red-500 text-white p-5 flex-shrink-0 relative">
                 <button onclick="cerrarModalCompra()" class="absolute top-5 right-5 text-white/80 hover:text-white p-1 rounded-full hover:bg-white/10 transition"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
@@ -146,7 +157,7 @@
                     <h2 class="text-lg font-bold text-center text-gray-800 mb-6">Selecciona tu método de pago</h2>
                     <label class="cursor-pointer group block relative">
                         <input type="radio" name="payment_method" value="pago_movil" class="peer hidden" checked>
-                        <div class="border-2 border-gray-100 peer-checked:border-red-500 peer-checked:bg-red-50 rounded-2xl p-4 flex items-center gap-4 transition-all">
+                        <div class="border-2 border-gray-100 peer-checked:border-red-500 peer-checked:bg-red-50 rounded-2xl p-4 flex items-center gap-4 transition-all hover:bg-gray-50">
                             <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0"><iconify-icon icon="solar:smartphone-2-bold-duotone" width="24"></iconify-icon></div>
                             <div class="flex-1 min-w-0">
                                 <h4 class="font-bold text-gray-800 truncate">Pago Móvil</h4>
@@ -162,12 +173,12 @@
                     
                     <p class="text-sm font-bold text-gray-700 mb-3">Selección rápida</p>
                     <div class="grid grid-cols-3 gap-2 mb-6">
-                        <button onclick="selectQty(1)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">1<br><span class="text-[10px] text-gray-400 font-normal">Boleto</span></button>
-                        <button onclick="selectQty(2)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">2<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
-                        <button onclick="selectQty(5)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">5<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
-                        <button onclick="selectQty(10)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">10<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
-                        <button onclick="selectQty(25)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">25<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
-                        <button onclick="selectQty(50)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">50<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(1)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-sm transition">1<br><span class="text-[10px] text-gray-400 font-normal">Boleto</span></button>
+                        <button onclick="selectQty(2)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-sm transition">2<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(5)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-sm transition">5<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(10)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-sm transition">10<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(25)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-sm transition">25<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(50)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-sm transition">50<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
                     </div>
 
                     <p class="text-sm font-bold text-gray-700 mb-2">Cantidad personalizada</p>
@@ -262,11 +273,11 @@
         });
         function abrirModalCompra() { 
             document.getElementById('checkoutModal').classList.remove('hidden'); 
-            document.body.style.overflow = 'hidden'; // Bloquear scroll de fondo
+            document.body.style.overflow = 'hidden'; 
         }
         function cerrarModalCompra() { 
             document.getElementById('checkoutModal').classList.add('hidden'); 
-            document.body.style.overflow = 'auto'; // Restaurar scroll
+            document.body.style.overflow = 'auto'; 
             location.reload(); 
         }
     </script>
