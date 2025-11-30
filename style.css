@@ -19887,13 +19887,13 @@ div.tox .tox-button::before {
     color: white;
 }
 
-/* Corrección de banderas */
+/* Corrección de banderas usando imagen desde Internet (CDN) */
 .iti__flag {
-  background-image: url("../img/flags.png") !important;
+  background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/img/flags.png") !important;
 }
 
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .iti__flag {
-    background-image: url("../img/flags@2x.png") !important;
+    background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/img/flags@2x.png") !important;
   }
 }
