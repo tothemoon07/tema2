@@ -9,7 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css" />
 
@@ -89,6 +90,7 @@
             </nav>
         </div>
     </div>
+
 
     <div class="w-full max-w-2xl mx-auto mt-20 px-4 space-y-6">
 
@@ -176,27 +178,140 @@
 
         <div id="view-raffles" class="hidden space-y-6">
             <h2 class="text-2xl font-black text-center text-gray-800">Nuestros Sorteos</h2>
+            <p class="text-center text-xs text-gray-500 -mt-4 mb-6">Conoce nuestros sorteos activos y participa</p>
+
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
                  <div class="aspect-video relative bg-gray-100">
                     <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
-                    <div class="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">● EN CURSO</div>
+                    <div class="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">
+                        ● EN CURSO
+                    </div>
                 </div>
                 <div class="p-5">
                     <h3 class="font-bold text-lg text-gray-900 mb-2">Equipa tu Navidad #2</h3>
                     <div class="flex gap-4 text-xs text-gray-500 mb-6">
                         <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-red-500"></iconify-icon> Bs. 700.00</span>
+                        <span class="flex items-center gap-1"><iconify-icon icon="solar:calendar-bold" class="text-blue-500"></iconify-icon> --</span>
                     </div>
-                    <button onclick="navigateTo('home')" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center justify-center gap-2">Participa ahora <span class="text-lg">🎄</span></button>
+                    <button onclick="navigateTo('home')" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center justify-center gap-2">
+                        Participa ahora <span class="text-lg">🎄</span>
+                    </button>
                 </div>
             </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative">
+                <div class="sold-out-filter">
+                     <div class="aspect-video relative bg-gray-100">
+                        <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-gray-900 mb-2">Sorteo de Chavas #1</h3>
+                        <div class="flex gap-4 text-xs text-gray-500 mb-6">
+                            <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-gray-500"></iconify-icon> Bs. 400.00</span>
+                            <span class="flex items-center gap-1"><iconify-icon icon="solar:calendar-bold" class="text-gray-500"></iconify-icon> 11/11/2025</span>
+                        </div>
+                        <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed">
+                            Agotado
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                    <div class="bg-red-600 text-white font-black text-2xl px-6 py-2 transform -rotate-12 border-4 border-white shadow-2xl tracking-widest uppercase">
+                        Sold Out
+                    </div>
+                </div>
             </div>
+             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative">
+                <div class="sold-out-filter">
+                     <div class="aspect-video relative bg-gray-100">
+                        <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-gray-900 mb-2">Equipa tu Navidad #1</h3>
+                        <div class="flex gap-4 text-xs text-gray-500 mb-6">
+                            <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-gray-500"></iconify-icon> Bs. 580.00</span>
+                        </div>
+                        <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed">
+                            Agotado
+                        </button>
+                    </div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                    <div class="bg-red-600 text-white font-black text-2xl px-6 py-2 transform -rotate-12 border-4 border-white shadow-2xl tracking-widest uppercase">
+                        Sold Out
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div id="view-terms" class="hidden space-y-6">
-             <div class="text-center mb-6">
+            <div class="text-center mb-6">
                 <h2 class="text-2xl font-black text-gray-800">Términos y Condiciones</h2>
+                <p class="text-xs text-gray-500">Conoce las políticas y términos de uso de nuestra plataforma</p>
             </div>
+
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8 text-sm text-gray-600 leading-relaxed space-y-6">
-                <p>Información de términos y condiciones...</p>
+                
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Disponibilidad de números</h4>
+                    <p>Los números disponibles para cada sorteo estarán siempre publicados en la página oficial de <strong class="text-gray-900">Súper Gana</strong>.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Entrega de tickets</h4>
+                    <p>Una vez confirmado tu pago, recibirás tus tickets de manera <strong class="text-gray-900">aleatoria</strong> en un plazo máximo de <strong class="text-gray-900">18 horas</strong>, ya que procesamos un alto volumen de operaciones diariamente.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Quiénes pueden participar</h4>
+                    <p>Solo podrán participar personas naturales mayores de 18 años.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Transparencia y difusión</h4>
+                    <p>Para garantizar la transparencia de cada sorteo, los ganadores aceptan aparecer en los contenidos audiovisuales relacionados con la entrega de premios, los cuales podrán ser publicados en nuestras redes sociales.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Compras con Zelle</h4>
+                    <p>Si eliges pagar con <strong class="text-gray-900">Zelle</strong>, la compra mínima debe ser de <strong class="text-gray-900">20 tickets</strong> para que tu pedido pueda ser confirmado.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Confirmación de compra</h4>
+                    <p>Una vez validado tu pago, recibirás un mensaje de confirmación con tu(s) número(s) asignado(s). Nuestro <strong class="text-gray-900">canal principal de comunicación es WhatsApp</strong>, y de forma secundaria también enviamos confirmación por correo electrónico.</p>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100">
+                    <h4 class="font-bold text-gray-900 mb-2">Sobre la plataforma</h4>
+                    <p class="text-xs bg-gray-50 p-3 rounded-xl border border-gray-100">La plataforma tecnológica es desarrollada y mantenida por <strong class="text-gray-900">Mousett Latam</strong>. Esta plataforma funciona únicamente como una <strong class="text-gray-900">herramienta de gestión y soporte técnico</strong>, y no tiene responsabilidad directa sobre la organización ni ejecución de los sorteos.</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
+                <h3 class="font-bold text-gray-800 text-lg mb-1">¿Tienes Dudas?</h3>
+                <p class="text-xs text-gray-500 mb-6">Nuestro equipo de soporte está disponible para resolver tus consultas</p>
+                <div class="flex justify-center gap-4">
+                    <a href="#" class="flex flex-col items-center gap-2 group">
+                        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition">
+                            <iconify-icon icon="logos:whatsapp-icon" width="24"></iconify-icon>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-[10px] font-bold text-gray-800">WhatsApp</span>
+                            <span class="block text-[9px] text-gray-400">+584226389020</span>
+                        </div>
+                    </a>
+                    <a href="#" class="flex flex-col items-center gap-2 group">
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100 group-hover:bg-blue-100 transition">
+                            <iconify-icon icon="solar:phone-calling-bold-duotone" width="24"></iconify-icon>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-[10px] font-bold text-gray-800">Llamar</span>
+                            <span class="block text-[9px] text-gray-400">+584226389020</span>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -206,6 +321,7 @@
                 MOUSE <span class="text-red-300">77</span>
             </div>
         </div>
+
     </div>
 
     <div id="floating-btn" class="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-40">
@@ -213,6 +329,7 @@
             <iconify-icon icon="solar:cart-4-bold" width="24"></iconify-icon> Comprar Boletos
         </button>
     </div>
+
 
     <div id="checkoutModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="cerrarModalCompra()"></div>
@@ -469,14 +586,15 @@
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js"></script>
-    <script src="logic.js"></script>
 
     <script>
         $(document).ready(function(){
             $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
         });
         
-        // --- LOGICA DEL MENÚ ---
+        let currentStep = 1;
+        
+        // --- NAVEGACIÓN Y MENÚ ---
         function toggleMenu() {
             const menu = document.getElementById('side-menu');
             const overlay = document.getElementById('menu-overlay');
@@ -514,7 +632,7 @@
         }
         function navigateTo(view) { menuAction(view); }
 
-        // --- FUNCIONES MODALES ---
+        // --- MODALES ---
         function abrirModalCompra() { 
             document.getElementById('checkoutModal').classList.remove('hidden'); 
             document.body.style.overflow = 'hidden'; 
@@ -535,26 +653,7 @@
             document.body.style.overflow = 'auto';
         }
 
-        // --- VALIDACIÓN PASO 5 y COPIAR ---
-        
-        function copiarTexto(texto) {
-            navigator.clipboard.writeText(texto).then(() => {
-                const Toast = Swal.mixin({
-                    toast: true, position: 'top-end', showConfirmButton: false, timer: 1500,
-                    didOpen: (toast) => { toast.onmouseenter = Swal.stopTimer; toast.onmouseleave = Swal.resumeTimer; }
-                });
-                Toast.fire({ icon: 'success', title: 'Copiado al portapapeles' });
-            });
-        }
-
-        // Esta función se llama dentro de nextStep() en logic.js para validar
-        // Como logic.js es externo, aquí reescribo una versión simplificada de nextStep 
-        // para asegurar que funcione en este archivo único si logic.js no tiene la validación.
-        // NOTA: Si usas logic.js, asegúrate que llame a esta lógica. 
-        // Aquí sobreescribo la logica de steps para que funcione todo en este archivo:
-
-        let currentStep = 1;
-        
+        // --- FUNCIONES CHECKOUT ---
         function updateModalHeader() {
             const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "Realiza el Pago", "Comprobante de Pago"];
             const icons = ["solar:card-2-bold-duotone", "solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:wallet-money-bold-duotone", "solar:upload-track-bold-duotone"];
@@ -573,19 +672,16 @@
 
         function nextStep() {
             if (currentStep < 5) {
-                // Validación simple de pasos anteriores si quieres
                 if(currentStep === 4) {
-                    // Mostrar instrucciones antes de pasar al 5
                     document.getElementById('payment-instructions').classList.remove('hidden');
-                    return; // Esperamos que den click en "Entendido"
+                    return; 
                 }
-                
                 document.getElementById(`step-${currentStep}`).classList.add('hidden');
                 currentStep++;
                 document.getElementById(`step-${currentStep}`).classList.remove('hidden');
                 updateModalHeader();
             } else {
-                // ESTAMOS EN EL PASO 5 -> VALIDAR
+                // VALIDACIÓN DEL PASO 5
                 const ref = document.getElementById('input-referencia').value;
                 const file = document.getElementById('input-comprobante').value;
 
@@ -598,12 +694,9 @@
                     return;
                 }
 
-                // SI TODO ESTA BIEN:
                 document.getElementById(`step-5`).classList.add('hidden');
                 document.getElementById('modal-footer').classList.add('hidden');
                 document.getElementById('step-success').classList.remove('hidden');
-                
-                // Efecto confetti
                 confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             }
         }
@@ -619,14 +712,12 @@
         
         function dismissInstructions() {
             document.getElementById('payment-instructions').classList.add('hidden');
-            // Avanzamos manualmente del 4 al 5
             document.getElementById(`step-4`).classList.add('hidden');
             currentStep = 5;
             document.getElementById(`step-5`).classList.remove('hidden');
             updateModalHeader();
         }
 
-        // Lógica de cantidad
         function selectQty(n) { document.getElementById('custom-qty').value = n; updateTotal(); }
         function changeQty(n) { 
             let val = parseInt(document.getElementById('custom-qty').value) || 0; 
@@ -637,7 +728,6 @@
             let val = parseInt(document.getElementById('custom-qty').value) || 1;
             let price = 700; 
             let total = val * price;
-            // Formato moneda
             let text = "Bs. " + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('step2-total').innerText = text;
             document.getElementById('step4-total').innerText = text;
@@ -651,12 +741,20 @@
             }
         }
         
-        // Simular búsqueda
         function simularBusquedaTickets() {
              document.getElementById('search-inputs').classList.add('hidden');
              document.getElementById('ticket-results').classList.remove('hidden');
         }
-
+        
+        function copiarTexto(texto) {
+            navigator.clipboard.writeText(texto).then(() => {
+                const Toast = Swal.mixin({
+                    toast: true, position: 'top-end', showConfirmButton: false, timer: 1500,
+                    didOpen: (toast) => { toast.onmouseenter = Swal.stopTimer; toast.onmouseleave = Swal.resumeTimer; }
+                });
+                Toast.fire({ icon: 'success', title: 'Copiado al portapapeles' });
+            });
+        }
     </script>
 </body>
 </html>
