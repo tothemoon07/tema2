@@ -237,13 +237,20 @@
                 </div>
 
                 <div id="step-success" class="step-content hidden text-center py-4 relative">
-                    <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none z-0"></canvas>
-                    
                     <div class="relative z-10">
                         <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500 animate-bounce"><iconify-icon icon="solar:check-circle-bold" width="40"></iconify-icon></div>
                         <h2 class="text-2xl font-black text-gray-800 mb-2">¡Todo Listo!</h2>
                         <p class="text-xs text-gray-500 mb-6">Tu compra ha sido registrada.</p>
-                        <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100"><div class="flex justify-between mb-2"><span class="text-xs font-bold text-gray-400">TOTAL</span><span class="font-black text-gray-900" id="success-total">Bs. 700.00</span></div><div class="border-t pt-3"><p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p><div class="flex flex-wrap gap-2" id="assigned-tickets"></div></div></div>
+                        
+                        <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100">
+                            <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
+                                 <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0"><iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon></div>
+                                <div><h4 class="font-bold text-gray-800 text-sm">#014593</h4><p class="text-[10px] font-bold text-yellow-600 uppercase">Verificando Pago</p></div>
+                                <div class="ml-auto text-right"><span class="text-xs font-bold text-gray-400">TOTAL</span><br><span class="font-black text-gray-900" id="success-total">Bs. 700.00</span></div>
+                            </div>
+                            <p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p>
+                            <div class="flex flex-wrap gap-2" id="assigned-tickets"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -277,23 +284,70 @@
 
             <div class="flex-1 overflow-y-auto p-6 md:p-8 text-center custom-scroll">
                 
-                <h2 class="text-xl font-bold text-gray-800 mb-2 mt-4">Consultar Boletos</h2>
-                <p class="text-xs text-gray-500 mb-8">Ingresa tu cédula para ver todas tus compras</p>
+                <h2 class="text-xl font-bold text-gray-800 mb-2 mt-4" id="consult-title">Consultar Boletos</h2>
+                <p class="text-xs text-gray-500 mb-8" id="consult-subtitle">Ingresa tu cédula para ver todas tus compras</p>
 
-                <div class="mb-6">
-                    <span class="text-red-500 font-bold text-sm bg-red-50 px-4 py-2 rounded-full">
-                        <iconify-icon icon="solar:list-bold" class="mr-1 relative top-0.5"></iconify-icon> Ver mis compras
-                    </span>
+                <div id="search-inputs">
+                    <div class="mb-6">
+                        <span class="text-red-500 font-bold text-sm bg-red-50 px-4 py-2 rounded-full">
+                            <iconify-icon icon="solar:list-bold" class="mr-1 relative top-0.5"></iconify-icon> Ver mis compras
+                        </span>
+                    </div>
+
+                    <div class="mb-6 text-left">
+                        <label class="text-xs font-bold text-gray-700 ml-1 mb-1 block">Cédula de Identidad</label>
+                        <input type="number" class="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 transition" placeholder="Escribe tu número de cédula">
+                    </div>
+
+                    <button onclick="simularBusquedaTickets()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 mb-8 flex items-center justify-center gap-2">
+                        <iconify-icon icon="solar:magnifer-bold"></iconify-icon> Buscar
+                    </button>
                 </div>
 
-                <div class="mb-6 text-left">
-                    <label class="text-xs font-bold text-gray-700 ml-1 mb-1 block">Cédula de Identidad</label>
-                    <input type="number" class="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 transition" placeholder="Escribe tu número de cédula">
-                </div>
+                <div id="ticket-results" class="hidden space-y-4">
+                    
+                    <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100 shadow-sm relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
+                            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0">
+                                <iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-sm">#015521</h4>
+                                <p class="text-[10px] font-bold text-yellow-600 uppercase">Verificando Pago</p>
+                            </div>
+                            <div class="ml-auto text-right">
+                                <span class="text-xs text-gray-400">30/11/2025</span><br>
+                                <span class="font-black text-gray-900">Bs. 700.00</span>
+                            </div>
+                        </div>
+                        <p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded">0421</span>
+                        </div>
+                    </div>
 
-                <button class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 mb-8 flex items-center justify-center gap-2">
-                    <iconify-icon icon="solar:magnifer-bold"></iconify-icon> Buscar
-                </button>
+                    <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100 shadow-sm relative overflow-hidden">
+                        <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 flex-shrink-0">
+                                <iconify-icon icon="solar:verified-check-bold" width="20"></iconify-icon>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-sm">#009842</h4>
+                                <p class="text-[10px] font-bold text-green-600 uppercase">Pago Verificado</p>
+                            </div>
+                            <div class="ml-auto text-right">
+                                <span class="text-xs text-gray-400">15/10/2025</span><br>
+                                <span class="font-black text-gray-900">Bs. 1,400.00</span>
+                            </div>
+                        </div>
+                        <p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p>
+                        <div class="flex flex-wrap gap-2">
+                             <span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">8812</span>
+                             <span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">9934</span>
+                        </div>
+                    </div>
+
+                </div>
                 
                 <div class="border-t border-gray-100 pt-6 mb-2">
                     <h3 class="font-bold text-gray-800 text-base mb-1">¿Necesitas Ayuda?</h3>
@@ -318,6 +372,8 @@
         </div>
     </div>
 
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-[60]"></canvas>
+
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js"></script>
     <script src="logic.js"></script>
@@ -327,6 +383,7 @@
             $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
         });
         
+        // Modal Compra
         function abrirModalCompra() { 
             document.getElementById('checkoutModal').classList.remove('hidden'); 
             document.body.style.overflow = 'hidden'; 
@@ -336,9 +393,17 @@
             document.body.style.overflow = 'auto'; 
             location.reload(); 
         }
+
+        // Modal Verificar
         function abrirModalVerificar() {
+            // Asegurarse de resetear la vista a "búsqueda" cada vez que se abre
             document.getElementById('checkTicketsModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+            
+            document.getElementById('search-inputs').classList.remove('hidden');
+            document.getElementById('ticket-results').classList.add('hidden');
+            document.getElementById('consult-title').innerText = "Consultar Boletos";
+            document.getElementById('consult-subtitle').innerText = "Ingresa tu cédula para ver todas tus compras";
         }
         function cerrarModalVerificar() {
             document.getElementById('checkTicketsModal').classList.add('hidden');
