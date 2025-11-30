@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css" />
@@ -32,6 +34,9 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
         
         .lottery-slider img { width: 100%; height: 100%; object-fit: contain; background-color: #f9fafb; }
+
+        /* Clase para desenfocar el fondo cuando salen las instrucciones */
+        .blur-content { filter: blur(3px); pointer-events: none; }
     </style>
 </head>
 <body class="text-gray-900 pb-32">
@@ -152,6 +157,7 @@
     <div id="checkoutModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="cerrarModalCompra()"></div>
         <div class="relative w-full max-w-md max-h-[90vh] h-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-10">
+            
             <div class="bg-red-500 text-white p-5 flex-shrink-0 relative">
                 <button onclick="cerrarModalCompra()" class="absolute top-5 right-5 text-white/80 hover:text-white"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
                 <div class="flex items-center gap-3">
@@ -167,6 +173,7 @@
             <div class="bg-gray-100 h-1 w-full flex-shrink-0"><div id="progress-bar" class="bg-red-600 h-full transition-all duration-300" style="width: 20%"></div></div>
             
             <div class="flex-1 overflow-y-auto p-5 custom-scroll bg-white relative">
+                
                 <div id="timer-container" class="hidden text-center mb-6"><div class="text-3xl font-black text-red-500 animate-pulse font-mono" id="countdown">15:00</div></div>
 
                 <div id="step-1" class="step-content">
@@ -229,13 +236,28 @@
                     </form>
                 </div>
 
-                <div id="step-success" class="step-content hidden text-center py-4">
-                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500 animate-bounce"><iconify-icon icon="solar:check-circle-bold" width="40"></iconify-icon></div>
-                    <h2 class="text-2xl font-black text-gray-800 mb-2">¡Todo Listo!</h2>
-                    <p class="text-xs text-gray-500 mb-6">Tu compra ha sido registrada.</p>
-                    <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100"><div class="flex justify-between mb-2"><span class="text-xs font-bold text-gray-400">TOTAL</span><span class="font-black text-gray-900" id="success-total">Bs. 700.00</span></div><div class="border-t pt-3"><p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p><div class="flex flex-wrap gap-2" id="assigned-tickets"></div></div></div>
+                <div id="step-success" class="step-content hidden text-center py-4 relative">
+                    <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none z-0"></canvas>
+                    
+                    <div class="relative z-10">
+                        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500 animate-bounce"><iconify-icon icon="solar:check-circle-bold" width="40"></iconify-icon></div>
+                        <h2 class="text-2xl font-black text-gray-800 mb-2">¡Todo Listo!</h2>
+                        <p class="text-xs text-gray-500 mb-6">Tu compra ha sido registrada.</p>
+                        <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100"><div class="flex justify-between mb-2"><span class="text-xs font-bold text-gray-400">TOTAL</span><span class="font-black text-gray-900" id="success-total">Bs. 700.00</span></div><div class="border-t pt-3"><p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p><div class="flex flex-wrap gap-2" id="assigned-tickets"></div></div></div>
+                    </div>
                 </div>
             </div>
+
+            <div id="payment-instructions" class="absolute inset-0 z-20 hidden flex flex-col items-center justify-center p-6 text-center" style="top: 80px; bottom: 80px;">
+                 <div class="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-gray-100 max-w-sm w-full">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 shadow-sm"><iconify-icon icon="solar:info-circle-bold" width="32"></iconify-icon></div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Instrucciones de pago</h3>
+                    <p class="text-sm text-gray-600 mb-4 leading-relaxed">Haz el pago a los datos que <strong class="text-gray-900">te mostraremos a continuación</strong>.</p>
+                    <p class="text-sm text-gray-600 mb-6 leading-relaxed">Asegúrate de colocar la <strong class="text-gray-900">referencia exacta</strong> del banco.</p>
+                    <button onclick="dismissInstructions()" class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold shadow-md shadow-blue-200 transition transform active:scale-95">Entendido</button>
+                 </div>
+            </div>
+
             <div id="modal-footer" class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-shrink-0">
                 <button id="btn-back" onclick="prevStep()" class="px-4 py-3 text-gray-500 font-bold text-sm disabled:opacity-50" disabled>Volver</button>
                 <button id="btn-next" onclick="nextStep()" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center gap-2">Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon></button>
@@ -305,7 +327,6 @@
             $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
         });
         
-        // Modal Compra
         function abrirModalCompra() { 
             document.getElementById('checkoutModal').classList.remove('hidden'); 
             document.body.style.overflow = 'hidden'; 
@@ -315,8 +336,6 @@
             document.body.style.overflow = 'auto'; 
             location.reload(); 
         }
-
-        // Modal Verificar
         function abrirModalVerificar() {
             document.getElementById('checkTicketsModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
