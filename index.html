@@ -258,13 +258,61 @@
         <div id="view-terms" class="hidden space-y-6">
             <div class="text-center mb-6">
                 <h2 class="text-2xl font-black text-gray-800">Términos y Condiciones</h2>
-                <p class="text-xs text-gray-500">Conoce las políticas y términos de uso de nuestra plataforma</p>
+                <p class="text-xs text-gray-500">Reglas claras para una participación transparente</p>
             </div>
 
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8 text-sm text-gray-600 leading-relaxed space-y-6">
-                <p>...</p>
+                
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <iconify-icon icon="solar:user-check-bold" class="text-red-500"></iconify-icon> 1. Participación
+                    </h4>
+                    <p class="text-xs">Solo pueden participar personas mayores de 18 años. Al comprar un boleto, el participante acepta todas las reglas aquí descritas.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <iconify-icon icon="solar:ticket-bold" class="text-blue-500"></iconify-icon> 2. Asignación de Boletos
+                    </h4>
+                    <p class="text-xs">Una vez confirmado el pago, los boletos se generan digitalmente. El participante recibirá un comprobante digital (vía WhatsApp o correo electrónico) con los números asignados.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <iconify-icon icon="solar:wallet-money-bold" class="text-green-500"></iconify-icon> 3. Pagos y Validación
+                    </h4>
+                    <p class="text-xs">Todos los pagos deben ser reportados con su referencia exacta y comprobante (captura). Pagos no reportados o con referencias erróneas no serán procesados, y no participarán en el sorteo.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <iconify-icon icon="solar:cup-star-bold" class="text-yellow-500"></iconify-icon> 4. Sorteo y Premios
+                    </h4>
+                    <p class="text-xs">El sorteo se realizará en la fecha indicada utilizando la lotería designada (ej. Super Gana, Táchira) o mediante transmisión en vivo según se especifique. El premio se entrega únicamente al titular de la cédula registrada en la compra.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <iconify-icon icon="solar:shield-warning-bold" class="text-orange-500"></iconify-icon> 5. Política de Reembolsos
+                    </h4>
+                    <p class="text-xs">No se realizan reembolsos una vez asignados los números, salvo que el sorteo sea cancelado definitivamente por la organización.</p>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100">
+                     <p class="text-[10px] text-gray-400 italic">Última actualización: Noviembre 2025</p>
+                </div>
             </div>
+
+             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
+                <h3 class="font-bold text-gray-800 text-lg mb-1">¿Tienes Dudas?</h3>
+                <p class="text-xs text-gray-500 mb-6">Nuestro equipo está listo para ayudarte</p>
+                <div class="flex justify-center gap-4">
+                    <button onclick="menuAction('contact')" class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs transition">
+                        Contáctanos
+                    </button>
+                </div>
             </div>
+        </div>
 
         <div class="text-center pb-8 pt-4">
             <p class="text-[10px] text-gray-400">Plataforma de rifas construida por</p>
@@ -708,7 +756,6 @@
             // Remover clase de todos los botones
             document.querySelectorAll('.qty-btn').forEach(b => {
                 b.classList.remove('qty-btn-selected');
-                // Restaurar estilo normal si se quiere mas detalle
             });
             // Agregar clase al presionado
             btn.classList.add('qty-btn-selected');
