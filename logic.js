@@ -158,12 +158,16 @@ function mostrarExito() {
 }
 
 function lanzarConfeti() {
+    // Buscamos el canvas en el body
     var myCanvas = document.getElementById('confetti-canvas');
     var myConfetti = confetti.create(myCanvas, { resize: true, useWorker: true });
+    
+    // Configuración para pantalla completa
     myConfetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.6 },
+        particleCount: 200, // Más partículas
+        spread: 160,       // Mayor dispersión
+        origin: { y: 0.5 }, // Desde el centro
+        zIndex: 9999,       // Asegurar que esté por encima del modal (que suele ser z-50)
         colors: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']
     });
 }
@@ -173,4 +177,17 @@ function previewImage(input) {
         document.getElementById('upload-placeholder').classList.add('hidden');
         document.getElementById('file-preview').classList.remove('hidden');
     }
+}
+
+// NUEVA FUNCIÓN: Simular Búsqueda
+function simularBusquedaTickets() {
+    // Ocultar inputs
+    document.getElementById('search-inputs').classList.add('hidden');
+    
+    // Mostrar resultados
+    document.getElementById('ticket-results').classList.remove('hidden');
+    
+    // Cambiar texto del encabezado
+    document.getElementById('consult-title').innerText = "Tus Compras";
+    document.getElementById('consult-subtitle').innerText = "Resultados para la cédula ingresada";
 }
