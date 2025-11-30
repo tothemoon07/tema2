@@ -239,9 +239,10 @@
                 <div id="step-success" class="step-content hidden text-center py-4 relative">
                     <div class="relative z-10">
                         <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500 animate-bounce"><iconify-icon icon="solar:check-circle-bold" width="40"></iconify-icon></div>
-                        <h2 class="text-2xl font-black text-gray-800 mb-2">¡Todo Listo!</h2>
-                        <p class="text-xs text-gray-500 mb-6">Tu compra ha sido registrada.</p>
-                        
+                        <div id="success-message-container">
+                            <h2 class="text-2xl font-black text-gray-800 mb-2">¡Todo Listo!</h2>
+                            <p class="text-xs text-gray-500 mb-6">Tu compra ha sido registrada.</p>
+                        </div>
                         <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100">
                             <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
                                  <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0"><iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon></div>
@@ -255,8 +256,8 @@
                 </div>
             </div>
 
-            <div id="payment-instructions" class="absolute inset-0 z-20 hidden flex flex-col items-center justify-center p-6 text-center" style="top: 80px; bottom: 80px;">
-                 <div class="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-gray-100 max-w-sm w-full">
+            <div id="payment-instructions" class="absolute inset-0 z-20 hidden flex items-center justify-center p-4">
+                 <div class="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-gray-100 w-full max-w-sm mx-4 text-center">
                     <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 shadow-sm"><iconify-icon icon="solar:info-circle-bold" width="32"></iconify-icon></div>
                     <h3 class="text-lg font-bold text-gray-900 mb-4">Instrucciones de pago</h3>
                     <p class="text-sm text-gray-600 mb-4 leading-relaxed">Haz el pago a los datos que <strong class="text-gray-900">te mostraremos a continuación</strong>.</p>
@@ -383,7 +384,6 @@
             $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
         });
         
-        // Modal Compra
         function abrirModalCompra() { 
             document.getElementById('checkoutModal').classList.remove('hidden'); 
             document.body.style.overflow = 'hidden'; 
@@ -393,10 +393,7 @@
             document.body.style.overflow = 'auto'; 
             location.reload(); 
         }
-
-        // Modal Verificar
         function abrirModalVerificar() {
-            // Asegurarse de resetear la vista a "búsqueda" cada vez que se abre
             document.getElementById('checkTicketsModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             
