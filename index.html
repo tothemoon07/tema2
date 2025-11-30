@@ -575,14 +575,14 @@
         });
         
         // --- LOGICA DEL MENÚ Y VISTAS ---
+        
+        // Función para ABRIR/CERRAR el menú (botón hamburguesa)
         function toggleMenu() {
             const menu = document.getElementById('side-menu');
             const overlay = document.getElementById('menu-overlay');
             
             if (menu.classList.contains('menu-open')) {
-                menu.classList.remove('menu-open');
-                overlay.classList.add('hidden');
-                document.body.style.overflow = 'auto';
+                closeMenu(); // Si está abierto, lo cerramos
             } else {
                 menu.classList.add('menu-open');
                 overlay.classList.remove('hidden');
@@ -590,9 +590,19 @@
             }
         }
 
+        // Función para FORZAR EL CIERRE del menú (usada al navegar)
+        function closeMenu() {
+            const menu = document.getElementById('side-menu');
+            const overlay = document.getElementById('menu-overlay');
+            
+            menu.classList.remove('menu-open');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
         function menuAction(action) {
-            // Cerramos menú primero
-            toggleMenu();
+            // IMPORTANTE: Siempre cerramos el menú al navegar
+            closeMenu();
 
             // Ocultamos todas las vistas
             document.getElementById('view-home').classList.add('hidden');
@@ -618,12 +628,12 @@
                     document.getElementById('contact-section-home').scrollIntoView({ behavior: 'smooth' });
                 }, 100);
             } else if (action === 'verify') {
-                // Abrir modal existente
-                document.getElementById('view-home').classList.remove('hidden'); // Mantenemos home de fondo
+                document.getElementById('view-home').classList.remove('hidden'); 
                 abrirModalVerificar();
             }
         }
 
+        // Esta función la usa el botón "Participa ahora"
         function navigateTo(view) {
             menuAction(view);
         }
