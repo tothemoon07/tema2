@@ -153,35 +153,37 @@ function mostrarExito() {
         container.innerHTML += `<span class="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">${ticket}</span>`;
     }
 
-    // LANZAR CONFETI: Ahora se lanza desde el centro de la pantalla
+    // LANZAR CONFETI
     lanzarConfeti();
 }
 
-// Función actualizada para una gran explosión desde el centro
+// Función TOTALMENTE NUEVA para el confeti
 function lanzarConfeti() {
-    var myCanvas = document.getElementById('confetti-canvas');
-    var myConfetti = confetti.create(myCanvas, { resize: true, useWorker: true });
-    
-    // Configuración de la explosión
-    const explosionConfig = {
-        particleCount: 200, // Cantidad de partículas
-        spread: 160,        // Dispersión amplia
-        origin: { y: 0.5 }, // Desde el centro vertical (x es 0.5 por defecto)
-        zIndex: 9999,       // Asegurar que esté por encima del modal
-        colors: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']
+    // Definimos configuraciones base para que siempre cubra todo
+    const defaults = {
+        origin: { y: 0.5, x: 0.5 }, // Centro exacto
+        zIndex: 9999, // Muy por encima del modal (que suele ser z-50)
     };
 
-    // Primera ráfaga
-    myConfetti(explosionConfig);
+    // 1. Explosión principal (simula salir de atrás/fondo)
+    confetti({
+        ...defaults,
+        particleCount: 150,
+        spread: 100,
+        scalar: 1.2, // Partículas más grandes
+        startVelocity: 60
+    });
 
-    // Segunda ráfaga con un ligero retraso para un efecto más festivo
+    // 2. Explosión secundaria (simula el "pop" frontal) con ligero retraso
     setTimeout(() => {
-        myConfetti({
-            ...explosionConfig,
-            particleCount: 150, // Un poco menos de partículas
-            startVelocity: 45,  // Un poco más de velocidad inicial
+        confetti({
+            ...defaults,
+            particleCount: 100,
+            spread: 160,
+            startVelocity: 45,
+            scalar: 0.8 // Partículas un poco más pequeñas
         });
-    }, 250); // 250ms de retraso
+    }, 150);
 }
 
 function previewImage(input) {
