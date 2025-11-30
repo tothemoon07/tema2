@@ -6,10 +6,8 @@
     <title>Gana con Graciela</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
@@ -18,32 +16,32 @@
 
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #f3f4f6; }
-        
         .animate-wave-pulse { animation: waves 2s infinite ease-out; }
         @keyframes waves {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
             50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         .custom-scroll::-webkit-scrollbar { width: 5px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
-        
         .lottery-slider img { width: 100%; height: 100%; object-fit: contain; background-color: #f9fafb; }
-
-        /* Clase para desenfocar el fondo cuando salen las instrucciones */
         .blur-content { filter: blur(3px); pointer-events: none; }
+        
+        /* Estilos para el Menú Lateral */
+        #side-menu { transition: transform 0.3s ease-in-out; }
+        .menu-open { transform: translateX(0) !important; }
+        
+        /* Estilos para Sold Out */
+        .sold-out-filter { filter: grayscale(100%); opacity: 0.8; pointer-events: none; }
     </style>
 </head>
 <body class="text-gray-900 pb-32">
 
-    <header class="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-200">
+    <header class="fixed top-0 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-200">
         <nav class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('home')">
                 <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100">
                     <img src="https://cdn.inteliticket.com/platform/logos/690fb6cfa0634_graciela.png" class="w-full h-full object-contain">
                 </div>
@@ -52,90 +50,284 @@
                     <p class="text-[10px] text-gray-500">by @gracielavarelaaa</p>
                 </div>
             </div>
-            <button class="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition"><iconify-icon icon="mingcute:menu-line" width="24"></iconify-icon></button>
+            <button onclick="toggleMenu()" class="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition">
+                <iconify-icon icon="mingcute:menu-line" width="24"></iconify-icon>
+            </button>
         </nav>
     </header>
 
+    <div id="menu-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-50 hidden transition-opacity"></div>
+    <div id="side-menu" class="fixed top-0 right-0 bottom-0 w-80 bg-white z-[60] shadow-2xl transform translate-x-full flex flex-col">
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+             <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-full overflow-hidden">
+                    <img src="https://cdn.inteliticket.com/platform/logos/690fb6cfa0634_graciela.png" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm">Gana con Graciela</h3>
+                    <p class="text-[10px] text-gray-400">@gracielavarelaaa</p>
+                </div>
+            </div>
+            <button onclick="toggleMenu()" class="text-gray-400 hover:text-gray-600"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto py-4">
+            <div class="px-6 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Navegación</div>
+            <nav class="space-y-1 px-3">
+                <a href="#" onclick="menuAction('home')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
+                    <iconify-icon icon="solar:home-smile-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Inicio</span>
+                </a>
+                <a href="#" onclick="menuAction('raffles')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
+                    <iconify-icon icon="solar:ticket-sale-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Sorteos</span>
+                </a>
+                <a href="#" onclick="menuAction('verify')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
+                    <iconify-icon icon="solar:bill-check-bold-duotone" width="22"></iconify-icon> <span class="font-medium text-red-500 bg-red-50 px-2 py-1 rounded-lg">Verificar boletos</span>
+                </a>
+                <a href="#" onclick="menuAction('terms')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
+                    <iconify-icon icon="solar:document-text-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Términos y condiciones</span>
+                </a>
+                <a href="#" onclick="menuAction('contact')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
+                    <iconify-icon icon="solar:question-circle-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Contacto</span>
+                </a>
+            </nav>
+
+            <div class="px-6 mt-8 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Redes Sociales</div>
+            <nav class="space-y-1 px-3">
+                <a href="#" class="flex items-center gap-4 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
+                    <iconify-icon icon="logos:instagram-icon" width="20"></iconify-icon> <span class="font-medium text-sm">Instagram</span>
+                </a>
+                <a href="#" class="flex items-center gap-4 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
+                    <iconify-icon icon="logos:twitter" width="20"></iconify-icon> <span class="font-medium text-sm">Twitter</span>
+                </a>
+                <a href="#" class="flex items-center gap-4 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
+                    <iconify-icon icon="logos:tiktok-icon" width="20"></iconify-icon> <span class="font-medium text-sm">TikTok</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+
     <div class="w-full max-w-2xl mx-auto mt-20 px-4 space-y-6">
 
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="lottery-slider aspect-square md:aspect-video relative bg-gray-50 border-b border-gray-100">
-                <div><img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png"></div>
+        <div id="view-home" class="space-y-6 transition-opacity duration-300">
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="lottery-slider aspect-square md:aspect-video relative bg-gray-50 border-b border-gray-100">
+                    <div><img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png"></div>
+                </div>
+
+                <div class="p-6">
+                    <div class="flex gap-2 mb-8 text-center">
+                        <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                            <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-1 text-yellow-600"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
+                            <p class="text-[9px] text-gray-400 font-bold uppercase">Fecha</p>
+                            <p class="font-bold text-xs">--</p>
+                        </div>
+                        <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-1 text-green-600"><iconify-icon icon="solar:ticket-bold-duotone"></iconify-icon></div>
+                            <p class="text-[9px] text-gray-400 font-bold uppercase">Boleto</p>
+                            <p class="font-bold text-xs">Bs. 700.00</p>
+                        </div>
+                        <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-1 text-blue-600"><iconify-icon icon="solar:shop-minimalistic-bold-duotone"></iconify-icon></div>
+                            <p class="text-[9px] text-gray-400 font-bold uppercase">Lotería</p>
+                            <p class="font-bold text-xs">Super Gana</p>
+                        </div>
+                    </div>
+
+                    <div class="px-1 mb-2">
+                        <div class="h-3 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner mb-2">
+                            <div class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[35%]"></div>
+                        </div>
+                        <p class="text-center text-[10px] text-gray-400 font-bold">34.6% disponibles</p>
+                    </div>
+
+                    <div class="flex justify-center gap-6 mt-8 opacity-80 grayscale hover:grayscale-0 transition-all">
+                        <img src="https://cdn.inteliticket.com/lotteries/logos/65f46b627993a_conalot.png" class="h-8 object-contain">
+                        <img src="https://cdn.inteliticket.com/lotteries/logos/66e07b34d748f_super-gana.png" class="h-8 object-contain">
+                        <img src="https://cdn.inteliticket.com/lotteries/logos/6604240751322_tachira.png" class="h-8 object-contain">
+                    </div>
+                </div>
             </div>
 
-            <div class="p-6">
-                <div class="flex gap-2 mb-8 text-center">
-                    <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-1 text-yellow-600"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
-                        <p class="text-[9px] text-gray-400 font-bold uppercase">Fecha</p>
-                        <p class="font-bold text-xs">--</p>
-                    </div>
-                    <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-1 text-green-600"><iconify-icon icon="solar:ticket-bold-duotone"></iconify-icon></div>
-                        <p class="text-[9px] text-gray-400 font-bold uppercase">Boleto</p>
-                        <p class="font-bold text-xs">Bs. 700.00</p>
-                    </div>
-                    <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-1 text-blue-600"><iconify-icon icon="solar:shop-minimalistic-bold-duotone"></iconify-icon></div>
-                        <p class="text-[9px] text-gray-400 font-bold uppercase">Lotería</p>
-                        <p class="font-bold text-xs">Super Gana</p>
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
+                <h3 class="font-bold text-gray-800 text-lg mb-1">Verificar Boletos</h3>
+                <p class="text-xs text-gray-500 mb-6">Click aquí para consultar tus boletos</p>
+                <button onclick="abrirModalVerificar()" class="w-full md:w-auto px-12 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-100 transition flex items-center justify-center gap-2 mx-auto">
+                    <iconify-icon icon="solar:magnifer-bold" width="20"></iconify-icon> Buscar
+                </button>
+            </div>
+
+            <div id="contact-section-home" class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
+                <h3 class="font-bold text-gray-800 text-lg mb-1">¿Necesitas Ayuda?</h3>
+                <p class="text-xs text-gray-500 mb-6">Contacta con nuestro equipo de soporte</p>
+                <div class="flex justify-center gap-4">
+                    <a href="#" class="flex flex-col items-center gap-2 group">
+                        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition">
+                            <iconify-icon icon="logos:whatsapp-icon" width="24"></iconify-icon>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-[10px] font-bold text-gray-800">WhatsApp</span>
+                            <span class="block text-[9px] text-gray-400">+584226389020</span>
+                        </div>
+                    </a>
+                    <a href="#" class="flex flex-col items-center gap-2 group">
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100 group-hover:bg-blue-100 transition">
+                            <iconify-icon icon="solar:phone-calling-bold-duotone" width="24"></iconify-icon>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-[10px] font-bold text-gray-800">Llamar</span>
+                            <span class="block text-[9px] text-gray-400">+584226389020</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
+                <h3 class="font-bold text-gray-800 text-lg mb-1">¿Listo para Ganar?</h3>
+                <p class="text-xs text-gray-500 mb-6">Compra tus boletos ahora y participa</p>
+                <button onclick="abrirModalCompra()" class="w-full md:w-auto px-12 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-100 transition flex items-center justify-center gap-2 mx-auto">
+                    <iconify-icon icon="solar:cart-4-bold" width="20"></iconify-icon> Comprar Boletos
+                </button>
+            </div>
+        </div>
+
+        <div id="view-raffles" class="hidden space-y-6">
+            <h2 class="text-2xl font-black text-center text-gray-800">Nuestros Sorteos</h2>
+            <p class="text-center text-xs text-gray-500 -mt-4 mb-6">Conoce nuestros sorteos activos y participa</p>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+                 <div class="aspect-video relative bg-gray-100">
+                    <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
+                    <div class="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">
+                        ● EN CURSO
                     </div>
                 </div>
-
-                <div class="px-1 mb-2">
-                    <div class="h-3 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner mb-2">
-                        <div class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[35%]"></div>
+                <div class="p-5">
+                    <h3 class="font-bold text-lg text-gray-900 mb-2">Equipa tu Navidad #2</h3>
+                    <div class="flex gap-4 text-xs text-gray-500 mb-6">
+                        <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-red-500"></iconify-icon> Bs. 700.00</span>
+                        <span class="flex items-center gap-1"><iconify-icon icon="solar:calendar-bold" class="text-blue-500"></iconify-icon> --</span>
                     </div>
-                    <p class="text-center text-[10px] text-gray-400 font-bold">34.6% disponibles</p>
+                    <button onclick="navigateTo('home')" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center justify-center gap-2">
+                        Participa ahora <span class="text-lg">🎄</span>
+                    </button>
                 </div>
+            </div>
 
-                <div class="flex justify-center gap-6 mt-8 opacity-80 grayscale hover:grayscale-0 transition-all">
-                    <img src="https://cdn.inteliticket.com/lotteries/logos/65f46b627993a_conalot.png" class="h-8 object-contain">
-                    <img src="https://cdn.inteliticket.com/lotteries/logos/66e07b34d748f_super-gana.png" class="h-8 object-contain">
-                    <img src="https://cdn.inteliticket.com/lotteries/logos/6604240751322_tachira.png" class="h-8 object-contain">
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative">
+                <div class="sold-out-filter">
+                     <div class="aspect-video relative bg-gray-100">
+                        <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-gray-900 mb-2">Sorteo de Chavas #1</h3>
+                        <div class="flex gap-4 text-xs text-gray-500 mb-6">
+                            <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-gray-500"></iconify-icon> Bs. 400.00</span>
+                            <span class="flex items-center gap-1"><iconify-icon icon="solar:calendar-bold" class="text-gray-500"></iconify-icon> 11/11/2025</span>
+                        </div>
+                        <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed">
+                            Agotado
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                    <div class="bg-red-600 text-white font-black text-2xl px-6 py-2 transform -rotate-12 border-4 border-white shadow-2xl tracking-widest uppercase">
+                        Sold Out
+                    </div>
+                </div>
+            </div>
+             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative">
+                <div class="sold-out-filter">
+                     <div class="aspect-video relative bg-gray-100">
+                        <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-bold text-lg text-gray-900 mb-2">Equipa tu Navidad #1</h3>
+                        <div class="flex gap-4 text-xs text-gray-500 mb-6">
+                            <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-gray-500"></iconify-icon> Bs. 580.00</span>
+                        </div>
+                        <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed">
+                            Agotado
+                        </button>
+                    </div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                    <div class="bg-red-600 text-white font-black text-2xl px-6 py-2 transform -rotate-12 border-4 border-white shadow-2xl tracking-widest uppercase">
+                        Sold Out
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
-            <h3 class="font-bold text-gray-800 text-lg mb-1">Verificar Boletos</h3>
-            <p class="text-xs text-gray-500 mb-6">Click aquí para consultar tus boletos</p>
-            <button onclick="abrirModalVerificar()" class="w-full md:w-auto px-12 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-100 transition flex items-center justify-center gap-2 mx-auto">
-                <iconify-icon icon="solar:magnifer-bold" width="20"></iconify-icon> Buscar
-            </button>
-        </div>
-
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
-            <h3 class="font-bold text-gray-800 text-lg mb-1">¿Necesitas Ayuda?</h3>
-            <p class="text-xs text-gray-500 mb-6">Contacta con nuestro equipo de soporte</p>
-            <div class="flex justify-center gap-4">
-                <a href="#" class="flex flex-col items-center gap-2 group">
-                    <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition">
-                        <iconify-icon icon="logos:whatsapp-icon" width="24"></iconify-icon>
-                    </div>
-                    <div class="text-center">
-                        <span class="block text-[10px] font-bold text-gray-800">WhatsApp</span>
-                        <span class="block text-[9px] text-gray-400">+584226389020</span>
-                    </div>
-                </a>
-                <a href="#" class="flex flex-col items-center gap-2 group">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100 group-hover:bg-blue-100 transition">
-                        <iconify-icon icon="solar:phone-calling-bold-duotone" width="24"></iconify-icon>
-                    </div>
-                    <div class="text-center">
-                        <span class="block text-[10px] font-bold text-gray-800">Llamar</span>
-                        <span class="block text-[9px] text-gray-400">+584226389020</span>
-                    </div>
-                </a>
+        <div id="view-terms" class="hidden space-y-6">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-black text-gray-800">Términos y Condiciones</h2>
+                <p class="text-xs text-gray-500">Conoce las políticas y términos de uso de nuestra plataforma</p>
             </div>
-        </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
-            <h3 class="font-bold text-gray-800 text-lg mb-1">¿Listo para Ganar?</h3>
-            <p class="text-xs text-gray-500 mb-6">Compra tus boletos ahora y participa</p>
-            <button onclick="abrirModalCompra()" class="w-full md:w-auto px-12 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-100 transition flex items-center justify-center gap-2 mx-auto">
-                <iconify-icon icon="solar:cart-4-bold" width="20"></iconify-icon> Comprar Boletos
-            </button>
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8 text-sm text-gray-600 leading-relaxed space-y-6">
+                
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Disponibilidad de números</h4>
+                    <p>Los números disponibles para cada sorteo estarán siempre publicados en la página oficial de <strong class="text-gray-900">Súper Gana</strong>.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Entrega de tickets</h4>
+                    <p>Una vez confirmado tu pago, recibirás tus tickets de manera <strong class="text-gray-900">aleatoria</strong> en un plazo máximo de <strong class="text-gray-900">18 horas</strong>, ya que procesamos un alto volumen de operaciones diariamente.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Quiénes pueden participar</h4>
+                    <p>Solo podrán participar personas naturales mayores de 18 años.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Transparencia y difusión</h4>
+                    <p>Para garantizar la transparencia de cada sorteo, los ganadores aceptan aparecer en los contenidos audiovisuales relacionados con la entrega de premios, los cuales podrán ser publicados en nuestras redes sociales.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Compras con Zelle</h4>
+                    <p>Si eliges pagar con <strong class="text-gray-900">Zelle</strong>, la compra mínima debe ser de <strong class="text-gray-900">20 tickets</strong> para que tu pedido pueda ser confirmado.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Confirmación de compra</h4>
+                    <p>Una vez validado tu pago, recibirás un mensaje de confirmación con tu(s) número(s) asignado(s). Nuestro <strong class="text-gray-900">canal principal de comunicación es WhatsApp</strong>, y de forma secundaria también enviamos confirmación por correo electrónico.</p>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100">
+                    <h4 class="font-bold text-gray-900 mb-2">Sobre la plataforma</h4>
+                    <p class="text-xs bg-gray-50 p-3 rounded-xl border border-gray-100">La plataforma tecnológica es desarrollada y mantenida por <strong class="text-gray-900">Mousett Latam</strong>. Esta plataforma funciona únicamente como una <strong class="text-gray-900">herramienta de gestión y soporte técnico</strong>, y no tiene responsabilidad directa sobre la organización ni ejecución de los sorteos.</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
+                <h3 class="font-bold text-gray-800 text-lg mb-1">¿Tienes Dudas?</h3>
+                <p class="text-xs text-gray-500 mb-6">Nuestro equipo de soporte está disponible para resolver tus consultas</p>
+                <div class="flex justify-center gap-4">
+                    <a href="#" class="flex flex-col items-center gap-2 group">
+                        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition">
+                            <iconify-icon icon="logos:whatsapp-icon" width="24"></iconify-icon>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-[10px] font-bold text-gray-800">WhatsApp</span>
+                            <span class="block text-[9px] text-gray-400">+584226389020</span>
+                        </div>
+                    </a>
+                    <a href="#" class="flex flex-col items-center gap-2 group">
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100 group-hover:bg-blue-100 transition">
+                            <iconify-icon icon="solar:phone-calling-bold-duotone" width="24"></iconify-icon>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-[10px] font-bold text-gray-800">Llamar</span>
+                            <span class="block text-[9px] text-gray-400">+584226389020</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
         </div>
 
         <div class="text-center pb-8 pt-4">
@@ -147,7 +339,7 @@
 
     </div>
 
-    <div class="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-40">
+    <div id="floating-btn" class="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-40">
         <button onclick="abrirModalCompra()" class="w-full bg-red-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 animate-wave-pulse flex items-center justify-center gap-2">
             <iconify-icon icon="solar:cart-4-bold" width="24"></iconify-icon> Comprar Boletos
         </button>
@@ -382,6 +574,61 @@
             $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
         });
         
+        // --- LOGICA DEL MENÚ Y VISTAS ---
+        function toggleMenu() {
+            const menu = document.getElementById('side-menu');
+            const overlay = document.getElementById('menu-overlay');
+            
+            if (menu.classList.contains('menu-open')) {
+                menu.classList.remove('menu-open');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            } else {
+                menu.classList.add('menu-open');
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function menuAction(action) {
+            // Cerramos menú primero
+            toggleMenu();
+
+            // Ocultamos todas las vistas
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-raffles').classList.add('hidden');
+            document.getElementById('view-terms').classList.add('hidden');
+            // Botón flotante solo en home
+            document.getElementById('floating-btn').classList.add('hidden');
+
+            window.scrollTo(0,0);
+
+            if (action === 'home') {
+                document.getElementById('view-home').classList.remove('hidden');
+                document.getElementById('floating-btn').classList.remove('hidden');
+            } else if (action === 'raffles') {
+                document.getElementById('view-raffles').classList.remove('hidden');
+            } else if (action === 'terms') {
+                document.getElementById('view-terms').classList.remove('hidden');
+            } else if (action === 'contact') {
+                // Ir a home y scroll al final
+                document.getElementById('view-home').classList.remove('hidden');
+                document.getElementById('floating-btn').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('contact-section-home').scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            } else if (action === 'verify') {
+                // Abrir modal existente
+                document.getElementById('view-home').classList.remove('hidden'); // Mantenemos home de fondo
+                abrirModalVerificar();
+            }
+        }
+
+        function navigateTo(view) {
+            menuAction(view);
+        }
+
+        // --- FUNCIONES MODALES EXISTENTES ---
         function abrirModalCompra() { 
             document.getElementById('checkoutModal').classList.remove('hidden'); 
             document.body.style.overflow = 'hidden'; 
