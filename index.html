@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gana con Graciela - Checkout</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,76 +11,91 @@
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css" />
 
     <style>
-        body { font-family: 'Roboto', sans-serif; background-color: #f9fafb; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f9fafb; overscroll-behavior: none; }
+        
+        /* Animación del botón */
         .animate-wave-pulse { animation: waves 2s infinite ease-out; }
         @keyframes waves {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
             50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
+
+        /* Quitar flechas de inputs numéricos */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
-        /* SCROLL PERSONALIZADO Y BONITO */
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        /* Scroll personalizado dentro del modal */
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        
+        /* Ajuste para que la imagen del slider se vea completa */
+        .lottery-slider img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; /* Cambiado a contain para ver la imagen completa sin recortes */
+            background-color: #f3f4f6;
+        }
     </style>
 </head>
-<body>
+<body class="antialiased text-gray-900">
 
     <header class="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200">
-        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
+        <nav class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100">
                     <img src="https://cdn.inteliticket.com/platform/logos/690fb6cfa0634_graciela.png" class="w-full h-full object-contain">
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold text-gray-900 leading-tight">Gana con Graciela</h1>
+                    <h1 class="text-base font-bold leading-tight">Gana con Graciela</h1>
                     <p class="text-[10px] text-gray-500">by @gracielavarelaaa</p>
                 </div>
             </div>
-            <button class="text-gray-600"><iconify-icon icon="mingcute:menu-line" width="24"></iconify-icon></button>
+            <button class="p-2 text-gray-600"><iconify-icon icon="mingcute:menu-line" width="24"></iconify-icon></button>
         </nav>
     </header>
 
-    <div class="max-w-4xl mx-auto px-4 py-8 pt-24 pb-32 md:pb-8">
-        <h1 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6">Equipa tu Navidad #2</h1>
+    <div class="max-w-4xl mx-auto px-4 pt-24 pb-40 md:pb-12">
+        <h1 class="text-2xl font-bold text-center mb-6">Equipa tu Navidad #2</h1>
 
-        <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-            <div class="lottery-slider h-64 md:h-96 relative bg-gray-100">
-                <div><img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover"></div>
+        <div class="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
+            <div class="lottery-slider aspect-square md:aspect-video md:h-[450px] relative bg-gray-100">
+                <div><img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png"></div>
             </div>
 
-            <div class="p-6">
+            <div class="p-5">
                 <div class="flex gap-2 mb-6 text-center">
-                    <div class="flex-1 bg-gray-50 p-3 rounded-2xl">
-                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-2 text-yellow-600"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase">Fecha</p>
-                        <p class="font-bold text-gray-800 text-sm">--</p>
+                    <div class="flex-1 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-1 text-yellow-600"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase">Fecha</p>
+                        <p class="font-bold text-xs">--</p>
                     </div>
-                    <div class="flex-1 bg-gray-50 p-3 rounded-2xl">
-                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2 text-green-600"><iconify-icon icon="solar:ticket-bold-duotone"></iconify-icon></div>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase">Boleto</p>
-                        <p class="font-bold text-gray-800 text-sm">Bs. 700.00</p>
+                    <div class="flex-1 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-1 text-green-600"><iconify-icon icon="solar:ticket-bold-duotone"></iconify-icon></div>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase">Boleto</p>
+                        <p class="font-bold text-xs">Bs. 700.00</p>
                     </div>
-                    <div class="flex-1 bg-gray-50 p-3 rounded-2xl">
-                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 text-blue-600"><iconify-icon icon="solar:shop-minimalistic-bold-duotone"></iconify-icon></div>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase">Lotería</p>
-                        <p class="font-bold text-gray-800 text-sm">Super Gana</p>
+                    <div class="flex-1 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-1 text-blue-600"><iconify-icon icon="solar:shop-minimalistic-bold-duotone"></iconify-icon></div>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase">Lotería</p>
+                        <p class="font-bold text-xs">Super Gana</p>
                     </div>
                 </div>
-                <div class="px-2">
-                    <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                        <div class="h-full bg-green-500 w-[35%]"></div>
+
+                <div class="px-1">
+                    <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+                        <span>Progreso</span>
+                        <span>34.6%</span>
                     </div>
-                    <p class="text-center text-xs font-bold text-gray-500 mt-2">34.6% disponibles</p>
+                    <div class="h-3 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                        <div class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[35%]"></div>
+                    </div>
+                    <p class="text-center text-[10px] text-gray-400 mt-2">Boletos disponibles para comprar</p>
                 </div>
             </div>
         </div>
@@ -93,19 +108,20 @@
         </div>
     </div>
 
-    <div class="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-30">
-        <button onclick="abrirModalCompra()" class="w-full bg-red-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 animate-wave-pulse flex items-center justify-center gap-2">
+    <div class="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-30">
+        <button onclick="abrirModalCompra()" class="w-full bg-red-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-200 animate-wave-pulse flex items-center justify-center gap-2 active:scale-95 transition">
             <iconify-icon icon="solar:cart-4-bold" width="24"></iconify-icon> Comprar Boletos
         </button>
     </div>
 
-    <div id="checkoutModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300 flex items-center justify-center px-4 py-4 md:py-10">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="/* cerrarModalCompra() */"></div>
+    <div id="checkoutModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300 flex items-center justify-center p-4">
         
-        <div class="relative w-full h-full md:h-auto md:max-h-[85vh] md:max-w-md bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-10">
-                
-            <div class="bg-red-500 text-white p-5 relative flex-shrink-0">
-                <button onclick="cerrarModalCompra()" class="absolute top-5 right-5 text-white/80 hover:text-white"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="/* cerrarModalCompra() */"></div>
+        
+        <div class="relative w-full max-w-md max-h-[90vh] h-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-10 transform transition-all">
+            
+            <div class="bg-red-500 text-white p-5 flex-shrink-0 relative">
+                <button onclick="cerrarModalCompra()" class="absolute top-5 right-5 text-white/80 hover:text-white p-1 rounded-full hover:bg-white/10 transition"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                         <iconify-icon id="header-icon" icon="solar:card-2-bold-duotone" width="24"></iconify-icon>
@@ -119,45 +135,48 @@
 
             <div class="bg-gray-100 h-1 w-full flex-shrink-0"><div id="progress-bar" class="bg-red-600 h-full transition-all duration-300" style="width: 20%"></div></div>
 
-            <div class="flex-1 overflow-y-auto p-6 bg-white relative custom-scroll">
+            <div class="flex-1 overflow-y-auto p-5 custom-scroll bg-white relative">
                 
                 <div id="timer-container" class="hidden text-center mb-6">
-                    <div class="text-2xl font-black text-red-500 animate-pulse" id="countdown">15:00</div>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase">Tiempo restante</p>
+                    <div class="text-3xl font-black text-red-500 animate-pulse font-mono" id="countdown">15:00</div>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Tiempo restante</p>
                 </div>
 
                 <div id="step-1" class="step-content">
                     <h2 class="text-lg font-bold text-center text-gray-800 mb-6">Selecciona tu método de pago</h2>
-                    <label class="cursor-pointer group block">
+                    <label class="cursor-pointer group block relative">
                         <input type="radio" name="payment_method" value="pago_movil" class="peer hidden" checked>
-                        <div class="border-2 border-gray-100 peer-checked:border-red-500 peer-checked:bg-red-50 rounded-2xl p-4 flex items-center gap-4 transition-all hover:bg-red-50/50">
-                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><iconify-icon icon="solar:smartphone-2-bold-duotone" width="24"></iconify-icon></div>
-                            <div class="flex-1">
-                                <h4 class="font-bold text-gray-800">Pago Móvil</h4>
-                                <p class="text-xs text-gray-500">Pago instantáneo en Bolívares</p>
+                        <div class="border-2 border-gray-100 peer-checked:border-red-500 peer-checked:bg-red-50 rounded-2xl p-4 flex items-center gap-4 transition-all">
+                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0"><iconify-icon icon="solar:smartphone-2-bold-duotone" width="24"></iconify-icon></div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-gray-800 truncate">Pago Móvil</h4>
+                                <p class="text-xs text-gray-500 truncate">Pago instantáneo en Bs</p>
                             </div>
-                            <div class="w-6 h-6 rounded-full border-2 border-gray-300 peer-checked:border-red-500 peer-checked:bg-red-500 flex items-center justify-center text-white"><iconify-icon icon="mingcute:check-line"></iconify-icon></div>
+                            <div class="w-6 h-6 rounded-full border-2 border-gray-300 peer-checked:border-red-500 peer-checked:bg-red-500 flex items-center justify-center text-white flex-shrink-0"><iconify-icon icon="mingcute:check-line"></iconify-icon></div>
                         </div>
                     </label>
                 </div>
 
                 <div id="step-2" class="step-content hidden">
-                    <div class="bg-blue-50 p-3 rounded-xl flex gap-3 mb-6 border border-blue-100"><iconify-icon icon="solar:info-circle-bold" class="text-blue-500 mt-0.5"></iconify-icon><p class="text-xs text-blue-700 leading-tight">Reservaremos tus boletos por unos minutos al continuar.</p></div>
+                    <div class="bg-blue-50 p-3 rounded-xl flex gap-3 mb-6 border border-blue-100"><iconify-icon icon="solar:info-circle-bold" class="text-blue-500 mt-0.5 flex-shrink-0"></iconify-icon><p class="text-xs text-blue-700 leading-tight">Al continuar, tus boletos quedarán reservados temporalmente.</p></div>
+                    
                     <p class="text-sm font-bold text-gray-700 mb-3">Selección rápida</p>
-                    <div class="grid grid-cols-3 gap-3 mb-6">
-                        <button onclick="selectQty(1)" class="border rounded-xl p-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-md transition">1<br><span class="text-[10px] text-gray-400 font-normal">Boleto</span></button>
-                        <button onclick="selectQty(2)" class="border rounded-xl p-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-md transition">2<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
-                        <button onclick="selectQty(5)" class="border rounded-xl p-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-md transition">5<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
-                        <button onclick="selectQty(10)" class="border rounded-xl p-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-md transition">10<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
-                        <button onclick="selectQty(25)" class="border rounded-xl p-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-md transition">25<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
-                        <button onclick="selectQty(50)" class="border rounded-xl p-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white hover:shadow-md transition">50<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                    <div class="grid grid-cols-3 gap-2 mb-6">
+                        <button onclick="selectQty(1)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">1<br><span class="text-[10px] text-gray-400 font-normal">Boleto</span></button>
+                        <button onclick="selectQty(2)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">2<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(5)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">5<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(10)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">10<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(25)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">25<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(50)" class="border rounded-xl p-2 py-3 hover:border-red-500 hover:text-red-500 font-bold text-sm bg-white shadow-sm">50<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
                     </div>
+
                     <p class="text-sm font-bold text-gray-700 mb-2">Cantidad personalizada</p>
                     <div class="flex items-center gap-3 mb-6">
-                        <button onclick="changeQty(-1)" class="w-12 h-12 rounded-xl bg-red-100 text-red-500 font-bold text-xl hover:bg-red-200 transition">-</button>
-                        <input type="number" id="custom-qty" value="1" class="flex-1 text-center font-bold text-xl border-2 border-gray-200 rounded-xl h-12 focus:border-red-500 outline-none" oninput="updateTotal()">
-                        <button onclick="changeQty(1)" class="w-12 h-12 rounded-xl bg-red-500 text-white font-bold text-xl hover:bg-red-600 transition">+</button>
+                        <button onclick="changeQty(-1)" class="w-12 h-12 rounded-xl bg-red-100 text-red-500 font-bold text-xl active:scale-95 transition">-</button>
+                        <input type="number" id="custom-qty" value="1" class="flex-1 text-center font-bold text-xl border-2 border-gray-200 rounded-xl h-12 focus:border-red-500 outline-none bg-white" oninput="updateTotal()">
+                        <button onclick="changeQty(1)" class="w-12 h-12 rounded-xl bg-red-500 text-white font-bold text-xl active:scale-95 transition">+</button>
                     </div>
+                    
                     <div class="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
                         <p class="text-xs text-gray-500 mb-1">Total a pagar</p>
                         <h3 class="text-2xl font-black text-gray-900" id="step2-total">Bs. 700.00</h3>
@@ -166,16 +185,16 @@
 
                 <div id="step-3" class="step-content hidden">
                     <form class="space-y-4 pb-2">
-                        <div><label class="text-xs font-bold text-gray-700 mb-1 block">Nombre y apellido <span class="text-red-500">*</span></label><input type="text" id="input-name" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none" placeholder="Ej: Juan Pérez"></div>
-                        <div><label class="text-xs font-bold text-gray-700 mb-1 block">Cédula de identidad <span class="text-red-500">*</span></label><input type="number" id="input-cedula" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none" placeholder="Ej: 12345678"></div>
+                        <div><label class="text-xs font-bold text-gray-700 mb-1 block">Nombre y apellido *</label><input type="text" id="input-name" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="Tu nombre"></div>
+                        <div><label class="text-xs font-bold text-gray-700 mb-1 block">Cédula de identidad *</label><input type="number" id="input-cedula" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="Solo números"></div>
                         <div>
-                            <label class="text-xs font-bold text-gray-700 mb-1 block">Teléfono con WhatsApp <span class="text-red-500">*</span></label>
+                            <label class="text-xs font-bold text-gray-700 mb-1 block">Teléfono con WhatsApp *</label>
                             <div class="flex gap-2">
-                                <div class="bg-gray-50 border border-gray-300 rounded-xl px-3 flex items-center text-sm">🇻🇪 +58</div>
-                                <input type="tel" id="input-phone" class="flex-1 border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none" placeholder="4121234567">
+                                <div class="bg-gray-50 border border-gray-300 rounded-xl px-3 flex items-center text-sm font-medium text-gray-600">🇻🇪 +58</div>
+                                <input type="tel" id="input-phone" class="flex-1 border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="4121234567">
                             </div>
                         </div>
-                        <div><label class="text-xs font-bold text-gray-700 mb-1 block">Correo electrónico <span class="text-red-500">*</span></label><input type="email" id="input-email" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none" placeholder="correo@ejemplo.com"></div>
+                        <div><label class="text-xs font-bold text-gray-700 mb-1 block">Correo electrónico *</label><input type="email" id="input-email" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="ejemplo@gmail.com"></div>
                     </form>
                 </div>
 
@@ -183,29 +202,29 @@
                     <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-6">
                         <div class="flex items-center gap-2 mb-4"><iconify-icon icon="solar:smartphone-2-bold" class="text-blue-600 text-lg"></iconify-icon><h4 class="font-bold text-gray-800">Pago Móvil</h4></div>
                         <div class="space-y-3 text-sm">
-                            <div class="flex justify-between border-b border-blue-100 pb-2"><span class="text-gray-500">Banco</span><div class="flex items-center gap-1"><span class="font-bold">Venezuela (0102)</span><button class="text-blue-500"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon></button></div></div>
-                            <div class="flex justify-between border-b border-blue-100 pb-2"><span class="text-gray-500">Teléfono</span><div class="flex items-center gap-1"><span class="font-bold">04243011181</span><button class="text-blue-500"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon></button></div></div>
-                            <div class="flex justify-between border-b border-blue-100 pb-2"><span class="text-gray-500">Cédula</span><div class="flex items-center gap-1"><span class="font-bold">26729223</span><button class="text-blue-500"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon></button></div></div>
-                            <div class="flex justify-between pt-1"><span class="text-gray-500 font-medium">Monto a pagar</span><span class="font-black text-red-500 text-lg" id="step4-total">Bs. 700.00</span></div>
+                            <div class="flex justify-between border-b border-blue-200 pb-2 border-dashed"><span class="text-gray-500">Banco</span><div class="flex items-center gap-1"><span class="font-bold text-gray-900">Venezuela (0102)</span><button class="text-blue-500 p-1"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon></button></div></div>
+                            <div class="flex justify-between border-b border-blue-200 pb-2 border-dashed"><span class="text-gray-500">Teléfono</span><div class="flex items-center gap-1"><span class="font-bold text-gray-900">04243011181</span><button class="text-blue-500 p-1"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon></button></div></div>
+                            <div class="flex justify-between border-b border-blue-200 pb-2 border-dashed"><span class="text-gray-500">Cédula</span><div class="flex items-center gap-1"><span class="font-bold text-gray-900">26729223</span><button class="text-blue-500 p-1"><iconify-icon icon="solar:copy-bold-duotone"></iconify-icon></button></div></div>
+                            <div class="flex justify-between pt-1 items-center"><span class="text-gray-500 font-medium">Monto Exacto</span><span class="font-black text-red-500 text-lg bg-white px-2 py-1 rounded border border-red-100 shadow-sm" id="step4-total">Bs. 700.00</span></div>
                         </div>
                     </div>
                 </div>
 
                 <div id="step-5" class="step-content hidden">
-                    <div class="bg-green-50 border border-green-100 p-3 rounded-xl flex gap-3 mb-6"><iconify-icon icon="solar:bill-check-bold" class="text-green-500 mt-0.5"></iconify-icon><p class="text-xs text-green-700">Sube tu comprobante para verificar la transacción.</p></div>
+                    <div class="bg-green-50 border border-green-100 p-3 rounded-xl flex gap-3 mb-6"><iconify-icon icon="solar:bill-check-bold" class="text-green-500 mt-0.5 flex-shrink-0"></iconify-icon><p class="text-xs text-green-700 leading-tight">Por favor, reporta tu pago para que podamos validarlo.</p></div>
                     <form class="space-y-4">
-                        <div><label class="text-xs font-bold text-gray-700 mb-1 block">Referencia (Últimos 6 dígitos) <span class="text-red-500">*</span></label><input type="number" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="Ej: 123456"></div>
+                        <div><label class="text-xs font-bold text-gray-700 mb-1 block">Referencia (Últimos 6 dígitos) *</label><input type="number" class="w-full border border-gray-300 rounded-xl p-3 text-sm focus:border-red-500 outline-none" placeholder="Ej: 123456"></div>
                         <div>
-                            <label class="text-xs font-bold text-gray-700 mb-1 block">Comprobante (Captura) <span class="text-red-500">*</span></label>
-                            <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 cursor-pointer relative transition">
-                                <input type="file" class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onchange="previewImage(this)">
-                                <div id="upload-placeholder">
+                            <label class="text-xs font-bold text-gray-700 mb-1 block">Comprobante de Pago *</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 cursor-pointer relative transition group">
+                                <input type="file" class="absolute inset-0 opacity-0 cursor-pointer z-10" accept="image/*" onchange="previewImage(this)">
+                                <div id="upload-placeholder" class="group-hover:scale-105 transition-transform">
                                     <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-400"><iconify-icon icon="solar:cloud-upload-bold-duotone" width="24"></iconify-icon></div>
-                                    <p class="text-xs text-gray-500 font-medium">Toca para subir foto</p>
+                                    <p class="text-xs text-gray-500 font-medium">Toca aquí para subir foto</p>
                                 </div>
                                 <div id="file-preview" class="hidden">
-                                    <p class="text-green-600 font-bold text-xs mb-2">¡Imagen seleccionada!</p>
-                                    <img id="preview-img" class="h-16 mx-auto rounded shadow-sm object-cover">
+                                    <p class="text-green-600 font-bold text-xs mb-2 bg-green-50 inline-block px-2 py-1 rounded">¡Foto cargada!</p>
+                                    <img id="preview-img" class="h-24 mx-auto rounded-lg shadow-sm object-cover border border-gray-200">
                                 </div>
                             </div>
                         </div>
@@ -215,8 +234,8 @@
                 <div id="step-success" class="step-content hidden text-center py-4">
                     <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500 animate-bounce"><iconify-icon icon="solar:check-circle-bold" width="40"></iconify-icon></div>
                     <h2 class="text-2xl font-black text-gray-800 mb-2">¡Todo Listo!</h2>
-                    <p class="text-xs text-gray-500 mb-6 px-4">Tu compra está pendiente. Recibirás una notificación cuando validemos tu pago.</p>
-                    <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100 mx-2">
+                    <p class="text-xs text-gray-500 mb-6 px-4">Tu compra ha sido registrada correctamente. Te avisaremos cuando se verifique.</p>
+                    <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100 mx-2 shadow-sm">
                         <div class="flex justify-between mb-2"><span class="text-xs font-bold text-gray-400 uppercase">Orden</span><span class="font-bold text-gray-900">#014593</span></div>
                         <div class="flex justify-between mb-4"><span class="text-xs font-bold text-gray-400 uppercase">Total</span><span class="font-black text-gray-900" id="success-total">Bs. 700.00</span></div>
                         <div class="border-t border-gray-200 pt-3"><p class="text-xs font-bold text-gray-700 mb-2">Boletos Asignados:</p><div class="flex flex-wrap gap-2" id="assigned-tickets"></div></div>
@@ -225,9 +244,9 @@
 
             </div>
 
-            <div id="modal-footer" class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-shrink-0 rounded-b-3xl">
-                <button id="btn-back" onclick="prevStep()" class="px-4 py-3 text-gray-500 font-bold text-sm disabled:opacity-50 hover:bg-gray-200 rounded-xl transition" disabled>Volver</button>
-                <button id="btn-next" onclick="nextStep()" class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center gap-2 transition transform active:scale-95">Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon></button>
+            <div id="modal-footer" class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-shrink-0">
+                <button id="btn-back" onclick="prevStep()" class="px-4 py-3 text-gray-500 font-bold text-sm disabled:opacity-50 hover:bg-gray-200 rounded-xl transition disabled:cursor-not-allowed" disabled>Volver</button>
+                <button id="btn-next" onclick="nextStep()" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center gap-2 transition transform active:scale-95">Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon></button>
             </div>
 
         </div>
@@ -241,14 +260,13 @@
         $(document).ready(function(){
             $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
         });
-        // Bloquea el scroll del fondo cuando abres el modal
         function abrirModalCompra() { 
             document.getElementById('checkoutModal').classList.remove('hidden'); 
-            document.body.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden'; // Bloquear scroll de fondo
         }
         function cerrarModalCompra() { 
             document.getElementById('checkoutModal').classList.add('hidden'); 
-            document.body.style.overflow = 'auto';
+            document.body.style.overflow = 'auto'; // Restaurar scroll
             location.reload(); 
         }
     </script>
