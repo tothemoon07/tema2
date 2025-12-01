@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css" />
@@ -619,6 +621,8 @@
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js"></script>
+    
+    <script src="client_logic.js"></script>
 
     <script>
         $(document).ready(function(){
@@ -738,7 +742,7 @@
                 document.getElementById(`step-${currentStep}`).classList.remove('hidden');
                 updateModalHeader();
             } else {
-                // PASO 5: VALIDACIÓN FINAL
+                // PASO 5: VALIDACIÓN FINAL Y ENVÍO A SUPABASE
                 const ref = document.getElementById('input-referencia').value;
                 const file = document.getElementById('input-comprobante').value;
 
@@ -751,10 +755,27 @@
                     return;
                 }
 
-                document.getElementById(`step-5`).classList.add('hidden');
-                document.getElementById('modal-footer').classList.add('hidden');
-                document.getElementById('step-success').classList.remove('hidden');
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                // --- NUEVO CÓDIGO CONECTADO A SUPABASE ---
+                Swal.fire({
+                    title: 'Procesando...',
+                    text: 'Subiendo comprobante y registrando orden',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading() }
+                });
+
+                // Llamamos a la función de client_logic.js
+                procesarCompraFinal().then(exito => {
+                    Swal.close(); // Cerramos el loading
+                    
+                    if (exito) {
+                        // Si guardó bien en Supabase, avanzamos al éxito visual
+                        document.getElementById(`step-5`).classList.add('hidden');
+                        document.getElementById('modal-footer').classList.add('hidden');
+                        document.getElementById('step-success').classList.remove('hidden');
+                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                    }
+                });
+                // -----------------------------------------
             }
         }
 
