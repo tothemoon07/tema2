@@ -12,11 +12,10 @@ let compraActual = {
     cantidad: 1,
     monto: 700,
     metodo: '',
-    ticketsReservados: [] // Aquí guardaremos los IDs si implementamos bloqueo estricto
+    ticketsReservados: [] 
 };
 
 // 1. INICIAR PROCESO DE PAGO (Paso 1 -> Paso 2)
-// Esta función se llama cuando seleccionan método de pago y cantidad
 function actualizarDatosCompra(qty, total) {
     compraActual.cantidad = qty;
     compraActual.monto = total;
@@ -29,7 +28,7 @@ async function subirComprobante(file) {
     const fileName = `${Date.now()}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    // Subir a Supabase Storage ('comprobantes' es el bucket que creamos)
+    // Subir a Supabase Storage
     const { data, error } = await supabaseClient.storage
         .from('comprobantes')
         .upload(filePath, file);
@@ -39,7 +38,7 @@ async function subirComprobante(file) {
         throw error;
     }
 
-    // Obtener URL pública para guardarla en la base de datos
+    // Obtener URL pública
     const { data: { publicUrl } } = supabaseClient.storage
         .from('comprobantes')
         .getPublicUrl(filePath);
@@ -63,6 +62,19 @@ async function procesarCompraFinal() {
         return false;
     }
 
+    // --- CORRECCIÓN CRÍTICA: LIMPIEZA DEL MONTO ---
+    // Tomamos el texto que dice "Bs. 700,00" y lo convertimos en un numero puro "700.00"
+    // para que Supabase no de error.
+    let montoTexto = document.getElementById('step4-total').innerText;
+    let montoLimpio = montoTexto
+        .replace('Bs.', '')   // Quitamos las letras
+        .replace(/\./g, '')   // Quitamos los puntos de miles (si es 1.000)
+        .replace(',', '.')    // Cambiamos coma por punto decimal
+        .trim();              // Quitamos espacios vacios
+    
+    let montoFinal = parseFloat(montoLimpio);
+    // ----------------------------------------------
+
     try {
         // A. Subir imagen primero
         const urlImagen = await subirComprobante(fileInput.files[0]);
@@ -79,9 +91,9 @@ async function procesarCompraFinal() {
                     metodo_pago: metodo,
                     referencia_pago: referencia,
                     url_comprobante: urlImagen,
-                    monto_total: document.getElementById('step4-total').innerText, // Guardamos el texto (ej: Bs 700) o el numero
+                    monto_total: montoFinal, // Enviamos el número limpio
                     cantidad_boletos: parseInt(document.getElementById('custom-qty').value),
-                    estado: 'pendiente_validacion' // Directo a pendiente porque ya subió el pago
+                    estado: 'pendiente_validacion'
                 }
             ])
             .select();
@@ -89,14 +101,11 @@ async function procesarCompraFinal() {
         if (error) throw error;
 
         console.log("Orden creada exitosamente:", data);
-        
-        // C. (Opcional) Aquí podríamos "reservar" tickets aleatorios, 
-        // pero tu flujo dice que el admin valida primero.
-        
         return true; // Todo salió bien
 
     } catch (err) {
         console.error("Error procesando compra:", err);
+        // Usamos Swal.fire porque ya tienes la librería importada en index.html
         Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo procesar el pedido. Intenta de nuevo.' });
         return false;
     }
