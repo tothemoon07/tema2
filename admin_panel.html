@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin | Capi Rifas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { border-bottom: 3px solid; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-ticket text-red-600"></i>
+                Panel Administrativo
+            </h1>
+            <div class="h-6 w-px bg-gray-300"></div>
+            <a href="index.html" target="_blank" class="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition bg-blue-50 px-3 py-1 rounded-full text-sm font-medium">
+                <span id="raffle-title">Cargando rifa...</span>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
+        </div>
+        <button onclick="logout()" class="text-gray-500 hover:text-red-600 font-medium text-sm flex items-center gap-2 transition">
+            <i class="fa-solid fa-right-from-bracket"></i> Salir
+        </button>
+    </nav>
+
+    <div class="bg-yellow-50 border-b border-yellow-100 px-6 py-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
+                <p class="text-xs text-gray-500 uppercase font-bold">Fecha Sorteo</p>
+                <p class="text-gray-800 font-semibold" id="stat-date">--/--/--</p>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
+                <p class="text-xs text-gray-500 uppercase font-bold">Precio Boleto</p>
+                <p class="text-gray-800 font-semibold" id="stat-price">--</p>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
+                <p class="text-xs text-gray-500 uppercase font-bold">Lotería</p>
+                <p class="text-gray-800 font-semibold" id="stat-lottery">--</p>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
+                <p class="text-xs text-gray-500 uppercase font-bold">Disponibles</p>
+                <p class="text-blue-600 font-bold text-lg" id="stat-available">0</p>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
+                <p class="text-xs text-gray-500 uppercase font-bold">Total Vendidos</p>
+                <p class="text-green-600 font-bold text-lg" id="stat-sold">0</p>
+            </div>
+            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-1">
+                    <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </div>
+                <p class="text-xs text-gray-500 uppercase font-bold">Bloqueados (15m)</p>
+                <p class="text-red-600 font-bold text-lg" id="stat-blocked">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-screen-2xl mx-auto p-6">
+        
+        <div class="flex border-b border-gray-200 mb-6 bg-white rounded-t-lg shadow-sm">
+            <button onclick="switchTab('pendiente_validacion')" id="tab-pendientes" class="flex-1 py-4 text-center text-gray-600 hover:bg-gray-50 tab-active border-gray-500 text-gray-800 transition">
+                <i class="fa-solid fa-clock text-gray-400 mr-2"></i> Pendientes
+            </button>
+            <button onclick="switchTab('aprobado')" id="tab-aprobados" class="flex-1 py-4 text-center text-gray-600 hover:bg-green-50 hover:text-green-700 transition">
+                <i class="fa-solid fa-check-circle text-green-500 mr-2"></i> Aprobados
+            </button>
+            <button onclick="switchTab('rechazado')" id="tab-rechazados" class="flex-1 py-4 text-center text-gray-600 hover:bg-red-50 hover:text-red-700 transition">
+                <i class="fa-solid fa-circle-xmark text-red-500 mr-2"></i> Rechazados
+            </button>
+        </div>
+
+        <div class="bg-white rounded-b-lg shadow-lg overflow-hidden border border-gray-200">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b">
+                        <tr>
+                            <th class="px-4 py-3">ID / Fecha</th>
+                            <th class="px-4 py-3">Cliente</th>
+                            <th class="px-4 py-3">Contacto</th>
+                            <th class="px-4 py-3 text-center">Tickets</th>
+                            <th class="px-4 py-3">Pago</th>
+                            <th class="px-4 py-3">Referencia</th>
+                            <th class="px-4 py-3 text-center">Comprobante</th>
+                            <th class="px-4 py-3 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body" class="divide-y divide-gray-100">
+                        <tr>
+                            <td colspan="8" class="text-center py-8 text-gray-400">Cargando órdenes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-4 py-3 bg-gray-50 border-t flex justify-end">
+                <span class="text-xs text-gray-400">Mostrando últimos resultados</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-proof" class="fixed inset-0 bg-black bg-opacity-80 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-2xl w-full p-2 relative">
+            <button onclick="closeModal('modal-proof')" class="absolute -top-4 -right-4 bg-red-600 text-white rounded-full p-2 hover:bg-red-700">
+                <i class="fa-solid fa-times"></i>
+            </button>
+            <img id="proof-image" src="" alt="Comprobante" class="w-full h-auto rounded max-h-[80vh] object-contain mx-auto">
+            <div class="text-center mt-2">
+                <a id="proof-download" href="#" target="_blank" class="text-blue-600 underline text-sm">Ver original / Descargar</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin_panel.js"></script>
+</body>
+</html>
