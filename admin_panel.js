@@ -1,8 +1,8 @@
 // admin_panel.js
 
 // ⚠️ PEGA AQUÍ TUS DATOS DE SUPABASE (IGUAL QUE EN EL LOGIN)
-const SUPABASE_URL = 'AQUI_TU_PROJECT_URL';
-const SUPABASE_KEY = 'AQUI_TU_ANON_KEY';
+const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
 
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
