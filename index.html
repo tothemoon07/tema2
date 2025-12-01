@@ -10,7 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/iconify-icon@1.0.8/dist/iconify-icon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.css" />
@@ -30,21 +29,16 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
         .lottery-slider img { width: 100%; height: 100%; object-fit: contain; background-color: #f9fafb; }
         
-        /* Estilos para el Menú Lateral */
         #side-menu { transition: transform 0.3s ease-in-out; }
         .menu-open { transform: translateX(0) !important; }
-        
         .sold-out-filter { filter: grayscale(100%); opacity: 0.8; pointer-events: none; }
 
-        /* Estilo para botón seleccionado en Paso 2 */
         .qty-btn-selected {
-            background-color: #ef4444 !important; /* bg-red-500 */
+            background-color: #ef4444 !important;
             color: white !important;
             border-color: #ef4444 !important;
         }
-        .qty-btn-selected span {
-            color: rgba(255,255,255,0.8) !important;
-        }
+        .qty-btn-selected span { color: rgba(255,255,255,0.8) !important; }
     </style>
 </head>
 <body class="text-gray-900 pb-32">
@@ -375,7 +369,7 @@
             
             <div class="flex-1 overflow-y-auto p-5 custom-scroll bg-white relative">
                 
-                <div id="timer-container" class="hidden text-center mb-6"><div class="text-3xl font-black text-red-500 animate-pulse font-mono" id="countdown">15:00</div></div>
+                <div id="timer-container" class="text-center mb-6"><div class="text-3xl font-black text-red-500 animate-pulse font-mono" id="countdown">15:00</div></div>
 
                 <div id="step-1" class="step-content">
                     <h2 class="text-lg font-bold text-center text-gray-800 mb-6">Selecciona tu método de pago</h2>
@@ -435,23 +429,6 @@
                                     <select id="input-country-code" class="w-full h-full border border-gray-200 bg-gray-50 rounded-xl p-3 pr-8 text-sm appearance-none outline-none focus:bg-white focus:border-red-500 transition font-bold text-gray-700">
                                         <option value="+58">🇻🇪 +58</option>
                                         <option value="+1">🇺🇸 +1</option>
-                                        <option value="+34">🇪🇸 +34</option>
-                                        <option value="+44">🇬🇧 +44</option>
-                                        <option value="+51">🇵🇪 +51</option>
-                                        <option value="+52">🇲🇽 +52</option>
-                                        <option value="+54">🇦🇷 +54</option>
-                                        <option value="+55">🇧🇷 +55</option>
-                                        <option value="+56">🇨🇱 +56</option>
-                                        <option value="+57">🇨🇴 +57</option>
-                                        <option value="+502">🇬🇹 +502</option>
-                                        <option value="+503">🇸🇻 +503</option>
-                                        <option value="+504">🇭🇳 +504</option>
-                                        <option value="+506">🇨🇷 +506</option>
-                                        <option value="+507">🇵🇦 +507</option>
-                                        <option value="+591">🇧🇴 +591</option>
-                                        <option value="+593">🇪🇨 +593</option>
-                                        <option value="+595">🇵🇾 +595</option>
-                                        <option value="+598">🇺🇾 +598</option>
                                     </select>
                                     <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
                                         <iconify-icon icon="solar:alt-arrow-down-bold" width="12"></iconify-icon>
@@ -556,11 +533,12 @@
                         <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100">
                             <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
                                  <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0"><iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon></div>
-                                <div><h4 class="font-bold text-gray-800 text-sm">#014593</h4><p class="text-[10px] font-bold text-yellow-600 uppercase">Verificando Pago</p></div>
+                                <div><h4 class="font-bold text-gray-800 text-sm">#PENDIENTE</h4><p class="text-[10px] font-bold text-yellow-600 uppercase">Verificando Pago</p></div>
                                 <div class="ml-auto text-right"><span class="text-xs font-bold text-gray-400">TOTAL</span><br><span class="font-black text-gray-900" id="success-total">Bs. 700.00</span></div>
                             </div>
-                            <p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p>
-                            <div class="flex flex-wrap gap-2" id="assigned-tickets"></div>
+                            <p class="text-xs font-bold text-gray-700 mb-2">Tus Boletos Asignados:</p>
+                            <div class="flex flex-wrap gap-2" id="assigned-tickets">
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -630,6 +608,27 @@
         });
         
         let currentStep = 1;
+        let timerInterval;
+
+        // --- TEMPORIZADOR NUEVO ---
+        function startTimer() {
+            clearInterval(timerInterval);
+            let timeLeft = 900; // 15 minutos (900 segundos)
+            const display = document.getElementById('countdown');
+            document.getElementById('timer-container').classList.remove('hidden');
+            
+            timerInterval = setInterval(() => {
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                display.textContent = `${minutes}:${seconds}`;
+                if (--timeLeft < 0) {
+                    clearInterval(timerInterval);
+                    alert("El tiempo de reserva ha expirado. Por favor, inicia de nuevo.");
+                    location.reload();
+                }
+            }, 1000);
+        }
         
         // --- NAVEGACIÓN Y MENÚ ---
         function toggleMenu() {
@@ -672,11 +671,13 @@
         // --- MODALES ---
         function abrirModalCompra() { 
             document.getElementById('checkoutModal').classList.remove('hidden'); 
-            document.body.style.overflow = 'hidden'; 
+            document.body.style.overflow = 'hidden';
+            startTimer(); // INICIAR TEMPORIZADOR AL ABRIR
         }
         function cerrarModalCompra() { 
             document.getElementById('checkoutModal').classList.add('hidden'); 
             document.body.style.overflow = 'auto'; 
+            clearInterval(timerInterval);
             location.reload(); 
         }
         function abrirModalVerificar() {
@@ -708,15 +709,10 @@
         }
 
         function nextStep() {
-            // VALIDACIÓN POR PASO
-            
             // PASO 1: METODO DE PAGO
             if(currentStep === 1) {
                 const method = document.querySelector('input[name="payment_method"]:checked');
-                if(!method) {
-                    Swal.fire({ icon: 'error', title: 'Oops...', text: 'Debes seleccionar un método de pago.' });
-                    return;
-                }
+                if(!method) { Swal.fire({ icon: 'error', title: 'Oops...', text: 'Debes seleccionar un método de pago.' }); return; }
             }
             
             // PASO 3: DATOS PERSONALES
@@ -725,11 +721,7 @@
                 const cedula = document.getElementById('input-cedula').value;
                 const phone = document.getElementById('input-phone').value;
                 const email = document.getElementById('input-email').value;
-
-                if(!name || !cedula || !phone || !email) {
-                     Swal.fire({ icon: 'warning', title: 'Faltan datos', text: 'Por favor completa todos los campos personales.' });
-                     return;
-                }
+                if(!name || !cedula || !phone || !email) { Swal.fire({ icon: 'warning', title: 'Faltan datos', text: 'Por favor completa todos los campos personales.' }); return; }
             }
 
             if (currentStep < 5) {
@@ -742,40 +734,38 @@
                 document.getElementById(`step-${currentStep}`).classList.remove('hidden');
                 updateModalHeader();
             } else {
-                // PASO 5: VALIDACIÓN FINAL Y ENVÍO A SUPABASE
+                // PASO 5: FINALIZAR Y MOSTRAR BOLETOS
                 const ref = document.getElementById('input-referencia').value;
                 const file = document.getElementById('input-comprobante').value;
 
-                if (!ref || ref.length < 4) {
-                    Swal.fire({ icon: 'error', title: 'Falta la referencia', text: 'Por favor ingresa el número de referencia del pago.' });
-                    return;
-                }
-                if (!file) {
-                    Swal.fire({ icon: 'error', title: 'Falta el comprobante', text: 'Por favor sube la captura de pantalla del pago.' });
-                    return;
-                }
+                if (!ref || ref.length < 4) { Swal.fire({ icon: 'error', title: 'Falta la referencia', text: 'Por favor ingresa el número de referencia del pago.' }); return; }
+                if (!file) { Swal.fire({ icon: 'error', title: 'Falta el comprobante', text: 'Por favor sube la captura de pantalla del pago.' }); return; }
 
-                // --- NUEVO CÓDIGO CONECTADO A SUPABASE ---
                 Swal.fire({
                     title: 'Procesando...',
-                    text: 'Subiendo comprobante y registrando orden',
+                    text: 'Validando pago y asignando boletos...',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading() }
                 });
 
-                // Llamamos a la función de client_logic.js
-                procesarCompraFinal().then(exito => {
-                    Swal.close(); // Cerramos el loading
+                // LLAMADA AL BACKEND (client_logic.js)
+                procesarCompraFinal().then(numerosBoletos => {
+                    Swal.close(); 
                     
-                    if (exito) {
-                        // Si guardó bien en Supabase, avanzamos al éxito visual
+                    if (numerosBoletos && numerosBoletos.length > 0) {
+                        // SI HAY BOLETOS, LOS MOSTRAMOS
+                        const container = document.getElementById('assigned-tickets');
+                        container.innerHTML = numerosBoletos.map(n => 
+                            `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`
+                        ).join('');
+
                         document.getElementById(`step-5`).classList.add('hidden');
                         document.getElementById('modal-footer').classList.add('hidden');
                         document.getElementById('step-success').classList.remove('hidden');
-                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+                        clearInterval(timerInterval); // DETENER TIMER
                     }
                 });
-                // -----------------------------------------
             }
         }
 
@@ -797,13 +787,8 @@
         }
 
         function selectQty(n, btn) {
-            // Remover clase de todos los botones
-            document.querySelectorAll('.qty-btn').forEach(b => {
-                b.classList.remove('qty-btn-selected');
-            });
-            // Agregar clase al presionado
+            document.querySelectorAll('.qty-btn').forEach(b => { b.classList.remove('qty-btn-selected'); });
             btn.classList.add('qty-btn-selected');
-            
             document.getElementById('custom-qty').value = n; 
             updateTotal(); 
         }
@@ -813,8 +798,6 @@
             val += n; if(val < 1) val = 1; 
             document.getElementById('custom-qty').value = val; 
             updateTotal();
-            
-            // Quitar seleccion visual de botones predefinidos si se usa manual
             document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
         }
 
@@ -842,10 +825,7 @@
         
         function copiarTexto(texto) {
             navigator.clipboard.writeText(texto).then(() => {
-                const Toast = Swal.mixin({
-                    toast: true, position: 'top-end', showConfirmButton: false, timer: 1500,
-                    didOpen: (toast) => { toast.onmouseenter = Swal.stopTimer; toast.onmouseleave = Swal.resumeTimer; }
-                });
+                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
                 Toast.fire({ icon: 'success', title: 'Copiado al portapapeles' });
             });
         }
