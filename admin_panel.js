@@ -1,6 +1,6 @@
 // admin_panel.js
 
-// ⚠️ TUS DATOS SUPABASE
+// ⚠️ DATOS DE SUPABASE
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
 
@@ -9,6 +9,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Variables Globales
 let currentTab = 'pendiente_validacion'; 
+let refreshInterval;
 
 // 1. VERIFICAR SESIÓN
 async function checkAuth() {
@@ -18,6 +19,16 @@ async function checkAuth() {
     } else {
         console.log("Sesión activa:", session.user.email);
         loadDashboardData();
+        
+        // AUTO-REFRESH: Actualiza contadores cada 10 segundos para ver bloqueos en vivo
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => {
+            // Solo actualizamos estadísticas para no molestar la tabla si estás revisando algo
+            const sorteoIdElement = document.getElementById('raffle-title'); 
+            if(sorteoIdElement.dataset.id) {
+                loadTicketStats(sorteoIdElement.dataset.id);
+            }
+        }, 10000); 
     }
 }
 
@@ -26,7 +37,10 @@ async function loadDashboardData() {
     const { data: sorteo } = await supabaseClient.from('sorteos').select('*').eq('estado', 'activo').single();
 
     if (sorteo) {
+        // Guardamos el ID en el DOM para el auto-refresh
         document.getElementById('raffle-title').textContent = sorteo.titulo;
+        document.getElementById('raffle-title').dataset.id = sorteo.id; 
+
         document.getElementById('stat-date').textContent = sorteo.fecha_sorteo;
         document.getElementById('stat-price').textContent = `${sorteo.precio_boleto} ${sorteo.moneda}`;
         document.getElementById('stat-lottery').textContent = sorteo.loteria;
@@ -40,17 +54,52 @@ async function loadDashboardData() {
     }
 }
 
-// 3. ESTADÍSTICAS (Actualizado para mostrar Pendientes)
+// 3. ESTADÍSTICAS (Lógica Corregida: Ventas vs Tickets)
 async function loadTicketStats(sorteoId) {
-    const { count: disponibles } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'disponible');
-    const { count: vendidos } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'vendido');
-    
-    // Aquí sumamos 'bloqueado' y 'pendiente' para saber cuántos están en proceso
-    const { count: pendientes } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).in('estado', ['bloqueado', 'pendiente']);
+    try {
+        // A. DISPONIBLES (Tickets libres)
+        const { count: disponibles } = await supabaseClient
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('id_sorteo', sorteoId)
+            .eq('estado', 'disponible');
 
-    document.getElementById('stat-available').textContent = disponibles || 0;
-    document.getElementById('stat-sold').textContent = vendidos || 0;
-    document.getElementById('stat-blocked').textContent = pendientes || 0;
+        // B. VENDIDOS (Tickets pagados y aprobados)
+        const { count: vendidos } = await supabaseClient
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('id_sorteo', sorteoId)
+            .eq('estado', 'vendido');
+        
+        // C. TICKETS BLOQUEADOS (Suma de: gente en timer + gente esperando aprobación)
+        // Usamos filtro OR para sumar 'bloqueado' y 'pendiente'
+        const { count: ticketsBloqueados } = await supabaseClient
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('id_sorteo', sorteoId)
+            .or('estado.eq.bloqueado,estado.eq.pendiente');
+
+        // D. VENTAS PENDIENTES (CLIENTES esperando)
+        // Aquí contamos ÓRDENES, no tickets.
+        const { count: ordenesPendientes } = await supabaseClient
+            .from('ordenes')
+            .select('*', { count: 'exact', head: true })
+            .eq('estado', 'pendiente_validacion');
+
+        // Actualizar DOM
+        // Usamos '|| 0' para que no salga 'undefined'
+        if(document.getElementById('stat-available')) document.getElementById('stat-available').textContent = disponibles || 0;
+        if(document.getElementById('stat-sold')) document.getElementById('stat-sold').textContent = vendidos || 0;
+        
+        // Cuadro ROJO: Tickets ocupados (Timer + Revisión)
+        if(document.getElementById('stat-blocked')) document.getElementById('stat-blocked').textContent = ticketsBloqueados || 0;
+        
+        // Cuadro AMARILLO: Clientes esperando (Órdenes)
+        if(document.getElementById('stat-orders-pending')) document.getElementById('stat-orders-pending').textContent = ordenesPendientes || 0;
+
+    } catch (e) {
+        console.error("Error cargando stats:", e);
+    }
 }
 
 // 4. TABS
@@ -94,7 +143,7 @@ async function loadOrders(estado) {
         const hora = new Date(orden.creado_en).toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'});
         
         let acciones = '';
-        // BOTONES DE ACCIÓN REALES
+        
         if (estado === 'pendiente_validacion') {
             acciones = `
                 <div class="flex justify-end gap-2">
@@ -144,18 +193,16 @@ async function loadOrders(estado) {
     tableBody.innerHTML = html;
 }
 
-// 6. LÓGICA DE APROBACIÓN Y RECHAZO (CRÍTICO)
+// 6. ACCIONES (Aprobar / Rechazar)
 
-// Aprobar: Pone la orden en 'aprobado' y los tickets en 'vendido'
+// Aprobar: Orden -> aprobado | Tickets -> vendido
 window.approveOrder = async function(ordenId) {
     if(!confirm("¿Confirmar pago y adjudicar tickets?")) return;
 
     try {
-        // 1. Aprobar Orden
         const { error: err1 } = await supabaseClient.from('ordenes').update({ estado: 'aprobado' }).eq('id', ordenId);
         if(err1) throw err1;
 
-        // 2. Marcar Tickets como Vendidos
         const { error: err2 } = await supabaseClient.from('tickets').update({ estado: 'vendido' }).eq('id_orden', ordenId);
         if(err2) throw err2;
 
@@ -167,16 +214,14 @@ window.approveOrder = async function(ordenId) {
     }
 }
 
-// Rechazar: Pone la orden en 'rechazado' y LIBERA los tickets para que otros compren
+// Rechazar: Orden -> rechazado | Tickets -> disponible (se liberan)
 window.rejectOrder = async function(ordenId) {
     if(!confirm("¿Rechazar pago y liberar los tickets?")) return;
 
     try {
-        // 1. Rechazar Orden
         const { error: err1 } = await supabaseClient.from('ordenes').update({ estado: 'rechazado' }).eq('id', ordenId);
         if(err1) throw err1;
 
-        // 2. LIBERAR TICKETS (estado: disponible, sin dueño)
         const { error: err2 } = await supabaseClient.from('tickets')
             .update({ estado: 'disponible', id_orden: null })
             .eq('id_orden', ordenId);
