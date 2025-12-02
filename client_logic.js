@@ -1,4 +1,4 @@
-// client_logic.js - Lógica Completa de Compra y Reserva
+// client_logic.js - Lógica Completa de Compra y Reserva (Versión Final)
 
 // ⚠️ TUS CLAVES (No borrar)
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
@@ -11,7 +11,49 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 let ticketsReservados = []; // Aquí guardamos los IDs de los tickets reservados
 let intervaloTimer = null;
 
-// --- FUNCIONES DE CARGA DE IMAGEN ---
+// --- 0. VALIDACIÓN INICIAL (SE EJECUTA AL CARGAR) ---
+async function verificarEstadoGeneral() {
+    try {
+        // Consultamos cuántos tickets 'disponible' existen
+        const { count, error } = await supabaseClient
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('estado', 'disponible');
+
+        if (error) {
+            console.error("Error conectando DB:", error);
+            return;
+        }
+
+        console.log(`Verificación inicial: Hay ${count} tickets disponibles.`);
+
+        // Si NO hay tickets (0), bloqueamos el botón de compra inmediatamente
+        if (count === 0) {
+            const botonesCompra = document.querySelectorAll('button[onclick="abrirModalCompra()"]');
+            botonesCompra.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'animate-wave-pulse');
+                btn.innerHTML = '<iconify-icon icon="solar:lock-keyhole-bold" width="20"></iconify-icon> AGOTADO';
+            });
+            
+            // También actualizamos el slider si existe
+            const etiqueta = document.querySelector('.bg-green-500.text-white'); // La etiqueta de "EN CURSO"
+            if(etiqueta) {
+                etiqueta.className = "absolute top-3 right-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg";
+                etiqueta.innerText = "● SOLD OUT";
+            }
+        }
+    } catch (e) {
+        console.error("Error verificación inicial:", e);
+    }
+}
+
+// Ejecutamos la verificación apenas lee el archivo
+verificarEstadoGeneral();
+
+
+// --- 1. FUNCIONES DE UTILIDAD ---
 async function subirComprobante(file) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}.${fileExt}`;
@@ -21,9 +63,9 @@ async function subirComprobante(file) {
     return publicUrl;
 }
 
-// --- LÓGICA DE RESERVA (BLOQUEO) ---
+// --- 2. LÓGICA DE RESERVA (BLOQUEO) ---
 
-// 1. Verificar disponibilidad y bloquear tickets (Se llama al pasar al Paso 3)
+// Se llama al pasar del Paso 2 al 3
 async function verificarYBloquearTickets() {
     const cantidad = parseInt(document.getElementById('custom-qty').value) || 1;
 
@@ -35,8 +77,7 @@ async function verificarYBloquearTickets() {
 
     if (errCount) {
         console.error("Error consultando stock:", errCount);
-        // Si hay error de conexión, dejamos pasar (el backend validará luego) o mostramos alerta
-        return true; 
+        return true; // Dejamos pasar si hay error de red, validamos al final
     }
 
     // Si pide más de lo que hay
@@ -47,6 +88,10 @@ async function verificarYBloquearTickets() {
             text: `Solo quedan ${count} boletos disponibles. Por favor reduce la cantidad.`,
             confirmButtonColor: '#ef4444'
         });
+        
+        // Si es 0, actualizamos la interfaz de una vez
+        if (count === 0) verificarEstadoGeneral();
+        
         return false; // Detiene el proceso
     }
 
@@ -85,7 +130,7 @@ async function verificarYBloquearTickets() {
     }
 }
 
-// 2. Liberar tickets (Si se acaba el tiempo o cancela)
+// Liberar tickets (Si se acaba el tiempo o cancela)
 async function liberarTickets() {
     if (ticketsReservados.length === 0) return;
     const ids = ticketsReservados.map(t => t.id);
@@ -99,9 +144,9 @@ async function liberarTickets() {
     console.log("Tickets liberados.");
 }
 
-// --- SOBREESCRIBIR LA NAVEGACIÓN (nextStep) ---
+// --- 3. NAVEGACIÓN (nextStep) ---
 window.nextStep = async function() {
-    // Si estamos en el PASO 2 y vamos al 3
+    // Si estamos en el PASO 2 y vamos al 3 -> Intentamos Reservar
     if (currentStep === 2) {
         const btn = document.getElementById('btn-next');
         const textoOriginal = btn.innerHTML;
@@ -113,7 +158,7 @@ window.nextStep = async function() {
         btn.innerHTML = textoOriginal;
         btn.disabled = false;
 
-        if (!exitoReserva) return; // No avanza si falló
+        if (!exitoReserva) return; // No avanza si falló la reserva
         
         iniciarTimer();
     }
@@ -129,12 +174,12 @@ window.nextStep = async function() {
         document.getElementById(`step-${currentStep}`).classList.remove('hidden');
         updateModalHeader();
     } else {
-        // Paso final
+        // Paso final -> Procesar Compra
         procesarCompraFinal();
     }
 }
 
-// --- TEMPORIZADOR ---
+// --- 4. TEMPORIZADOR ---
 function iniciarTimer() {
     clearInterval(intervaloTimer);
     let timeLeft = 900; // 15 minutos
@@ -162,7 +207,7 @@ function iniciarTimer() {
     }, 1000);
 }
 
-// --- PROCESO FINAL (CON PLAN B INCLUIDO) ---
+// --- 5. PROCESO FINAL (CON PLAN B DE EMERGENCIA) ---
 async function procesarCompraFinal() {
     const nombre = document.getElementById('input-name').value;
     const cedula = document.getElementById('input-cedula').value;
@@ -202,19 +247,20 @@ async function procesarCompraFinal() {
 
         if (ordenError) throw ordenError;
 
-        // --- AQUÍ ESTÁ EL ARREGLO PRINCIPAL ---
+        // --- PLAN A vs PLAN B ---
         
         let idsFinales = [];
         let numerosFinales = [];
 
-        // CASO A: Tenemos tickets reservados (El flujo normal)
+        // PLAN A: Usar los tickets que ya reservamos en el paso 2
         if (ticketsReservados.length === cantidad) {
+            console.log("Usando tickets reservados previamente.");
             idsFinales = ticketsReservados.map(t => t.id);
             numerosFinales = ticketsReservados.map(t => t.numero);
         } 
-        // CASO B: PLAN DE EMERGENCIA (Si por error la lista llegó vacía)
+        // PLAN B (Emergencia): Si la reserva falló o se perdió, buscar tickets nuevos AHORA
         else {
-            console.warn("Lista de reserva vacía o incompleta. Buscando tickets nuevos...");
+            console.warn("Reserva perdida. Buscando tickets de emergencia...");
             const { data: ticketsEmergencia, error: errEmergencia } = await supabaseClient
                 .from('tickets')
                 .select('id, numero')
@@ -222,17 +268,15 @@ async function procesarCompraFinal() {
                 .limit(cantidad);
                 
             if (errEmergencia || !ticketsEmergencia || ticketsEmergencia.length < cantidad) {
-                // Si llegamos aquí, la orden se creó pero no hay tickets.
-                // Lo dejamos pasar al éxito pero alertamos en consola. El admin verá la orden sin tickets.
-                // Opcional: lanzar error. Pero preferimos que el cliente vea éxito y el admin resuelva.
-                console.error("No se encontraron tickets de emergencia.");
+                console.error("CRÍTICO: No se encontraron tickets ni de emergencia. La orden se creó sin tickets.");
+                // Aquí permitimos continuar para no asustar al cliente, pero el admin deberá asignar manualmente.
             } else {
                 idsFinales = ticketsEmergencia.map(t => t.id);
                 numerosFinales = ticketsEmergencia.map(t => t.numero);
             }
         }
 
-        // 3. ASIGNAR LOS TICKETS (Si tenemos IDs)
+        // 3. ASIGNAR LOS TICKETS A LA ORDEN
         if (idsFinales.length > 0) {
             const { error: updateError } = await supabaseClient
                 .from('tickets')
@@ -240,26 +284,25 @@ async function procesarCompraFinal() {
                     estado: 'pendiente', // Pasan a pendiente de revisión
                     id_orden: ordenData.id 
                 })
-                .in('id', idsFinales); // Aquí ya no fallará porque idsFinales no está vacío
+                .in('id', idsFinales);
 
             if (updateError) throw updateError;
         }
 
-        // --- FIN DEL ARREGLO ---
+        // --- FINALIZACIÓN ---
 
-        // Éxito Total
         ticketsReservados = []; 
         clearInterval(intervaloTimer); 
         Swal.close();
 
-        // Mostrar Pantalla de Éxito
+        // Mostrar boletos en pantalla de éxito
         const container = document.getElementById('assigned-tickets');
         if(container && numerosFinales.length > 0) {
             container.innerHTML = numerosFinales.map(n => 
                 `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`
             ).join('');
         } else if (container) {
-             container.innerHTML = `<span class="text-xs text-gray-500">Asignación en proceso por el administrador...</span>`;
+             container.innerHTML = `<span class="text-xs text-gray-500">Tu orden fue recibida. Tus boletos serán asignados por el administrador en breve.</span>`;
         }
 
         document.getElementById(`step-5`).classList.add('hidden');
@@ -275,10 +318,7 @@ async function procesarCompraFinal() {
 
 // Liberar si cierra la ventana (Intento best-effort)
 window.addEventListener('beforeunload', () => {
-    // Solo si hay reserva y NO hemos completado la compra
     if (ticketsReservados.length > 0) {
-        const ids = ticketsReservados.map(t => t.id);
-        // Usamos sendBeacon si es posible para mandar la petición aunque cierre
-        // (Esto es avanzado, por ahora solo confiamos en el timer del lado cliente/usuario)
+        // Lógica de liberación en cierre (opcional)
     }
 });
