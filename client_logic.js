@@ -1,6 +1,6 @@
-// client_logic.js - LÓGICA MAESTRA UNIFICADA
+// client_logic.js - VERSIÓN FINAL CON UX MEJORADA Y SUPABASE
 
-// ⚠️ TUS CLAVES
+// ⚠️ TUS CLAVES DE SUPABASE
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
 
@@ -8,12 +8,12 @@ const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Variables Globales
-let currentStep = 1; // Definimos aquí el paso inicial
+let currentStep = 1; 
 let ticketsReservados = []; 
 let intervaloTimer = null;
 
 // ==========================================
-// 1. FUNCIONES UI (MENÚS Y BOTONES)
+// 1. FUNCIONES UI (MENÚS, BOTONES Y ALERTAS)
 // ==========================================
 
 window.toggleMenu = function() {
@@ -31,8 +31,7 @@ window.toggleMenu = function() {
 }
 
 window.menuAction = function(action) {
-    window.toggleMenu(); // Cerrar menú
-    // Ocultar vistas
+    window.toggleMenu(); 
     document.getElementById('view-home').classList.add('hidden');
     document.getElementById('view-raffles').classList.add('hidden');
     document.getElementById('view-terms').classList.add('hidden');
@@ -74,7 +73,7 @@ window.changeQty = function(n) {
 
 window.updateTotal = function() {
     let val = parseInt(document.getElementById('custom-qty').value) || 1;
-    let price = 700; // PRECIO FIJO
+    let price = 700; 
     let total = val * price;
     let text = "Bs. " + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
     
@@ -101,10 +100,9 @@ window.copiarTexto = function(texto) {
     });
 }
 
-// --- MODALES ---
+// --- MODALES Y NAVEGACIÓN ---
 
 window.abrirModalCompra = function() {
-    // Check de seguridad visual
     const btn = document.querySelector('button[onclick="abrirModalCompra()"]');
     if (btn && (btn.disabled || btn.innerText.includes('AGOTADO'))) return;
 
@@ -119,9 +117,17 @@ window.abrirModalCompra = function() {
 
 window.cerrarModalCompra = function() {
     const modal = document.getElementById('checkoutModal');
+    
+    // 🔥 UX MEJORADA: Si el usuario ya completó la compra, recargamos la página al cerrar
+    const pasoExito = document.getElementById('step-success');
+    if (!pasoExito.classList.contains('hidden')) {
+        location.reload();
+        return; 
+    }
+
     if (modal) modal.classList.add('hidden');
     document.body.style.overflow = 'auto';
-    liberarTickets(); // IMPORTANTE: Liberar si cancela
+    liberarTickets(); 
 }
 
 window.abrirModalVerificar = function() {
@@ -188,6 +194,18 @@ window.dismissInstructions = function() {
     window.updateModalHeader();
 }
 
+// --- FUNCIONES NUEVAS PARA ALERTA STOCK SUTIL ---
+window.cerrarAlertaStock = function() {
+    document.getElementById('modal-stock-sutil').classList.add('hidden');
+}
+
+window.mostrarAlertaStock = function(pedidos, disponibles) {
+    document.getElementById('stock-pedido-val').innerText = pedidos;
+    document.getElementById('stock-disponible-val').innerText = disponibles;
+    document.getElementById('modal-stock-sutil').classList.remove('hidden');
+}
+
+
 // ==========================================
 // 2. LÓGICA DE SEGURIDAD (VALIDACIÓN STOCK)
 // ==========================================
@@ -201,35 +219,18 @@ async function validarStockReal() {
         return false;
     }
 
-    // CONSULTA A DB
     const { count, error } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('estado', 'disponible');
 
-    if (error) {
-        console.error("Error DB:", error);
-        return false;
-    }
+    if (error) { console.error("Error DB:", error); return false; }
 
     const stockReal = Number(count);
 
-    // BLOQUEO AGRESIVO
+    // 🔥 UX MEJORADA: Usamos el modal sutil en vez de Swal rojo gigante
     if (stockReal < cantidadSolicitada) {
-        Swal.fire({
-            icon: 'error',
-            title: '¡STOCK INSUFICIENTE!',
-            html: `
-                <div style="text-align: left;">
-                    <p>⛔ <b>No puedes avanzar.</b></p>
-                    <p>Pediste: <b style="color: red;">${cantidadSolicitada}</b></p>
-                    <p>Quedan: <b style="color: green;">${stockReal}</b></p>
-                    <br><small>Por favor reduce la cantidad.</small>
-                </div>
-            `,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Entendido'
-        });
+        window.mostrarAlertaStock(cantidadSolicitada, stockReal);
         return false;
     }
 
@@ -245,7 +246,13 @@ async function reservarTicketsEnDB(cantidad) {
             .limit(cantidad);
 
         if (error || !ticketsLibres || ticketsLibres.length < cantidad) {
-            Swal.fire('Ups', 'Esos boletos ya se vendieron.', 'warning');
+            // Si falla la concurrencia (alguien compró hace 1ms), aquí sí dejamos Swal
+            Swal.fire({
+                icon: 'warning',
+                title: 'Boletos agotados',
+                text: 'Alguien acaba de comprar esos boletos. Intenta de nuevo.',
+                confirmButtonColor: '#f59e0b'
+            });
             return false;
         }
 
@@ -264,13 +271,11 @@ async function reservarTicketsEnDB(cantidad) {
 
 window.nextStep = async function() {
     
-    // PASO 1 (MÉTODO PAGO)
     if(currentStep === 1) {
         const method = document.querySelector('input[name="payment_method"]:checked');
         if(!method) { Swal.fire({ icon: 'error', text: 'Selecciona un método de pago.' }); return; }
     }
 
-    // PASO 2 (CANTIDAD) - AQUÍ ESTÁ EL BLOQUEO
     if(currentStep === 2) {
         const btn = document.getElementById('btn-next');
         const txt = btn.innerHTML;
@@ -282,12 +287,11 @@ window.nextStep = async function() {
         btn.innerHTML = txt;
         btn.disabled = false;
 
-        if (!check) return; // SI FALLA, SE DETIENE AQUÍ
+        if (!check) return; 
 
         iniciarTimer();
     }
 
-    // PASO 3 (DATOS)
     if(currentStep === 3) {
         const name = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
@@ -296,7 +300,6 @@ window.nextStep = async function() {
         if(!name || !cedula || !phone || !email) { Swal.fire({ icon: 'warning', text: 'Completa todos los datos.' }); return; }
     }
 
-    // AVANCE
     if (currentStep < 5) {
         if (currentStep === 4) {
             document.getElementById('payment-instructions').classList.remove('hidden');
@@ -363,8 +366,6 @@ async function procesarCompraFinal() {
 
     try {
         const urlImagen = await subirComprobante(file.files[0]);
-
-        // Datos del formulario
         const nombre = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
         const telefono = document.getElementById('input-country-code').value + document.getElementById('input-phone').value;
@@ -388,7 +389,6 @@ async function procesarCompraFinal() {
 
         if (error) throw error;
 
-        // Asignar tickets
         const ids = ticketsReservados.map(t => t.id);
         const numeros = ticketsReservados.map(t => t.numero);
 
@@ -398,7 +398,6 @@ async function procesarCompraFinal() {
         clearInterval(intervaloTimer);
         Swal.close();
 
-        // Mostrar Éxito
         const container = document.getElementById('assigned-tickets');
         if(container) {
             container.innerHTML = numeros.map(n => 
