@@ -561,6 +561,31 @@
         </div>
     </div>
 
+    <div id="modal-stock-sutil" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xs p-6 text-center transform transition-all scale-100">
+            <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-500 animate-pulse">
+                <iconify-icon icon="solar:info-circle-bold" width="28"></iconify-icon>
+            </div>
+            <h3 class="font-bold text-gray-800 text-base mb-1">Stock Limitado</h3>
+            <p class="text-xs text-gray-500 mb-4">La cantidad supera los boletos disponibles.</p>
+            
+            <div class="bg-gray-50 rounded-xl p-3 border border-gray-100 mb-4 text-xs">
+                <div class="flex justify-between mb-1">
+                    <span class="text-gray-400">Pediste:</span>
+                    <span class="font-bold text-red-500" id="stock-pedido-val">--</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Disponibles:</span>
+                    <span class="font-bold text-green-500" id="stock-disponible-val">--</span>
+                </div>
+            </div>
+
+            <button onclick="cerrarAlertaStock()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-amber-200 transition">
+                Entendido, ajustaré la cantidad
+            </button>
+        </div>
+    </div>
+
     <div id="checkTicketsModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="cerrarModalVerificar()"></div>
         <div class="relative w-full max-w-md max-h-[90vh] h-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden z-10">
@@ -603,7 +628,6 @@
     <script src="client_logic.js"></script>
 
     <script>
-        // SOLO CONFIGURACIÓN VISUAL DEL SLIDER (ESTO ES SEGURO)
         $(document).ready(function(){
             $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
         });
