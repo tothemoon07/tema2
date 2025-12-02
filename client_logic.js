@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN COMPLETA Y CORREGIDA
+// client_logic.js - CORREGIDO (Sin declarar currentStep de nuevo)
 
 // ⚠️ TUS CLAVES
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
@@ -7,15 +7,16 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Variables Globales (NO declaramos currentStep aquí porque ya está en tu HTML)
+// Variables Globales 
+// NOTA: NO declaramos 'currentStep' aquí porque ya existe en tu HTML y eso causaba el error.
 let ticketsReservados = []; 
 let intervaloTimer = null;
 
 // ==========================================
-// 1. FUNCIONES UI (MENÚS Y MODALES) - RESTAURADAS
+// 1. FUNCIONES DE INTERFAZ (Para que los botones funcionen)
 // ==========================================
 
-// Menú Hamburguesa (Móvil)
+// Menú Hamburguesa
 window.toggleMenu = function() {
     const nav = document.querySelector('.nav-links');
     if (nav) nav.classList.toggle('active');
@@ -23,7 +24,7 @@ window.toggleMenu = function() {
 
 // Abrir Modal de Compra
 window.abrirModalCompra = function() {
-    // Verificar si ya está agotado antes de abrir
+    // Verificar si el botón dice AGOTADO
     const btn = document.querySelector('button[onclick="abrirModalCompra()"]');
     if (btn && (btn.disabled || btn.innerText.includes('AGOTADO'))) {
         return; 
@@ -32,11 +33,11 @@ window.abrirModalCompra = function() {
     const modal = document.getElementById('modal-compra');
     if (modal) {
         modal.classList.remove('hidden');
-        modal.style.display = 'flex'; // Asegurar display flex
+        modal.style.display = 'flex'; 
         
-        // Resetear pasos
+        // Reiniciamos al paso 1 usando la variable global existente
         if (typeof currentStep !== 'undefined') {
-            currentStep = 1; // Usamos la variable global del HTML
+            currentStep = 1; 
             mostrarPaso(1);
         }
     }
@@ -45,7 +46,7 @@ window.abrirModalCompra = function() {
 window.cerrarModalCompra = function() {
     const modal = document.getElementById('modal-compra');
     if (modal) modal.classList.add('hidden');
-    liberarTickets(); // Liberar si cierra
+    liberarTickets(); // Si cierra, soltamos los tickets
 }
 
 // Abrir Modal Verificar
@@ -59,30 +60,28 @@ window.cerrarModalVerificar = function() {
     if (modal) modal.classList.add('hidden');
 }
 
-// Utilidad para mostrar pasos
+// Función auxiliar para cambiar visualmente de paso
 function mostrarPaso(paso) {
-    // Ocultar todos
     for(let i=1; i<=5; i++){
         const el = document.getElementById(`step-${i}`);
         if(el) el.classList.add('hidden');
     }
-    // Mostrar actual
     const actual = document.getElementById(`step-${paso}`);
     if(actual) actual.classList.remove('hidden');
     
-    // Actualizar Header del modal si existe la función
+    // Si tienes una función para el header, la llamamos
     if(typeof updateModalHeader === 'function') updateModalHeader();
 }
 
-
 // ==========================================
-// 2. VALIDACIÓN ESTRICTA (EL INTERCEPTOR)
+// 2. LA VALIDACIÓN ESTRICTA (El filtro de seguridad)
 // ==========================================
 
 async function validarStockReal() {
     const inputElement = document.getElementById('custom-qty');
     if (!inputElement) return false;
 
+    // Convertimos a número para evitar errores de texto
     const cantidadSolicitada = parseInt(inputElement.value, 10);
     
     if (!cantidadSolicitada || cantidadSolicitada <= 0) {
@@ -90,7 +89,7 @@ async function validarStockReal() {
         return false;
     }
 
-    // Consulta a la Base de Datos
+    // Consultamos directo a la base de datos (La fuente de verdad)
     const { count, error } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
@@ -98,13 +97,13 @@ async function validarStockReal() {
 
     if (error) {
         console.error("Error Supabase:", error);
-        Swal.fire('Error', 'Error de conexión.', 'error');
+        Swal.fire('Error', 'Error de conexión verificando stock.', 'error');
         return false;
     }
 
     const stockReal = Number(count); 
 
-    // BLOQUEO TOTAL
+    // --- AQUÍ ESTÁ EL BLOQUEO ---
     if (stockReal < cantidadSolicitada) {
         Swal.fire({
             icon: 'error',
@@ -113,16 +112,17 @@ async function validarStockReal() {
                 <div style="text-align: left;">
                     <p>⛔ <b>No puedes avanzar.</b></p>
                     <p>Pediste: <b style="color: red;">${cantidadSolicitada}</b></p>
-                    <p>Quedan: <b style="color: green;">${stockReal}</b></p>
-                    <br><small>Por favor reduce la cantidad.</small>
+                    <p>Solo quedan: <b style="color: green;">${stockReal}</b></p>
+                    <br><small>Por favor reduce la cantidad para continuar.</small>
                 </div>
             `,
             confirmButtonColor: '#d33',
             confirmButtonText: 'Entendido'
         });
-        return false; // IMPIDE AVANZAR
+        return false; // Retorna FALSO = NO DEJA AVANZAR
     }
 
+    // Si hay stock suficiente, intentamos reservar
     return await reservarTicketsEnDB(cantidadSolicitada);
 }
 
@@ -134,16 +134,19 @@ async function reservarTicketsEnDB(cantidad) {
             .eq('estado', 'disponible')
             .limit(cantidad);
 
+        // Doble check por si se vendieron hace milisegundos
         if (error || !ticketsLibres || ticketsLibres.length < cantidad) {
             Swal.fire('Ups', 'Esos boletos acaban de venderse. Intenta de nuevo.', 'warning');
             return false;
         }
 
         const ids = ticketsLibres.map(t => t.id);
+        
+        // Bloqueamos en DB
         await supabaseClient.from('tickets').update({ estado: 'bloqueado' }).in('id', ids);
 
         ticketsReservados = ticketsLibres;
-        return true;
+        return true; // Éxito
 
     } catch (e) {
         console.error(e);
@@ -151,17 +154,19 @@ async function reservarTicketsEnDB(cantidad) {
     }
 }
 
-
 // ==========================================
-// 3. NAVEGACIÓN (NEXT STEP)
+// 3. EL CONTROLADOR DE "SIGUIENTE" (Next Step)
 // ==========================================
 
 window.nextStep = async function() {
-    // Usamos window.currentStep o la variable global implícita
-    let paso = (typeof currentStep !== 'undefined') ? currentStep : 1;
+    // Usamos la variable global currentStep que ya existe en tu HTML
+    // Si por alguna razón no existe, asumimos 1
+    let pasoActual = (typeof currentStep !== 'undefined') ? currentStep : 1;
 
-    // === PASO 2: VALIDACIÓN CRÍTICA ===
-    if (paso === 2) {
+    console.log("Intentando avanzar desde paso:", pasoActual);
+
+    // === INTERCEPTOR DEL PASO 2 ===
+    if (pasoActual === 2) {
         const btn = document.getElementById('btn-next');
         const txtOriginal = btn ? btn.innerHTML : 'Continuar';
         
@@ -170,7 +175,7 @@ window.nextStep = async function() {
             btn.disabled = true;
         }
 
-        // 🛑 LLAMADA AL INTERCEPTOR
+        // 🛑 LLAMADA A LA VALIDACIÓN
         const puedePasar = await validarStockReal();
 
         if(btn) {
@@ -178,25 +183,31 @@ window.nextStep = async function() {
             btn.disabled = false;
         }
 
-        if (!puedePasar) return; // SE DETIENE AQUÍ SI NO HAY STOCK
+        // SI LA VALIDACIÓN FALLA, PARAMOS TODO AQUÍ
+        if (!puedePasar) return; 
 
+        // Si pasa, arrancamos timer
         iniciarTimer();
     }
 
-    // Avance normal
-    if (paso < 5) {
-        if (paso === 4) {
+    // Lógica normal de avance
+    if (pasoActual < 5) {
+        if (pasoActual === 4) {
             const instr = document.getElementById('payment-instructions');
             if(instr) instr.classList.remove('hidden');
             return; 
         }
         
-        // Ocultar actual
-        document.getElementById(`step-${paso}`).classList.add('hidden');
+        // Ocultar paso actual
+        const pasoActualEl = document.getElementById(`step-${pasoActual}`);
+        if(pasoActualEl) pasoActualEl.classList.add('hidden');
+        
         // Incrementar variable global
         currentStep++; 
-        // Mostrar siguiente
-        document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+        
+        // Mostrar siguiente paso
+        const pasoSiguienteEl = document.getElementById(`step-${currentStep}`);
+        if(pasoSiguienteEl) pasoSiguienteEl.classList.remove('hidden');
         
         if (typeof updateModalHeader === 'function') updateModalHeader();
     } else {
@@ -204,14 +215,13 @@ window.nextStep = async function() {
     }
 };
 
-
 // ==========================================
-// 4. UTILIDADES (TIMER, UPLOAD, FINAL)
+// 4. UTILIDADES FINALES
 // ==========================================
 
 function iniciarTimer() {
     clearInterval(intervaloTimer);
-    let timeLeft = 900; 
+    let timeLeft = 900; // 15 min
     const container = document.getElementById('timer-container');
     if(container) container.classList.remove('hidden');
     
@@ -248,6 +258,7 @@ async function subirComprobante(file) {
 }
 
 async function procesarCompraFinal() {
+    // Recolectar datos
     const nombre = document.getElementById('input-name')?.value;
     const cedula = document.getElementById('input-cedula')?.value;
     const telefono = (document.getElementById('input-country-code')?.value || '') + (document.getElementById('input-phone')?.value || '');
@@ -269,6 +280,7 @@ async function procesarCompraFinal() {
     try {
         const urlImagen = await subirComprobante(fileInput.files[0]);
 
+        // Guardar Orden
         const { data: orden, error } = await supabaseClient
             .from('ordenes')
             .insert([{
@@ -297,7 +309,7 @@ async function procesarCompraFinal() {
         clearInterval(intervaloTimer);
         Swal.close();
 
-        // Mostrar Éxito
+        // Mostrar Ticket Exitoso
         const container = document.getElementById('assigned-tickets');
         if(container) {
             container.innerHTML = numeros.map(n => 
@@ -306,7 +318,7 @@ async function procesarCompraFinal() {
         }
 
         document.getElementById('step-5').classList.add('hidden');
-        document.getElementById('modal-footer').classList.add('hidden'); // Ocultar botones modal
+        document.getElementById('modal-footer').classList.add('hidden');
         document.getElementById('step-success').classList.remove('hidden');
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 
@@ -316,7 +328,7 @@ async function procesarCompraFinal() {
     }
 }
 
-// Carga Inicial
+// Carga Inicial para bloquear si está agotado desde el principio
 window.onload = async function() {
     try {
         const { count } = await supabaseClient.from('tickets')
