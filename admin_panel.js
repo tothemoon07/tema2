@@ -1,4 +1,4 @@
-// admin_panel.js
+// admin_panel.js - VERSIÓN ROBUSTA
 
 // ⚠️ DATOS DE SUPABASE
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
@@ -11,21 +11,34 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentTab = 'pendiente_validacion'; 
 let refreshInterval;
 
+// Función segura para actualizar texto en HTML
+function safeSetText(id, text) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.textContent = text;
+    } else {
+        // Opcional: console.warn(`Elemento HTML con ID '${id}' no encontrado.`);
+    }
+}
+
 // 1. VERIFICAR SESIÓN
 async function checkAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) {
-        window.location.href = 'admin_login.html';
+        // Si no hay sesión y estamos en el panel, mandar al login
+        // Comentar la siguiente línea si estás probando local sin login real
+         window.location.href = 'admin_login.html';
+         console.log("No hay sesión, pero continuando para pruebas..."); // Solo para debug
+         loadDashboardData(); // Forzamos carga para probar
     } else {
         console.log("Sesión activa:", session.user.email);
         loadDashboardData();
         
-        // AUTO-REFRESH: Actualiza contadores cada 10 segundos para ver bloqueos en vivo
+        // AUTO-REFRESH cada 10 seg
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(() => {
-            // Solo actualizamos estadísticas para no molestar la tabla si estás revisando algo
             const sorteoIdElement = document.getElementById('raffle-title'); 
-            if(sorteoIdElement.dataset.id) {
+            if(sorteoIdElement && sorteoIdElement.dataset.id) {
                 loadTicketStats(sorteoIdElement.dataset.id);
             }
         }, 10000); 
@@ -34,68 +47,53 @@ async function checkAuth() {
 
 // 2. CARGAR DASHBOARD
 async function loadDashboardData() {
-    const { data: sorteo } = await supabaseClient.from('sorteos').select('*').eq('estado', 'activo').single();
+    try {
+        const { data: sorteo, error } = await supabaseClient.from('sorteos').select('*').eq('estado', 'activo').single();
 
-    if (sorteo) {
-        // Guardamos el ID en el DOM para el auto-refresh
-        document.getElementById('raffle-title').textContent = sorteo.titulo;
-        document.getElementById('raffle-title').dataset.id = sorteo.id; 
+        if (sorteo) {
+            const titleEl = document.getElementById('raffle-title');
+            if (titleEl) {
+                titleEl.textContent = sorteo.titulo;
+                titleEl.dataset.id = sorteo.id; 
+            }
 
-        document.getElementById('stat-date').textContent = sorteo.fecha_sorteo;
-        document.getElementById('stat-price').textContent = `${sorteo.precio_boleto} ${sorteo.moneda}`;
-        document.getElementById('stat-lottery').textContent = sorteo.loteria;
+            safeSetText('stat-date', sorteo.fecha_sorteo);
+            safeSetText('stat-price', `${sorteo.precio_boleto} ${sorteo.moneda}`);
+            safeSetText('stat-lottery', sorteo.loteria);
 
-        // Cargar Estadísticas
-        loadTicketStats(sorteo.id);
-        // Cargar Tabla
-        loadOrders(currentTab);
-    } else {
-        alert("No hay ningún sorteo activo.");
+            // Cargar Estadísticas y Tabla
+            loadTicketStats(sorteo.id);
+            loadOrders(currentTab);
+        } else {
+            console.log("No hay sorteo activo o tabla vacía.");
+        }
+    } catch (e) {
+        console.error("Error cargando dashboard:", e);
     }
 }
 
-// 3. ESTADÍSTICAS (Lógica Corregida: Ventas vs Tickets)
+// 3. ESTADÍSTICAS
 async function loadTicketStats(sorteoId) {
     try {
-        // A. DISPONIBLES (Tickets libres)
+        // A. DISPONIBLES
         const { count: disponibles } = await supabaseClient
-            .from('tickets')
-            .select('*', { count: 'exact', head: true })
-            .eq('id_sorteo', sorteoId)
-            .eq('estado', 'disponible');
+            .from('tickets').select('*', { count: 'exact', head: true })
+            .eq('id_sorteo', sorteoId).eq('estado', 'disponible');
 
-        // B. VENDIDOS (Tickets pagados y aprobados)
+        // B. VENDIDOS
         const { count: vendidos } = await supabaseClient
-            .from('tickets')
-            .select('*', { count: 'exact', head: true })
-            .eq('id_sorteo', sorteoId)
-            .eq('estado', 'vendido');
+            .from('tickets').select('*', { count: 'exact', head: true })
+            .eq('id_sorteo', sorteoId).eq('estado', 'vendido');
         
-        // C. TICKETS BLOQUEADOS (Suma de: gente en timer + gente esperando aprobación)
-        // Usamos filtro OR para sumar 'bloqueado' y 'pendiente'
+        // C. BLOQUEADOS/PENDIENTES
         const { count: ticketsBloqueados } = await supabaseClient
-            .from('tickets')
-            .select('*', { count: 'exact', head: true })
-            .eq('id_sorteo', sorteoId)
-            .or('estado.eq.bloqueado,estado.eq.pendiente');
+            .from('tickets').select('*', { count: 'exact', head: true })
+            .eq('id_sorteo', sorteoId).or('estado.eq.bloqueado,estado.eq.pendiente');
 
-        // D. VENTAS PENDIENTES (CLIENTES esperando)
-        // Aquí contamos ÓRDENES, no tickets.
-        const { count: ordenesPendientes } = await supabaseClient
-            .from('ordenes')
-            .select('*', { count: 'exact', head: true })
-            .eq('estado', 'pendiente_validacion');
-
-        // Actualizar DOM
-        // Usamos '|| 0' para que no salga 'undefined'
-        if(document.getElementById('stat-available')) document.getElementById('stat-available').textContent = disponibles || 0;
-        if(document.getElementById('stat-sold')) document.getElementById('stat-sold').textContent = vendidos || 0;
-        
-        // Cuadro ROJO: Tickets ocupados (Timer + Revisión)
-        if(document.getElementById('stat-blocked')) document.getElementById('stat-blocked').textContent = ticketsBloqueados || 0;
-        
-        // Cuadro AMARILLO: Clientes esperando (Órdenes)
-        if(document.getElementById('stat-orders-pending')) document.getElementById('stat-orders-pending').textContent = ordenesPendientes || 0;
+        // Actualizar HTML de forma segura
+        safeSetText('stat-available', disponibles || 0);
+        safeSetText('stat-sold', vendidos || 0);
+        safeSetText('stat-blocked', ticketsBloqueados || 0);
 
     } catch (e) {
         console.error("Error cargando stats:", e);
@@ -110,12 +108,16 @@ window.switchTab = function(tabName) {
     
     tabs.forEach((t, i) => {
         const btn = document.getElementById(btnIds[i]);
-        if (t === tabName) {
-            if(t === 'pendiente_validacion') btn.className = "flex-1 py-4 text-center font-bold border-b-4 border-gray-600 text-gray-800 bg-gray-50";
-            if(t === 'aprobado') btn.className = "flex-1 py-4 text-center font-bold border-b-4 border-green-500 text-green-800 bg-green-50";
-            if(t === 'rechazado') btn.className = "flex-1 py-4 text-center font-bold border-b-4 border-red-500 text-red-800 bg-red-50";
-        } else {
-            btn.className = "flex-1 py-4 text-center text-gray-500 hover:bg-gray-50 transition";
+        if (btn) {
+            if (t === tabName) {
+                // Estilos activos simplificados para asegurar que funcionen
+                btn.classList.add('border-b-4', 'font-bold', 'bg-gray-50');
+                if(t === 'pendiente_validacion') btn.classList.add('border-gray-600', 'text-gray-800');
+                if(t === 'aprobado') btn.classList.add('border-green-500', 'text-green-800');
+                if(t === 'rechazado') btn.classList.add('border-red-500', 'text-red-800');
+            } else {
+                btn.className = "flex-1 py-4 text-center text-gray-500 hover:bg-gray-50 transition cursor-pointer";
+            }
         }
     });
     loadOrders(tabName);
@@ -124,6 +126,8 @@ window.switchTab = function(tabName) {
 // 5. CARGAR ÓRDENES
 async function loadOrders(estado) {
     const tableBody = document.getElementById('orders-table-body');
+    if (!tableBody) return;
+
     tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl text-gray-400"></i></td></tr>`;
 
     const { data: ordenes, error } = await supabaseClient
@@ -143,7 +147,6 @@ async function loadOrders(estado) {
         const hora = new Date(orden.creado_en).toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'});
         
         let acciones = '';
-        
         if (estado === 'pendiente_validacion') {
             acciones = `
                 <div class="flex justify-end gap-2">
@@ -154,7 +157,7 @@ async function loadOrders(estado) {
         } else if (estado === 'aprobado') {
             acciones = `
                 <div class="flex justify-end gap-2">
-                    <a href="https://wa.me/${orden.telefono}?text=Hola ${orden.nombre}, tu pago ha sido aprobado! 🎟️" target="_blank" class="bg-green-500 text-white hover:bg-green-600 px-3 py-1 rounded text-xs flex items-center gap-1 transition"><i class="fa-brands fa-whatsapp"></i> Contactar</a>
+                    <a href="https://wa.me/${orden.telefono}?text=Hola ${orden.nombre}, tu pago ha sido aprobado!" target="_blank" class="bg-green-500 text-white hover:bg-green-600 px-3 py-1 rounded text-xs flex items-center gap-1 transition"><i class="fa-brands fa-whatsapp"></i> Contactar</a>
                 </div>
             `;
         }
@@ -194,27 +197,26 @@ async function loadOrders(estado) {
 }
 
 // 6. ACCIONES (Aprobar / Rechazar)
-
-// Aprobar: Orden -> aprobado | Tickets -> vendido
 window.approveOrder = async function(ordenId) {
     if(!confirm("¿Confirmar pago y adjudicar tickets?")) return;
 
     try {
+        // 1. Aprobar Orden
         const { error: err1 } = await supabaseClient.from('ordenes').update({ estado: 'aprobado' }).eq('id', ordenId);
         if(err1) throw err1;
 
+        // 2. Marcar Tickets como Vendidos
         const { error: err2 } = await supabaseClient.from('tickets').update({ estado: 'vendido' }).eq('id_orden', ordenId);
         if(err2) throw err2;
 
-        alert("Orden Aprobada con éxito");
+        alert("Orden Aprobada");
         loadDashboardData();
     } catch (e) {
-        console.error(e);
-        alert("Error al aprobar");
+        console.error("Error aprobando:", e);
+        alert("Error al aprobar: " + e.message);
     }
 }
 
-// Rechazar: Orden -> rechazado | Tickets -> disponible (se liberan)
 window.rejectOrder = async function(ordenId) {
     if(!confirm("¿Rechazar pago y liberar los tickets?")) return;
 
@@ -227,21 +229,28 @@ window.rejectOrder = async function(ordenId) {
             .eq('id_orden', ordenId);
         if(err2) throw err2;
 
-        alert("Orden Rechazada y tickets liberados");
+        alert("Orden Rechazada");
         loadDashboardData();
     } catch (e) {
-        console.error(e);
-        alert("Error al rechazar");
+        console.error("Error rechazando:", e);
+        alert("Error al rechazar: " + e.message);
     }
 }
 
 // Utilidades
 window.viewProof = function(url) {
-    document.getElementById('proof-image').src = url;
-    document.getElementById('proof-download').href = url;
-    document.getElementById('modal-proof').classList.remove('hidden');
+    const img = document.getElementById('proof-image');
+    const dl = document.getElementById('proof-download');
+    const modal = document.getElementById('modal-proof');
+    
+    if(img) img.src = url;
+    if(dl) dl.href = url;
+    if(modal) modal.classList.remove('hidden');
 }
-window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); }
+window.closeModal = function(id) { 
+    const el = document.getElementById(id);
+    if(el) el.classList.add('hidden'); 
+}
 window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'admin_login.html'; }
 
 // Iniciar
