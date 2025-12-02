@@ -1,4 +1,4 @@
-// client_logic.js - VALIDACIÓN ESTRICTA DE CANTIDAD
+// client_logic.js - VERSIÓN BLOQUEO ESTRICTO
 
 // ⚠️ TUS CLAVES (No borrar)
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
@@ -23,7 +23,7 @@ async function verificarEstadoGeneral() {
 
         console.log(`Sistema listo: Hay ${count} tickets disponibles.`);
 
-        // Si NO hay tickets, bloqueamos todo
+        // Si NO hay tickets, bloqueamos todo visualmente
         if (count === 0) {
             bloquearBotonCompra();
         }
@@ -62,69 +62,82 @@ async function subirComprobante(file) {
     return publicUrl;
 }
 
-// --- 2. LÓGICA DE RESERVA (AQUÍ ESTÁ LA CORRECCIÓN CRÍTICA) ---
-async function verificarYBloquearTickets() {
+// --- 2. LÓGICA DE RESERVA Y BLOQUEO (CRÍTICO) ---
+async function validarYReservarEstricto() {
     const inputCantidad = document.getElementById('custom-qty');
-    const cantidad = parseInt(inputCantidad.value) || 0;
+    // Aseguramos que sea un número entero base 10
+    const cantidadSolicitada = parseInt(inputCantidad.value, 10) || 0;
 
-    if (cantidad <= 0) {
+    console.log(`Intento de compra: ${cantidadSolicitada} boletos.`);
+
+    if (cantidadSolicitada <= 0) {
         Swal.fire('Error', 'Selecciona al menos 1 boleto.', 'error');
         return false;
     }
 
-    // A. CONSULTA DE STOCK EXACTO
-    const { count, error: errCount } = await supabaseClient
+    // 1. CONSULTA DE STOCK EXACTO (Lectura)
+    const { count: stockDisponible, error: errCount } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('estado', 'disponible');
 
     if (errCount) {
-        console.error("Error red:", errCount);
-        return false; // Error de conexión, no dejamos avanzar por seguridad
+        console.error("Error de conexión:", errCount);
+        Swal.fire('Error', 'Problema de conexión. Intenta de nuevo.', 'error');
+        return false; 
     }
 
-    // B. VALIDACIÓN ESTRICTA: ¿Pide más de lo que hay?
-    if (count < cantidad) {
-        // ALERTA CLARA AL USUARIO
+    // 2. EL FILTRO: ¿Hay suficientes?
+    // Si el usuario pide 85 y hay 75, entra aquí y MATA el proceso.
+    if (stockDisponible < cantidadSolicitada) {
+        console.warn(`BLOQUEO: Pide ${cantidadSolicitada}, hay ${stockDisponible}`);
+        
         Swal.fire({
             icon: 'warning',
             title: '¡Cantidad no disponible!',
-            html: `Intentas comprar <b>${cantidad}</b> boletos, pero solo quedan <b>${count}</b> disponibles.<br><br>Por favor ajusta la cantidad.`,
+            html: `
+                <div class="text-left">
+                    <p class="mb-2">Solicitaste: <b>${cantidadSolicitada}</b> boletos.</p>
+                    <p class="mb-4 text-red-600 font-bold">Solo quedan: ${stockDisponible} boletos.</p>
+                    <p class="text-sm">Por favor ajusta la cantidad para continuar.</p>
+                </div>
+            `,
             confirmButtonColor: '#ef4444',
-            confirmButtonText: 'Entendido'
+            confirmButtonText: 'Entendido, ajustaré la cantidad'
         });
         
-        // Si no queda nada, bloqueamos la UI
-        if (count === 0) {
+        // Si ya no queda nada, refrescamos para mostrar el "Sold Out"
+        if (stockDisponible === 0) {
             bloquearBotonCompra();
-            location.reload(); // Recargamos para que se actualice todo
+            setTimeout(() => location.reload(), 2000);
         }
         
-        return false; // ⛔ IMPIDE AVANZAR AL PASO 3
+        return false; // ⛔ RETORNA FALSO, NO AVANZA
     }
 
-    // C. INTENTO DE BLOQUEO (RESERVA)
+    // 3. INTENTO DE RESERVA (Escritura)
+    // Solo llegamos aquí si stockDisponible >= cantidadSolicitada
     try {
-        // Traemos EXACTAMENTE la cantidad solicitada
-        const { data: ticketsLibres, error: errSelect } = await supabaseClient
+        // Traemos los IDs a reservar
+        const { data: ticketsParaBloquear, error: errSelect } = await supabaseClient
             .from('tickets')
             .select('id, numero')
             .eq('estado', 'disponible')
-            .limit(cantidad);
+            .limit(cantidadSolicitada);
 
-        // Validación doble: Si la DB nos devolvió menos filas de las pedidas (Race Condition)
-        if (errSelect || !ticketsLibres || ticketsLibres.length !== cantidad) {
+        // Validación "Race Condition": Si entre que consultamos y reservamos, alguien compró.
+        if (errSelect || !ticketsParaBloquear || ticketsParaBloquear.length !== cantidadSolicitada) {
             Swal.fire({ 
                 icon: 'warning', 
-                title: '¡Alguien te ganó!', 
-                text: 'Justo en este momento alguien compró esos boletos. Intenta de nuevo.' 
+                title: '¡Te ganaron!', 
+                text: 'Alguien acaba de comprar esos boletos hace un segundo. Intenta de nuevo.' 
             });
-            return false; // ⛔ IMPIDE AVANZAR
+            return false; // ⛔ RETORNA FALSO
         }
 
-        const ids = ticketsLibres.map(t => t.id);
+        const ids = ticketsParaBloquear.map(t => t.id);
 
-        // Actualizamos estado a 'bloqueado'
+        // Ejecutamos el bloqueo en la DB
         const { error: errUpdate } = await supabaseClient
             .from('tickets')
             .update({ estado: 'bloqueado' })
@@ -133,13 +146,15 @@ async function verificarYBloquearTickets() {
         if (errUpdate) throw errUpdate;
 
         // Éxito: Guardamos en memoria
-        ticketsReservados = ticketsLibres; 
-        console.log(`Bloqueados ${ticketsReservados.length} tickets correctamente.`);
-        return true; // ✅ PUEDE AVANZAR
+        ticketsReservados = ticketsParaBloquear; 
+        console.log(`Éxito: Reservados ${ticketsReservados.length} tickets.`);
+        return true; // ✅ RETORNA VERDADERO (SOLO AQUÍ SE AVANZA)
 
     } catch (e) {
-        console.error("Error al bloquear:", e);
-        Swal.fire('Error', 'Hubo un problema de conexión. Intenta de nuevo.', 'error');
+        console.error("Error crítico al reservar:", e);
+        // Si falló algo, intentamos liberar por si acaso se marcó alguno a medias
+        if(ticketsReservados.length > 0) liberarTickets(); 
+        Swal.fire('Error', 'Hubo un error procesando la reserva. Intenta de nuevo.', 'error');
         return false;
     }
 }
@@ -149,35 +164,50 @@ async function liberarTickets() {
     const ids = ticketsReservados.map(t => t.id);
     await supabaseClient.from('tickets').update({ estado: 'disponible' }).in('id', ids);
     ticketsReservados = [];
-    console.log("Tickets liberados.");
+    console.log("Tickets liberados por cancelación/timeout.");
 }
 
-// --- 3. NAVEGACIÓN (nextStep) ---
+// --- 3. NAVEGACIÓN (nextStep) - MODIFICADA ---
 window.nextStep = async function() {
-    // Si estamos en el PASO 2 (Selección) y queremos ir al 3
+    // === VALIDACIÓN DEL PASO 2 ===
     if (currentStep === 2) {
         const btn = document.getElementById('btn-next');
         const textoOriginal = btn.innerHTML;
         
-        // Feedback visual
+        // UI de carga
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
         btn.disabled = true;
+        
+        // Bloqueamos la pantalla para que no modifique el input mientras verificamos
+        Swal.fire({
+            title: 'Verificando disponibilidad...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
 
-        // LLAMADA A LA VALIDACIÓN
-        const exitoReserva = await verificarYBloquearTickets();
+        // LLAMADA A LA FUNCIÓN ESTRICTA
+        const puedeAvanzar = await validarYReservarEstricto();
         
         // Restaurar botón
         btn.innerHTML = textoOriginal;
         btn.disabled = false;
-
-        // ⛔ SI LA VALIDACIÓN FUE FALSE, NO HACEMOS NADA MÁS (Se queda en paso 2)
-        if (!exitoReserva) return; 
         
-        // Si fue true, iniciamos timer y avanzamos
+        // Cerrar el loading de Swal
+        if (Swal.isVisible() && Swal.getTitle()?.textContent === 'Verificando disponibilidad...') {
+            Swal.close();
+        }
+
+        // ⛔ EL GRAN FILTRO: SI ES FALSE, SE ACABA LA FUNCIÓN AQUÍ.
+        if (!puedeAvanzar) {
+            console.log("Bloqueo de avance activado.");
+            return; 
+        }
+        
+        // Si pasó el filtro, iniciamos timer y continuamos
         iniciarTimer();
     }
 
-    // Lógica normal de avance de pasos
+    // Lógica normal de avance de pasos (Paso 3, 4...)
     if (currentStep < 5) {
         if(currentStep === 4) {
             document.getElementById('payment-instructions').classList.remove('hidden');
@@ -259,7 +289,7 @@ async function procesarCompraFinal() {
         if (ordenError) throw ordenError;
 
         // ASIGNAR TICKETS (Usamos los que ya reservamos en paso 2)
-        // Ya no buscamos de emergencia porque el Paso 2 es estricto
+        // Ya no hay Plan B porque el Paso 2 garantiza que los tenemos.
         if (ticketsReservados.length === cantidad) {
             const idsFinales = ticketsReservados.map(t => t.id);
             const numerosFinales = ticketsReservados.map(t => t.numero);
@@ -292,19 +322,22 @@ async function procesarCompraFinal() {
             confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 
         } else {
-            // Caso imposible si el paso 2 funcionó, pero por seguridad:
-            throw new Error("Discrepancia en reserva de tickets.");
+            // Este error ya no debería saltar jamás con la validación estricta del paso 2
+            throw new Error(`Discrepancia fatal: Reservados ${ticketsReservados.length} vs Solicitados ${cantidad}`);
         }
 
     } catch (err) {
         console.error("Error final:", err);
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Hubo un error registrando los tickets. Contacta a soporte con tu referencia.' });
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Tu orden fue creada pero hubo un problema técnico asignando los boletos. Por favor contacta a soporte con tu referencia.' });
     }
 }
 
 // Liberar si cierra
 window.addEventListener('beforeunload', () => {
     if (ticketsReservados.length > 0) {
-        // Beacon request (opcional)
+        // Intento de liberar (beacon)
+        const ids = ticketsReservados.map(t => t.id);
+        // Esto es complejo de implementar fiable con Supabase rest en beforeunload, 
+        // confiamos en que el admin puede limpiar tickets "bloqueados" viejos o el timer del cliente.
     }
 });
