@@ -33,35 +33,62 @@
     </nav>
 
     <div class="bg-yellow-50 border-b border-yellow-100 px-6 py-4">
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
-                <p class="text-xs text-gray-500 uppercase font-bold">Fecha Sorteo</p>
-                <p class="text-gray-800 font-semibold" id="stat-date">--/--/--</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-200">
+                <div class="flex justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold">Disponibles</p>
+                        <p class="text-blue-600 font-bold text-2xl" id="stat-available">--</p>
+                    </div>
+                    <div class="bg-blue-100 p-2 rounded-full h-10 w-10 flex items-center justify-center text-blue-600">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
-                <p class="text-xs text-gray-500 uppercase font-bold">Precio Boleto</p>
-                <p class="text-gray-800 font-semibold" id="stat-price">--</p>
+
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-green-200">
+                <div class="flex justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold">Total Vendidos</p>
+                        <p class="text-green-600 font-bold text-2xl" id="stat-sold">--</p>
+                    </div>
+                    <div class="bg-green-100 p-2 rounded-full h-10 w-10 flex items-center justify-center text-green-600">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
-                <p class="text-xs text-gray-500 uppercase font-bold">Lotería</p>
-                <p class="text-gray-800 font-semibold" id="stat-lottery">--</p>
+
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-yellow-200">
+                <div class="flex justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold">Ventas Pendientes</p>
+                        <p class="text-yellow-600 font-bold text-2xl" id="stat-orders-pending">--</p>
+                        <p class="text-[10px] text-gray-400">Clientes esperando</p>
+                    </div>
+                    <div class="bg-yellow-100 p-2 rounded-full h-10 w-10 flex items-center justify-center text-yellow-600">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
-                <p class="text-xs text-gray-500 uppercase font-bold">Disponibles</p>
-                <p class="text-blue-600 font-bold text-lg" id="stat-available">0</p>
-            </div>
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200">
-                <p class="text-xs text-gray-500 uppercase font-bold">Total Vendidos</p>
-                <p class="text-green-600 font-bold text-lg" id="stat-sold">0</p>
-            </div>
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-yellow-200 relative overflow-hidden">
+
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-red-200 relative overflow-hidden">
                 <div class="absolute top-0 right-0 p-1">
                     <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                 </div>
-                <p class="text-xs text-gray-500 uppercase font-bold">Por Validar</p>
-                <p class="text-red-600 font-bold text-lg" id="stat-blocked">0</p>
+                <div class="flex justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold">Tickets Bloqueados</p>
+                        <p class="text-red-600 font-bold text-2xl" id="stat-blocked">--</p>
+                        <p class="text-[10px] text-gray-400">En compra + Revisión</p>
+                    </div>
+                    <div class="bg-red-100 p-2 rounded-full h-10 w-10 flex items-center justify-center text-red-600">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                </div>
             </div>
+
         </div>
     </div>
 
