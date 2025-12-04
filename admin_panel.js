@@ -1,4 +1,4 @@
-// admin_panel.js - CMS COMPLETO CON GENERACIÓN DE TICKETS
+// admin_panel.js - VERSIÓN CORREGIDA Y ROBUSTA
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -44,7 +44,7 @@ async function checkAuth() {
         refreshInterval = setInterval(() => {
             const el = document.getElementById('raffle-title');
             if(el && el.dataset.id) loadTicketStats(el.dataset.id);
-        }, 15000);
+        }, 15000); // Refrescar cada 15 seg
         
         // Listener Edit Quantity
         const qtyInput = document.getElementById('edit-cantidad');
@@ -68,6 +68,11 @@ async function loadDashboardData() {
             loadOrders(currentTab);
         } else {
              document.getElementById('raffle-title').innerText = "⚠️ No hay sorteo activo";
+             // Si no hay sorteo, limpiar stats
+             safeSetText('stat-available', '-');
+             safeSetText('stat-sold', '-');
+             safeSetText('stat-blocked', '-');
+             safeSetText('stat-pending', '-');
         }
     } catch(e) { console.error(e); }
 }
@@ -228,14 +233,13 @@ window.saveEditOrder = async function() {
 window.approveOrder = async function(id) {
     if(!confirm("¿Aprobar orden?")) return;
     
-    // Obtener orden para saber cuantos tickets son
+    // Obtener orden
     const { data: orden } = await supabaseClient.from('ordenes').select('cantidad_boletos').eq('id', id).single();
     
-    // Verificar si ya tiene tickets asignados (estado pendiente)
+    // Verificar si ya tiene tickets asignados
     const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_orden', id);
     
     if (count < orden.cantidad_boletos) {
-         // Si por algun error no tenia tickets, intentamos asignarlos
          const raffleId = document.getElementById('raffle-title').dataset.id;
          const { data: newTickets } = await supabaseClient.from('tickets')
              .select('id')
@@ -248,7 +252,6 @@ window.approveOrder = async function(id) {
          const ids = newTickets.map(t => t.id);
          await supabaseClient.from('tickets').update({ estado: 'vendido', id_orden: id }).in('id', ids);
     } else {
-        // Si ya tenia tickets, solo cambiar estado a vendido
         await supabaseClient.from('tickets').update({ estado: 'vendido' }).eq('id_orden', id);
     }
     
@@ -287,7 +290,8 @@ async function loadSorteoConfiguration() {
             document.getElementById('conf-precio').value = sorteo.precio_boleto;
             document.getElementById('conf-fecha').value = sorteo.fecha_sorteo;
             document.getElementById('conf-estado').value = sorteo.estado;
-            document.getElementById('conf-img-preview').src = sorteo.url_flyer || 'https://via.placeholder.com/150';
+            // IMAGEN PLACEHOLDER SEGURA (NO VIA.PLACEHOLDER)
+            document.getElementById('conf-img-preview').src = sorteo.url_flyer || 'https://placehold.co/150x100?text=Sin+Imagen';
             
             // Contar tickets
             const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteo.id);
@@ -302,10 +306,10 @@ window.generateTickets = async function() {
     const raffleId = document.getElementById('conf-id').value;
     if(!raffleId) return Swal.fire('Error', 'No hay sorteo cargado', 'error');
     
-    // Verificar si ya existen tickets para evitar duplicados masivos
+    // Verificar si ya existen tickets
     const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', raffleId);
     if(count > 0) {
-        if(!confirm(`Ya existen ${count} tickets para este sorteo. ¿Quieres generar más? (Podría duplicar si no limpias antes)`)) return;
+        if(!confirm(`Ya existen ${count} tickets para este sorteo. ¿Quieres generar más?`)) return;
     }
 
     Swal.fire({
@@ -317,7 +321,6 @@ window.generateTickets = async function() {
 
     try {
         const tickets = [];
-        // Generar 1000 tickets (000 - 999)
         for (let i = 0; i < 1000; i++) {
             tickets.push({
                 numero: i.toString().padStart(3, '0'), // "005"
@@ -326,7 +329,6 @@ window.generateTickets = async function() {
             });
         }
 
-        // Insertar en lotes de 100 para no saturar Supabase
         const batchSize = 100;
         for (let i = 0; i < tickets.length; i += batchSize) {
             const batch = tickets.slice(i, i + batchSize);
@@ -335,7 +337,7 @@ window.generateTickets = async function() {
         }
 
         Swal.fire('¡Listo!', 'Se han generado 1000 tickets exitosamente.', 'success');
-        loadSorteoConfiguration(); // Recargar contador
+        loadSorteoConfiguration();
 
     } catch (e) {
         console.error(e);
@@ -359,9 +361,14 @@ async function saveSorteoConfig() {
     try {
         if(fileInput.files.length > 0) {
             const file = fileInput.files[0];
+            // NOMBRE ÚNICO PARA EVITAR CACHE
             const fileName = `flyer_${Date.now()}.${file.name.split('.').pop()}`;
+            
+            // Subir a bucket 'images'
             const { error: upErr } = await supabaseClient.storage.from('images').upload(fileName, file);
             if(upErr) throw upErr;
+            
+            // Obtener URL
             const { data: publicUrl } = supabaseClient.storage.from('images').getPublicUrl(fileName);
             updates.url_flyer = publicUrl.publicUrl;
         }
@@ -370,9 +377,18 @@ async function saveSorteoConfig() {
         if(error) throw error;
         
         Swal.fire('Guardado', 'Configuración actualizada', 'success');
+        
+        // Refrescar imagen si se cambió
+        if(updates.url_flyer) {
+            document.getElementById('conf-img-preview').src = updates.url_flyer;
+        }
+
         if(updates.estado === 'finalizado') location.reload();
         
-    } catch(e) { Swal.fire('Error', e.message, 'error'); }
+    } catch(e) { 
+        console.error(e);
+        Swal.fire('Error', 'No se pudo guardar: ' + e.message, 'error'); 
+    }
 }
 
 async function loadPaymentMethods() {
