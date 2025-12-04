@@ -43,6 +43,9 @@
 </head>
 <body class="text-gray-900 pb-32">
 
+    <input type="hidden" id="raffle-id">
+    <input type="hidden" id="raffle-price" value="0">
+
     <header class="fixed top-0 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-200">
         <nav class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
             <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('home')">
@@ -81,17 +84,11 @@
                 <a href="#" onclick="menuAction('home')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
                     <iconify-icon icon="solar:home-smile-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Inicio</span>
                 </a>
-                <a href="#" onclick="menuAction('raffles')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
-                    <iconify-icon icon="solar:ticket-sale-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Sorteos</span>
-                </a>
                 <a href="#" onclick="menuAction('verify')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
                     <iconify-icon icon="solar:bill-check-bold-duotone" width="22"></iconify-icon> <span class="font-medium text-red-500 bg-red-50 px-2 py-1 rounded-lg">Verificar boletos</span>
                 </a>
                 <a href="#" onclick="menuAction('terms')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
                     <iconify-icon icon="solar:document-text-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Términos y condiciones</span>
-                </a>
-                <a href="#" onclick="menuAction('contact')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
-                    <iconify-icon icon="solar:question-circle-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Contacto</span>
                 </a>
             </nav>
         </div>
@@ -101,9 +98,13 @@
     <div class="w-full max-w-2xl mx-auto mt-20 px-4 space-y-6">
 
         <div id="view-home" class="space-y-6 transition-opacity duration-300">
+            <div class="text-center mb-2">
+                <h2 class="text-2xl font-black text-gray-800" id="landing-title">Cargando Sorteo...</h2>
+            </div>
+
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="lottery-slider aspect-square md:aspect-video relative bg-gray-50 border-b border-gray-100">
-                    <div><img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png"></div>
+                    <div><img id="landing-image" src="" class="object-cover w-full h-full bg-gray-100"></div>
                 </div>
 
                 <div class="p-6">
@@ -111,25 +112,25 @@
                         <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
                             <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-1 text-yellow-600"><iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon></div>
                             <p class="text-[9px] text-gray-400 font-bold uppercase">Fecha</p>
-                            <p class="font-bold text-xs">--</p>
+                            <p class="font-bold text-xs" id="landing-date">--</p>
                         </div>
                         <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
                             <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-1 text-green-600"><iconify-icon icon="solar:ticket-bold-duotone"></iconify-icon></div>
                             <p class="text-[9px] text-gray-400 font-bold uppercase">Boleto</p>
-                            <p class="font-bold text-xs">Bs. 700.00</p>
+                            <p class="font-bold text-xs" id="landing-price-display">--</p>
                         </div>
                         <div class="flex-1 bg-gray-50 p-3 rounded-2xl border border-gray-100">
                             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-1 text-blue-600"><iconify-icon icon="solar:shop-minimalistic-bold-duotone"></iconify-icon></div>
                             <p class="text-[9px] text-gray-400 font-bold uppercase">Lotería</p>
-                            <p class="font-bold text-xs">Super Gana</p>
+                            <p class="font-bold text-xs" id="landing-lottery">--</p>
                         </div>
                     </div>
 
                     <div class="px-1 mb-2">
                         <div class="h-3 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner mb-2">
-                            <div class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[35%]"></div>
+                            <div class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[80%]"></div>
                         </div>
-                        <p class="text-center text-[10px] text-gray-400 font-bold">34.6% disponibles</p>
+                        <p class="text-center text-[10px] text-gray-400 font-bold">Boletos volando 🚀</p>
                     </div>
 
                     <div class="flex justify-center gap-6 mt-8 opacity-80 grayscale hover:grayscale-0 transition-all">
@@ -152,22 +153,12 @@
                 <h3 class="font-bold text-gray-800 text-lg mb-1">¿Necesitas Ayuda?</h3>
                 <p class="text-xs text-gray-500 mb-6">Contacta con nuestro equipo de soporte</p>
                 <div class="flex justify-center gap-4">
-                    <a href="#" class="flex flex-col items-center gap-2 group">
+                    <a href="https://wa.me/584243011181" target="_blank" class="flex flex-col items-center gap-2 group">
                         <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition">
                             <iconify-icon icon="logos:whatsapp-icon" width="24"></iconify-icon>
                         </div>
                         <div class="text-center">
                             <span class="block text-[10px] font-bold text-gray-800">WhatsApp</span>
-                            <span class="block text-[9px] text-gray-400">+584226389020</span>
-                        </div>
-                    </a>
-                    <a href="#" class="flex flex-col items-center gap-2 group">
-                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100 group-hover:bg-blue-100 transition">
-                            <iconify-icon icon="solar:phone-calling-bold-duotone" width="24"></iconify-icon>
-                        </div>
-                        <div class="text-center">
-                            <span class="block text-[10px] font-bold text-gray-800">Llamar</span>
-                            <span class="block text-[9px] text-gray-400">+584226389020</span>
                         </div>
                     </a>
                 </div>
@@ -182,153 +173,18 @@
             </div>
         </div>
 
-        <div id="view-raffles" class="hidden space-y-6">
-            <h2 class="text-2xl font-black text-center text-gray-800">Nuestros Sorteos</h2>
-            <p class="text-center text-xs text-gray-500 -mt-4 mb-6">Conoce nuestros sorteos activos y participa</p>
-
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                 <div class="aspect-video relative bg-gray-100">
-                    <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
-                    <div class="absolute top-3 right-3 bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">
-                        ● EN CURSO
-                    </div>
-                </div>
-                <div class="p-5">
-                    <h3 class="font-bold text-lg text-gray-900 mb-2">Equipa tu Navidad #2</h3>
-                    <div class="flex gap-4 text-xs text-gray-500 mb-6">
-                        <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-red-500"></iconify-icon> Bs. 700.00</span>
-                        <span class="flex items-center gap-1"><iconify-icon icon="solar:calendar-bold" class="text-blue-500"></iconify-icon> --</span>
-                    </div>
-                    <button onclick="navigateTo('home')" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-200 text-sm flex items-center justify-center gap-2">
-                        Participa ahora <span class="text-lg">🎄</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative">
-                <div class="sold-out-filter">
-                     <div class="aspect-video relative bg-gray-100">
-                        <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-gray-900 mb-2">Sorteo de Chavas #1</h3>
-                        <div class="flex gap-4 text-xs text-gray-500 mb-6">
-                            <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-gray-500"></iconify-icon> Bs. 400.00</span>
-                            <span class="flex items-center gap-1"><iconify-icon icon="solar:calendar-bold" class="text-gray-500"></iconify-icon> 11/11/2025</span>
-                        </div>
-                        <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed">
-                            Agotado
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                    <div class="bg-red-600 text-white font-black text-2xl px-6 py-2 transform -rotate-12 border-4 border-white shadow-2xl tracking-widest uppercase">
-                        Sold Out
-                    </div>
-                </div>
-            </div>
-             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden relative">
-                <div class="sold-out-filter">
-                     <div class="aspect-video relative bg-gray-100">
-                        <img src="https://cdn.inteliticket.com/raffles/covers/6928bb99e3a23_graciela-2.png" class="w-full h-full object-cover">
-                    </div>
-                    <div class="p-5">
-                        <h3 class="font-bold text-lg text-gray-900 mb-2">Equipa tu Navidad #1</h3>
-                        <div class="flex gap-4 text-xs text-gray-500 mb-6">
-                            <span class="flex items-center gap-1"><iconify-icon icon="solar:ticket-bold" class="text-gray-500"></iconify-icon> Bs. 580.00</span>
-                        </div>
-                        <button disabled class="w-full py-3 bg-gray-200 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed">
-                            Agotado
-                        </button>
-                    </div>
-                </div>
-                <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                    <div class="bg-red-600 text-white font-black text-2xl px-6 py-2 transform -rotate-12 border-4 border-white shadow-2xl tracking-widest uppercase">
-                        Sold Out
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div id="view-terms" class="hidden space-y-6">
             <div class="text-center mb-6">
                 <h2 class="text-2xl font-black text-gray-800">Términos y Condiciones</h2>
-                <p class="text-xs text-gray-500">Reglas claras para una participación transparente</p>
             </div>
-
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8 text-sm text-gray-600 leading-relaxed space-y-6">
-                
                 <div>
-                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                        <iconify-icon icon="solar:user-check-bold" class="text-red-500"></iconify-icon> 1. Participación
-                    </h4>
-                    <p class="text-xs">Solo podrán participar personas naturales mayores de 18 años. Al comprar un boleto, el participante acepta todas las reglas aquí descritas.</p>
+                    <h4 class="font-bold text-gray-900 mb-2">1. Participación</h4>
+                    <p class="text-xs">Al comprar un boleto, aceptas todas las reglas del sorteo activo.</p>
                 </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                        <iconify-icon icon="solar:ticket-bold" class="text-blue-500"></iconify-icon> 2. Disponibilidad y Entrega
-                    </h4>
-                    <p class="text-xs mb-2">Los números disponibles para cada sorteo estarán siempre publicados en la página oficial de <strong>Súper Gana</strong>.</p>
-                    <p class="text-xs">Una vez confirmado el pago, los boletos se generan de manera <strong>aleatoria</strong> y se envían en un plazo máximo de <strong>18 horas</strong>, debido al alto volumen de operaciones diarias.</p>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                        <iconify-icon icon="solar:wallet-money-bold" class="text-green-500"></iconify-icon> 3. Pagos y Validación
-                    </h4>
-                    <p class="text-xs mb-2">Todos los pagos deben ser reportados con su referencia exacta y comprobante (captura). Pagos no reportados o con referencias erróneas no serán procesados.</p>
-                    <p class="text-xs bg-green-50 text-green-700 p-2 rounded-lg border border-green-100"><strong>Nota sobre Zelle:</strong> Si eliges pagar con Zelle, la compra mínima debe ser de <strong>20 tickets</strong> para que tu pedido pueda ser confirmado.</p>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                        <iconify-icon icon="solar:videocamera-record-bold" class="text-purple-500"></iconify-icon> 4. Transparencia
-                    </h4>
-                    <p class="text-xs">Para garantizar la transparencia, los ganadores aceptan aparecer en contenidos audiovisuales relacionados con la entrega de premios, los cuales podrán ser publicados en nuestras redes sociales.</p>
-                </div>
-
                  <div>
-                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                        <iconify-icon icon="logos:whatsapp-icon"></iconify-icon> 5. Confirmación
-                    </h4>
-                    <p class="text-xs">Una vez validado tu pago, recibirás un mensaje de confirmación con tus números. Nuestro <strong>canal principal es WhatsApp</strong>, y de forma secundaria enviamos confirmación por correo electrónico.</p>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                        <iconify-icon icon="solar:shield-warning-bold" class="text-orange-500"></iconify-icon> 6. Política de Reembolsos
-                    </h4>
-                    <p class="text-xs">No se realizan reembolsos una vez asignados los números, salvo que el sorteo sea cancelado definitivamente por la organización.</p>
-                </div>
-
-                <div class="pt-4 border-t border-gray-100 bg-gray-50 -mx-6 -mb-6 p-6 rounded-b-3xl">
-                     <h4 class="font-bold text-gray-900 mb-2 text-xs uppercase">Sobre la Plataforma</h4>
-                     <p class="text-[10px] text-gray-500 italic">La tecnología es desarrollada por <strong>Mousett Latam</strong>. Esta plataforma funciona únicamente como herramienta de gestión y no tiene responsabilidad directa sobre la organización ni ejecución de los sorteos.</p>
-                </div>
-            </div>
-
-             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
-                <h3 class="font-bold text-gray-800 text-lg mb-1">¿Tienes Dudas?</h3>
-                <p class="text-xs text-gray-500 mb-6">Nuestro equipo de soporte está disponible para resolver tus consultas</p>
-                <div class="flex justify-center gap-4">
-                    <a href="#" class="flex flex-col items-center gap-2 group">
-                        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition">
-                            <iconify-icon icon="logos:whatsapp-icon" width="24"></iconify-icon>
-                        </div>
-                        <div class="text-center">
-                            <span class="block text-[10px] font-bold text-gray-800">WhatsApp</span>
-                        </div>
-                    </a>
-                    <a href="#" class="flex flex-col items-center gap-2 group">
-                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100 group-hover:bg-blue-100 transition">
-                            <iconify-icon icon="solar:phone-calling-bold-duotone" width="24"></iconify-icon>
-                        </div>
-                        <div class="text-center">
-                            <span class="block text-[10px] font-bold text-gray-800">Llamar</span>
-                        </div>
-                    </a>
+                    <h4 class="font-bold text-gray-900 mb-2">2. Pagos</h4>
+                    <p class="text-xs">Los pagos deben ser reportados inmediatamente para garantizar la reserva de los boletos.</p>
                 </div>
             </div>
         </div>
@@ -374,10 +230,10 @@
                 <div id="step-1" class="step-content">
                     <h2 class="text-lg font-bold text-center text-gray-800 mb-6">Selecciona tu método de pago</h2>
                     <label class="cursor-pointer group block relative">
-                        <input type="radio" name="payment_method" value="pago_movil" class="peer hidden">
+                        <input type="radio" name="payment_method" value="pago_movil" class="peer hidden" checked>
                         <div class="border-2 border-gray-100 peer-checked:border-red-500 peer-checked:bg-red-50 rounded-2xl p-4 flex items-center gap-4 transition-all">
                             <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><iconify-icon icon="solar:smartphone-2-bold-duotone" width="24"></iconify-icon></div>
-                            <div class="flex-1"><h4 class="font-bold text-gray-800">Pago Móvil</h4><p class="text-xs text-gray-500">Pago instantáneo</p></div>
+                            <div class="flex-1"><h4 class="font-bold text-gray-800">Pago Móvil / Transferencia</h4><p class="text-xs text-gray-500">Pago instantáneo</p></div>
                             <div class="w-6 h-6 rounded-full border-2 border-gray-300 peer-checked:border-red-500 peer-checked:bg-red-500 flex items-center justify-center text-white"><iconify-icon icon="mingcute:check-line"></iconify-icon></div>
                         </div>
                     </label>
@@ -398,30 +254,14 @@
                         <button onclick="changeQty(1)" class="w-12 h-12 rounded-xl bg-red-500 text-white font-bold text-xl">+</button>
                     </div>
                     <div class="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
-                        <p class="text-xs text-gray-500">Total a pagar</p><h3 class="text-2xl font-black text-gray-900" id="step2-total">Bs. 700.00</h3>
+                        <p class="text-xs text-gray-500">Total a pagar</p><h3 class="text-2xl font-black text-gray-900" id="step2-total">--</h3>
                     </div>
                 </div>
 
                 <div id="step-3" class="step-content hidden">
-                    <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4 mb-6 flex gap-3">
-                         <iconify-icon icon="solar:shield-warning-bold-duotone" class="text-yellow-500 text-xl flex-shrink-0 mt-0.5"></iconify-icon>
-                         <div>
-                             <h4 class="font-bold text-yellow-800 text-xs mb-1">Información importante</h4>
-                             <p class="text-[10px] text-yellow-700 leading-tight">Asegúrate de ingresar correctamente tus datos, ya que estos serán usados para la entrega del premio.</p>
-                         </div>
-                    </div>
-
                     <form class="space-y-4">
-                        <div class="space-y-1">
-                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre y Apellido <span class="text-red-500">*</span></label>
-                             <input type="text" id="input-name" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="Ingresa tu nombre completo">
-                        </div>
-                        
-                        <div class="space-y-1">
-                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Cédula de Identidad <span class="text-red-500">*</span></label>
-                             <input type="number" id="input-cedula" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="Ingresa tu cédula">
-                        </div>
-
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre y Apellido <span class="text-red-500">*</span></label><input type="text" id="input-name" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Cédula <span class="text-red-500">*</span></label><input type="number" id="input-cedula" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Teléfono WhatsApp <span class="text-red-500">*</span></label>
                             <div class="flex gap-2">
@@ -437,11 +277,7 @@
                                 <input type="tel" id="input-phone" class="flex-1 border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="4121234567">
                             </div>
                         </div>
-
-                        <div class="space-y-1">
-                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Correo Electrónico <span class="text-red-500">*</span></label>
-                             <input type="email" id="input-email" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="tu@correo.com">
-                        </div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Correo <span class="text-red-500">*</span></label><input type="email" id="input-email" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                     </form>
                 </div>
 
@@ -449,74 +285,37 @@
                      <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-6 text-sm space-y-4 shadow-sm">
                         <div class="flex items-center gap-3 pb-3 border-b border-blue-100">
                             <iconify-icon icon="solar:wallet-bold-duotone" class="text-blue-500 text-xl"></iconify-icon>
-                            <span class="font-bold text-blue-900">Pago Móvil</span>
-                        </div>
-
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-500 text-xs">Banco</span>
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-gray-800">Venezuela (0102)</span>
-                                <button onclick="copiarTexto('0102')" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
-                            </div>
+                            <span class="font-bold text-blue-900">Datos para el pago</span>
                         </div>
                         
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-500 text-xs">Teléfono</span>
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-gray-800">04243011181</span>
-                                <button onclick="copiarTexto('04243011181')" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-500 text-xs">Cédula</span>
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-gray-800">26729223</span>
-                                <button onclick="copiarTexto('26729223')" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
-                            </div>
+                        <div id="payment-methods-container" class="space-y-4">
+                            <p class="text-center text-xs text-gray-400">Cargando cuentas...</p>
                         </div>
 
                         <div class="flex justify-between items-center pt-2 border-t border-blue-100 border-dashed">
                             <span class="text-gray-500 text-xs">Monto a pagar</span>
                             <div class="flex items-center gap-2">
-                                <span class="font-black text-red-500 text-lg" id="step4-total">Bs. 700.00</span>
-                                <button onclick="copiarTexto(document.getElementById('step4-total').innerText)" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
+                                <span class="font-black text-red-500 text-lg" id="step4-total">--</span>
+                                <button onclick="copiarTexto(document.getElementById('step4-total').innerText.replace('Bs.','').trim())" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
                             </div>
                         </div>
                      </div>
                 </div>
 
                 <div id="step-5" class="step-content hidden">
-                    
-                    <div class="bg-green-50 border border-green-100 rounded-xl p-4 mb-6 flex gap-3">
-                         <iconify-icon icon="solar:bill-check-bold-duotone" class="text-green-500 text-xl flex-shrink-0 mt-0.5"></iconify-icon>
-                         <div>
-                             <h4 class="font-bold text-green-800 text-xs mb-1">Comprobante de pago</h4>
-                             <p class="text-[10px] text-green-700 leading-tight">Ingresa los datos del pago y sube la captura para verificar tu transacción más rápido.</p>
-                         </div>
-                    </div>
-
                     <form class="space-y-4">
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Referencia (Últimos 6 dígitos) <span class="text-red-500">*</span></label><input type="number" id="input-referencia" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                         <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Referencia completa (6 dígitos) <span class="text-red-500">*</span></label>
-                            <input type="number" id="input-referencia" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="Ej: 123456">
-                        </div>
-                        
-                        <div class="space-y-1">
-                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Comprobante de pago <span class="text-red-500">*</span></label>
+                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Comprobante <span class="text-red-500">*</span></label>
                             <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 cursor-pointer relative transition group">
                                 <input type="file" id="input-comprobante" class="absolute inset-0 opacity-0 cursor-pointer z-20" accept="image/*" onchange="previewImage(this)">
-                                
                                 <div id="upload-placeholder" class="group-hover:scale-105 transition-transform">
-                                    <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-400">
-                                        <iconify-icon icon="solar:cloud-upload-bold-duotone" width="20"></iconify-icon>
-                                    </div>
+                                    <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-400"><iconify-icon icon="solar:cloud-upload-bold-duotone" width="20"></iconify-icon></div>
                                     <p class="text-xs text-gray-500 font-medium">Toca para subir imagen</p>
                                 </div>
-                                
                                 <div id="file-preview" class="hidden flex items-center justify-center gap-2">
                                      <iconify-icon icon="solar:gallery-check-bold" class="text-green-500 text-xl"></iconify-icon>
-                                    <p class="text-green-600 text-xs font-bold">¡Imagen cargada correctamente!</p>
+                                    <p class="text-green-600 text-xs font-bold">¡Imagen cargada!</p>
                                 </div>
                             </div>
                         </div>
@@ -534,11 +333,10 @@
                             <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
                                  <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0"><iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon></div>
                                 <div><h4 class="font-bold text-gray-800 text-sm">#PENDIENTE</h4><p class="text-[10px] font-bold text-yellow-600 uppercase">Verificando Pago</p></div>
-                                <div class="ml-auto text-right"><span class="text-xs font-bold text-gray-400">TOTAL</span><br><span class="font-black text-gray-900" id="success-total">Bs. 700.00</span></div>
+                                <div class="ml-auto text-right"><span class="text-xs font-bold text-gray-400">TOTAL</span><br><span class="font-black text-gray-900" id="success-total">--</span></div>
                             </div>
                             <p class="text-xs font-bold text-gray-700 mb-2">Tus Boletos Asignados:</p>
-                            <div class="flex flex-wrap gap-2" id="assigned-tickets">
-                                </div>
+                            <div class="flex flex-wrap gap-2" id="assigned-tickets"></div>
                         </div>
                     </div>
                 </div>
@@ -548,8 +346,7 @@
                  <div class="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-gray-100 w-full max-w-sm mx-4 text-center">
                     <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 shadow-sm"><iconify-icon icon="solar:info-circle-bold" width="32"></iconify-icon></div>
                     <h3 class="text-lg font-bold text-gray-900 mb-4">Instrucciones de pago</h3>
-                    <p class="text-sm text-gray-600 mb-4 leading-relaxed">Haz el pago a los datos que <strong class="text-gray-900">te mostraremos a continuación</strong>.</p>
-                    <p class="text-sm text-gray-600 mb-6 leading-relaxed">Asegúrate de colocar la <strong class="text-gray-900">referencia exacta</strong> del banco.</p>
+                    <p class="text-sm text-gray-600 mb-6 leading-relaxed">Haz el pago a los datos mostrados y asegúrate de colocar la <strong class="text-gray-900">referencia exacta</strong>.</p>
                     <button onclick="dismissInstructions()" class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold shadow-md shadow-blue-200 transition transform active:scale-95">Entendido</button>
                  </div>
             </div>
@@ -568,21 +365,11 @@
             </div>
             <h3 class="font-bold text-gray-800 text-base mb-1">Stock Limitado</h3>
             <p class="text-xs text-gray-500 mb-4">La cantidad supera los boletos disponibles.</p>
-            
             <div class="bg-gray-50 rounded-xl p-3 border border-gray-100 mb-4 text-xs">
-                <div class="flex justify-between mb-1">
-                    <span class="text-gray-400">Pediste:</span>
-                    <span class="font-bold text-red-500" id="stock-pedido-val">--</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">Disponibles:</span>
-                    <span class="font-bold text-green-500" id="stock-disponible-val">--</span>
-                </div>
+                <div class="flex justify-between mb-1"><span class="text-gray-400">Pediste:</span><span class="font-bold text-red-500" id="stock-pedido-val">--</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Disponibles:</span><span class="font-bold text-green-500" id="stock-disponible-val">--</span></div>
             </div>
-
-            <button onclick="cerrarAlertaStock()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-amber-200 transition">
-                Entendido, ajustaré la cantidad
-            </button>
+            <button onclick="cerrarAlertaStock()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-amber-200 transition">Entendido</button>
         </div>
     </div>
 
@@ -595,28 +382,10 @@
                 <p class="text-xs text-gray-500 mb-8" id="consult-subtitle">Ingresa tu cédula para ver todas tus compras</p>
                 <div id="search-inputs">
                     <div class="mb-6"><span class="text-red-500 font-bold text-sm bg-red-50 px-4 py-2 rounded-full"><iconify-icon icon="solar:list-bold" class="mr-1 relative top-0.5"></iconify-icon> Ver mis compras</span></div>
-                    <div class="mb-6 text-left"><label class="text-xs font-bold text-gray-700 ml-1 mb-1 block">Cédula de Identidad</label><input type="number" class="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 transition" placeholder="Escribe tu número de cédula"></div>
-                    <button onclick="simularBusquedaTickets()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 mb-8 flex items-center justify-center gap-2"><iconify-icon icon="solar:magnifer-bold"></iconify-icon> Buscar</button>
+                    <div class="mb-6 text-left"><label class="text-xs font-bold text-gray-700 ml-1 mb-1 block">Cédula de Identidad</label><input type="number" id="cedula-consult" class="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 transition" placeholder="Escribe tu número de cédula"></div>
+                    <button onclick="consultarTicketsReales()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 mb-8 flex items-center justify-center gap-2"><iconify-icon icon="solar:magnifer-bold"></iconify-icon> Buscar</button>
                 </div>
-                <div id="ticket-results" class="hidden space-y-4">
-                     <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100 shadow-sm relative overflow-hidden">
-                        <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
-                            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0"><iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon></div>
-                            <div><h4 class="font-bold text-gray-800 text-sm">#015521</h4><p class="text-[10px] font-bold text-yellow-600 uppercase">Verificando Pago</p></div>
-                            <div class="ml-auto text-right"><span class="text-xs text-gray-400">30/11/2025</span><br><span class="font-black text-gray-900">Bs. 700.00</span></div>
-                        </div>
-                        <p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p>
-                        <div class="flex flex-wrap gap-2"><span class="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded">0421</span></div>
-                    </div>
-                </div>
-                <div class="border-t border-gray-100 pt-6 mb-2">
-                    <h3 class="font-bold text-gray-800 text-base mb-1">¿Necesitas Ayuda?</h3>
-                    <p class="text-[10px] text-gray-500 mb-4">Nuestro equipo de soporte está disponible para asistirte</p>
-                    <div class="flex justify-center gap-3">
-                        <a href="#" class="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-100 hover:bg-green-100 transition group"><iconify-icon icon="logos:whatsapp-icon" width="20"></iconify-icon><span class="text-[10px] font-bold text-gray-700">WhatsApp</span></a>
-                        <a href="#" class="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition group"><iconify-icon icon="solar:phone-calling-bold-duotone" width="20" class="text-blue-600"></iconify-icon><span class="text-[10px] font-bold text-gray-700">Llamar</span></a>
-                    </div>
-                </div>
+                <div id="ticket-results" class="hidden space-y-4"></div>
             </div>
             <div class="p-3 border-t border-gray-100 bg-gray-50 flex-shrink-0 text-center"><button onclick="cerrarModalVerificar()" class="text-gray-400 text-xs hover:text-gray-600 font-medium w-full py-2">Cerrar ventana</button></div>
         </div>
@@ -624,9 +393,7 @@
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js"></script>
-    
     <script src="client_logic.js"></script>
-
     <script>
         $(document).ready(function(){
             $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
@@ -634,3 +401,539 @@
     </script>
 </body>
 </html>
+
+### PASO 3: `client_logic.js` (Listo para reemplazar)
+Este archivo ya hace la conexión automática. Busca el precio y el nombre del sorteo, y carga los bancos que hayas configurado en el admin.
+
+```javascript
+// client_logic.js - VERSIÓN FINAL DINÁMICA
+
+// ⚠️ TUS CLAVES
+const SUPABASE_URL = '[https://tpzuvrvjtxuvmyusjmpq.supabase.co](https://tpzuvrvjtxuvmyusjmpq.supabase.co)';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
+
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Variables Globales
+let currentStep = 1; 
+let ticketsReservados = []; 
+let intervaloTimer = null;
+let activeRaffle = null; // Guardará el sorteo activo
+
+// ==========================================
+// 1. CARGA INICIAL DE DATOS (SORTEO Y PAGOS)
+// ==========================================
+
+window.onload = async function() {
+    try {
+        // 1. Cargar Info del Sorteo Activo
+        const { data: sorteo, error } = await supabaseClient
+            .from('sorteos').select('*').eq('estado', 'activo').single();
+
+        if (sorteo) {
+            activeRaffle = sorteo;
+            
+            // Inyectar datos en el HTML (Index)
+            document.getElementById('raffle-id').value = sorteo.id;
+            document.getElementById('raffle-price').value = sorteo.precio_boleto;
+            
+            const titleEl = document.getElementById('landing-title');
+            if(titleEl) titleEl.innerText = sorteo.titulo;
+
+            const priceEl = document.getElementById('landing-price-display');
+            if(priceEl) priceEl.innerText = `Bs. ${sorteo.precio_boleto.toFixed(2)}`;
+
+            const dateEl = document.getElementById('landing-date');
+            if(dateEl) dateEl.innerText = sorteo.fecha_sorteo;
+
+            const lotoEl = document.getElementById('landing-lottery');
+            if(lotoEl) lotoEl.innerText = sorteo.loteria;
+
+            const imgEl = document.getElementById('landing-image');
+            if(imgEl && sorteo.url_flyer) imgEl.src = sorteo.url_flyer;
+
+            // Actualizar total inicial en modales
+            updateTotal();
+        } else {
+            console.warn("No hay sorteo activo.");
+            document.getElementById('landing-title').innerText = "No hay sorteo activo por el momento.";
+            disablePurchaseButtons();
+        }
+
+        // 2. Cargar Métodos de Pago
+        loadPaymentMethodsForModal();
+
+    } catch(e) { console.error("Error init:", e); }
+};
+
+async function loadPaymentMethodsForModal() {
+    const container = document.getElementById('payment-methods-container');
+    if(!container) return;
+    
+    const { data: methods } = await supabaseClient.from('metodos_pago').select('*').eq('activo', true);
+    
+    if(!methods || methods.length === 0) {
+        container.innerHTML = '<p class="text-center text-xs text-red-400">No hay métodos de pago disponibles.</p>';
+        return;
+    }
+
+    let html = '';
+    methods.forEach(m => {
+        html += `
+            <div class="border-b border-gray-100 pb-2 last:border-0">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-gray-500 text-xs font-bold uppercase">${m.banco}</span>
+                    <span class="text-[10px] bg-blue-50 text-blue-600 px-2 rounded">${m.tipo.replace('_', ' ')}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-600">${m.titular}</span>
+                </div>
+                <div class="flex justify-between items-center mt-1">
+                    <span class="text-gray-500 text-xs">Cédula:</span>
+                    <div class="flex items-center gap-1">
+                        <span class="font-bold text-gray-800 text-xs">${m.cedula}</span>
+                        <button onclick="copiarTexto('${m.cedula}')" class="text-blue-400"><iconify-icon icon="solar:copy-bold" width="12"></iconify-icon></button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mt-1">
+                    <span class="text-gray-500 text-xs">Teléfono/Cuenta:</span>
+                    <div class="flex items-center gap-1">
+                        <span class="font-bold text-gray-800 text-xs">${m.telefono}</span>
+                        <button onclick="copiarTexto('${m.telefono}')" class="text-blue-400"><iconify-icon icon="solar:copy-bold" width="12"></iconify-icon></button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function disablePurchaseButtons() {
+    const btns = document.querySelectorAll('button[onclick="abrirModalCompra()"]');
+    btns.forEach(b => { 
+        b.disabled = true; 
+        b.innerHTML = '<i class="fas fa-lock"></i> NO DISPONIBLE'; 
+        b.classList.add('bg-gray-400');
+        b.classList.remove('bg-red-600', 'hover:bg-red-700');
+    });
+}
+
+// ==========================================
+// 2. FUNCIONES UI
+// ==========================================
+
+window.toggleMenu = function() {
+    const menu = document.getElementById('side-menu');
+    const overlay = document.getElementById('menu-overlay');
+    if (menu.classList.contains('menu-open')) {
+        menu.classList.remove('menu-open');
+        overlay.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    } else {
+        menu.classList.add('menu-open');
+        overlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+window.menuAction = function(action) {
+    window.toggleMenu(); 
+    document.getElementById('view-home').classList.add('hidden');
+    document.getElementById('view-terms').classList.add('hidden');
+    document.getElementById('floating-btn').classList.add('hidden');
+    window.scrollTo(0,0);
+
+    if (action === 'home') {
+        document.getElementById('view-home').classList.remove('hidden');
+        document.getElementById('floating-btn').classList.remove('hidden');
+    } else if (action === 'terms') {
+        document.getElementById('view-terms').classList.remove('hidden');
+    } else if (action === 'verify') {
+        document.getElementById('view-home').classList.remove('hidden');
+        window.abrirModalVerificar();
+    }
+}
+window.navigateTo = function(view) { window.menuAction(view); }
+
+// --- FUNCIONES DE CANTIDAD Y PRECIOS ---
+
+window.selectQty = function(n, btn) {
+    document.querySelectorAll('.qty-btn').forEach(b => { b.classList.remove('qty-btn-selected'); });
+    btn.classList.add('qty-btn-selected');
+    document.getElementById('custom-qty').value = n; 
+    window.updateTotal(); 
+}
+
+window.changeQty = function(n) { 
+    let val = parseInt(document.getElementById('custom-qty').value) || 0; 
+    val += n; 
+    if(val < 1) val = 1; 
+    document.getElementById('custom-qty').value = val; 
+    window.updateTotal();
+    document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
+}
+
+window.updateTotal = function() {
+    let val = parseInt(document.getElementById('custom-qty').value) || 1;
+    // PRECIO DINÁMICO
+    let price = parseFloat(document.getElementById('raffle-price').value) || 0; 
+    let total = val * price;
+    let text = "Bs. " + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
+    
+    const el2 = document.getElementById('step2-total');
+    const el4 = document.getElementById('step4-total');
+    const elS = document.getElementById('success-total');
+    
+    if(el2) el2.innerText = text;
+    if(el4) el4.innerText = text;
+    if(elS) elS.innerText = text;
+}
+
+window.previewImage = function(input) {
+    if (input.files && input.files[0]) {
+        document.getElementById('upload-placeholder').classList.add('hidden');
+        document.getElementById('file-preview').classList.remove('hidden');
+    }
+}
+
+window.copiarTexto = function(texto) {
+    navigator.clipboard.writeText(texto).then(() => {
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+        Toast.fire({ icon: 'success', title: 'Copiado' });
+    });
+}
+
+// --- MODALES ---
+
+window.abrirModalCompra = function() {
+    const btn = document.querySelector('button[onclick="abrirModalCompra()"]');
+    if (btn && (btn.disabled)) return;
+
+    const modal = document.getElementById('checkoutModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        currentStep = 1;
+        window.mostrarPaso(1);
+    }
+}
+
+window.cerrarModalCompra = function() {
+    const modal = document.getElementById('checkoutModal');
+    const pasoExito = document.getElementById('step-success');
+    if (!pasoExito.classList.contains('hidden')) {
+        location.reload();
+        return; 
+    }
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    liberarTickets(); 
+}
+
+window.abrirModalVerificar = function() { document.getElementById('checkTicketsModal').classList.remove('hidden'); }
+window.cerrarModalVerificar = function() { document.getElementById('checkTicketsModal').classList.add('hidden'); }
+
+window.mostrarPaso = function(paso) {
+    for(let i=1; i<=5; i++){
+        const el = document.getElementById(`step-${i}`);
+        if(el) el.classList.add('hidden');
+    }
+    const actual = document.getElementById(`step-${paso}`);
+    if(actual) actual.classList.remove('hidden');
+    window.updateModalHeader();
+}
+
+window.updateModalHeader = function() {
+    const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "Realiza el Pago", "Comprobante de Pago"];
+    const icons = ["solar:card-2-bold-duotone", "solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:wallet-money-bold-duotone", "solar:upload-track-bold-duotone"];
+    
+    const titleEl = document.getElementById('header-title');
+    if(titleEl) titleEl.innerText = titles[currentStep - 1];
+    
+    const stepEl = document.getElementById('header-step');
+    if(stepEl) stepEl.innerText = `Paso ${currentStep} de 5`;
+    
+    const iconEl = document.getElementById('header-icon');
+    if(iconEl) iconEl.setAttribute('icon', icons[currentStep - 1]);
+    
+    const prog = document.getElementById('progress-bar');
+    if(prog) prog.style.width = `${currentStep * 20}%`;
+
+    const btnBack = document.getElementById('btn-back');
+    if(btnBack) {
+        if(currentStep === 1) { btnBack.disabled = true; btnBack.classList.add('opacity-50'); }
+        else { btnBack.disabled = false; btnBack.classList.remove('opacity-50'); }
+    }
+
+    const btnNext = document.getElementById('btn-next');
+    if(btnNext) {
+        if(currentStep === 5) btnNext.innerHTML = `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>`;
+        else btnNext.innerHTML = `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`;
+    }
+}
+
+window.prevStep = function() {
+    if (currentStep > 1) {
+        document.getElementById(`step-${currentStep}`).classList.add('hidden');
+        currentStep--;
+        document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+        window.updateModalHeader();
+    }
+}
+
+window.dismissInstructions = function() {
+    document.getElementById('payment-instructions').classList.add('hidden');
+    document.getElementById(`step-4`).classList.add('hidden');
+    currentStep = 5;
+    document.getElementById(`step-5`).classList.remove('hidden');
+    window.updateModalHeader();
+}
+
+// Alerta Stock
+window.cerrarAlertaStock = function() { document.getElementById('modal-stock-sutil').classList.add('hidden'); }
+window.mostrarAlertaStock = function(pedidos, disponibles) {
+    document.getElementById('stock-pedido-val').innerText = pedidos;
+    document.getElementById('stock-disponible-val').innerText = disponibles;
+    document.getElementById('modal-stock-sutil').classList.remove('hidden');
+}
+
+// ==========================================
+// 3. LOGICA PRINCIPAL (STOCK Y COMPRA)
+// ==========================================
+
+async function validarStockReal() {
+    const raffleId = document.getElementById('raffle-id').value;
+    const cantidadSolicitada = parseInt(document.getElementById('custom-qty').value, 10);
+    
+    if (!cantidadSolicitada || cantidadSolicitada <= 0) {
+        Swal.fire('Error', 'Selecciona al menos 1 boleto.', 'error');
+        return false;
+    }
+
+    const { count, error } = await supabaseClient
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('id_sorteo', raffleId) // 🔥 Solo del sorteo actual
+        .eq('estado', 'disponible');
+
+    if (error) { console.error("Error DB:", error); return false; }
+
+    const stockReal = Number(count);
+    if (stockReal < cantidadSolicitada) {
+        window.mostrarAlertaStock(cantidadSolicitada, stockReal);
+        return false;
+    }
+
+    return await reservarTicketsEnDB(cantidadSolicitada, raffleId);
+}
+
+async function reservarTicketsEnDB(cantidad, raffleId) {
+    try {
+        const { data: ticketsLibres, error } = await supabaseClient
+            .from('tickets')
+            .select('id, numero')
+            .eq('id_sorteo', raffleId)
+            .eq('estado', 'disponible')
+            .limit(cantidad);
+
+        if (error || !ticketsLibres || ticketsLibres.length < cantidad) {
+            Swal.fire({ icon: 'warning', title: 'Boletos agotados', text: 'Intenta de nuevo.' });
+            return false;
+        }
+
+        const ids = ticketsLibres.map(t => t.id);
+        await supabaseClient.from('tickets').update({ estado: 'bloqueado' }).in('id', ids);
+
+        ticketsReservados = ticketsLibres;
+        return true;
+
+    } catch (e) { console.error(e); return false; }
+}
+
+window.nextStep = async function() {
+    if(currentStep === 1) {
+        const method = document.querySelector('input[name="payment_method"]:checked');
+        if(!method) { Swal.fire({ icon: 'error', text: 'Selecciona un método de pago.' }); return; }
+    }
+
+    if(currentStep === 2) {
+        const btn = document.getElementById('btn-next');
+        const txt = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+        btn.disabled = true;
+
+        const check = await validarStockReal();
+        
+        btn.innerHTML = txt;
+        btn.disabled = false;
+
+        if (!check) return; 
+
+        iniciarTimer();
+    }
+
+    if(currentStep === 3) {
+        const name = document.getElementById('input-name').value;
+        const cedula = document.getElementById('input-cedula').value;
+        const phone = document.getElementById('input-phone').value;
+        const email = document.getElementById('input-email').value;
+        if(!name || !cedula || !phone || !email) { Swal.fire({ icon: 'warning', text: 'Completa todos los datos.' }); return; }
+    }
+
+    if (currentStep < 5) {
+        if (currentStep === 4) {
+            document.getElementById('payment-instructions').classList.remove('hidden');
+            return; 
+        }
+        
+        document.getElementById(`step-${currentStep}`).classList.add('hidden');
+        currentStep++; 
+        document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+        window.updateModalHeader();
+    } else {
+        procesarCompraFinal();
+    }
+};
+
+function iniciarTimer() {
+    clearInterval(intervaloTimer);
+    let timeLeft = 900; 
+    document.getElementById('timer-container').classList.remove('hidden');
+    
+    intervaloTimer = setInterval(() => {
+        let min = Math.floor(timeLeft / 60);
+        let sec = timeLeft % 60;
+        sec = sec < 10 ? '0' + sec : sec;
+        const el = document.getElementById('countdown');
+        if(el) el.innerText = `${min}:${sec}`;
+
+        if (timeLeft <= 0) {
+            clearInterval(intervaloTimer);
+            liberarTickets();
+            Swal.fire({ title: 'Tiempo Agotado', icon: 'error', confirmButtonText: 'Reiniciar' }).then(() => location.reload());
+        }
+        timeLeft--;
+    }, 1000);
+}
+
+async function liberarTickets() {
+    if (ticketsReservados.length === 0) return;
+    const ids = ticketsReservados.map(t => t.id);
+    await supabaseClient.from('tickets').update({ estado: 'disponible' }).in('id', ids);
+    ticketsReservados = [];
+}
+
+async function subirComprobante(file) {
+    const fileName = `${Date.now()}.${file.name.split('.').pop()}`;
+    const { error } = await supabaseClient.storage.from('comprobantes').upload(fileName, file);
+    if (error) throw error;
+    const { data } = supabaseClient.storage.from('comprobantes').getPublicUrl(fileName);
+    return data.publicUrl;
+}
+
+async function procesarCompraFinal() {
+    const ref = document.getElementById('input-referencia').value;
+    const file = document.getElementById('input-comprobante');
+    
+    if (!ref || ref.length < 4) { Swal.fire({ icon: 'error', text: 'Falta referencia.' }); return; }
+    if (!file.files.length) { Swal.fire({ icon: 'error', text: 'Falta comprobante.' }); return; }
+
+    Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        const urlImagen = await subirComprobante(file.files[0]);
+        const nombre = document.getElementById('input-name').value;
+        const cedula = document.getElementById('input-cedula').value;
+        const telefono = document.getElementById('input-country-code').value + document.getElementById('input-phone').value; // 🔥 CORREGIDO PAÍS + TELF
+        const email = document.getElementById('input-email').value;
+        const cantidad = parseInt(document.getElementById('custom-qty').value);
+        let montoTexto = document.getElementById('step4-total').innerText;
+        let montoFinal = parseFloat(montoTexto.replace('Bs.', '').replace(/\./g, '').replace(',', '.').trim());
+
+        const { data: orden, error } = await supabaseClient
+            .from('ordenes')
+            .insert([{
+                nombre, cedula, telefono, email,
+                metodo_pago: 'pago_movil',
+                referencia_pago: ref,
+                url_comprobante: urlImagen,
+                monto_total: montoFinal,
+                cantidad_boletos: cantidad,
+                estado: 'pendiente_validacion'
+            }])
+            .select().single();
+
+        if (error) throw error;
+
+        const ids = ticketsReservados.map(t => t.id);
+        const numeros = ticketsReservados.map(t => t.numero);
+
+        await supabaseClient.from('tickets').update({ estado: 'pendiente', id_orden: orden.id }).in('id', ids);
+
+        ticketsReservados = [];
+        clearInterval(intervaloTimer);
+        Swal.close();
+
+        const container = document.getElementById('assigned-tickets');
+        if(container) {
+            container.innerHTML = numeros.map(n => 
+                `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`
+            ).join('');
+        }
+
+        document.getElementById('step-5').classList.add('hidden');
+        document.getElementById('modal-footer').classList.add('hidden');
+        document.getElementById('step-success').classList.remove('hidden');
+        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Error', 'Hubo un error. Contacta soporte.', 'error');
+    }
+}
+
+// --- CONSULTA DE TICKETS (NUEVO) ---
+window.consultarTicketsReales = async function() {
+    const cedula = document.getElementById('cedula-consult').value;
+    if(!cedula) return Swal.fire('Error', 'Ingresa tu cédula', 'warning');
+    
+    const resultsDiv = document.getElementById('ticket-results');
+    resultsDiv.innerHTML = '<p class="text-center text-gray-400"><i class="fas fa-spinner fa-spin"></i> Buscando...</p>';
+    resultsDiv.classList.remove('hidden');
+
+    // Buscar Ordenes
+    const { data: ordenes } = await supabaseClient.from('ordenes').select('*').eq('cedula', cedula).order('creado_en', {ascending:false});
+    
+    if(!ordenes || ordenes.length === 0) {
+        resultsDiv.innerHTML = '<p class="text-center text-gray-500">No se encontraron compras con esa cédula.</p>';
+        return;
+    }
+
+    let html = '';
+    for (let orden of ordenes) {
+        // Buscar tickets de esa orden
+        const { data: tickets } = await supabaseClient.from('tickets').select('numero').eq('id_orden', orden.id);
+        const nums = tickets ? tickets.map(t => t.numero).join(', ') : 'Pendientes de asignación';
+        
+        let color = orden.estado === 'aprobado' ? 'green' : (orden.estado === 'rechazado' ? 'red' : 'yellow');
+        let estadoTxt = orden.estado === 'aprobado' ? 'APROBADO' : (orden.estado === 'rechazado' ? 'RECHAZADO' : 'VERIFICANDO');
+
+        html += `
+            <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100 shadow-sm">
+                <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
+                    <div class="w-10 h-10 bg-${color}-100 rounded-full flex items-center justify-center text-${color}-600 flex-shrink-0">
+                        <iconify-icon icon="solar:ticket-bold" width="20"></iconify-icon>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm">Ord #${orden.id.slice(0,6)}</h4>
+                        <p class="text-[10px] font-bold text-${color}-600 uppercase">${estadoTxt}</p>
+                    </div>
+                </div>
+                <p class="text-xs font-bold text-gray-700 mb-2">Boletos:</p>
+                <div class="flex flex-wrap gap-2 text-xs font-mono text-gray-600">${nums}</div>
+            </div>
+        `;
+    }
+    resultsDiv.innerHTML = html;
+}
