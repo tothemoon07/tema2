@@ -1,4 +1,4 @@
-// admin_panel.js - CMS COMPLETO
+// admin_panel.js - CMS COMPLETO CON GENERACIÓN DE TICKETS
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -24,26 +24,27 @@ window.switchView = function(view) {
     document.getElementById(`btn-view-${view}`).className = "nav-btn-active px-4 py-1.5 rounded-md text-sm font-semibold transition flex items-center gap-2";
 
     if(view === 'settings') loadSorteoConfiguration();
+    if(view === 'dashboard') loadDashboardData();
 }
 
 // ==========================================
-// 2. LOGICA DEL DASHBOARD (LO VIEJO)
+// 2. DASHBOARD
 // ==========================================
-// ... (Aquí van las funciones de carga de stats y ordenes que ya tenías, resumidas)
 
 async function checkAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) window.location.href = 'admin_login.html';
     else {
         loadDashboardData();
-        // Listener clicks dropdowns
+        
+        // Listeners globales
         document.addEventListener('click', (e) => { if (!e.target.closest('.relative')) closeAllDropdowns(); });
         
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(() => {
             const el = document.getElementById('raffle-title');
             if(el && el.dataset.id) loadTicketStats(el.dataset.id);
-        }, 10000);
+        }, 15000);
         
         // Listener Edit Quantity
         const qtyInput = document.getElementById('edit-cantidad');
@@ -65,6 +66,8 @@ async function loadDashboardData() {
             document.getElementById('raffle-title').dataset.id = sorteo.id;
             loadTicketStats(sorteo.id);
             loadOrders(currentTab);
+        } else {
+             document.getElementById('raffle-title').innerText = "⚠️ No hay sorteo activo";
         }
     } catch(e) { console.error(e); }
 }
@@ -76,7 +79,11 @@ async function loadTicketStats(sorteoId) {
     const { count: vend } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'vendido');
     const { count: bloq } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'bloqueado');
     const { count: pend } = await supabaseClient.from('ordenes').select('*', { count: 'exact', head: true }).eq('estado', 'pendiente_validacion');
-    safeSetText('stat-available', disp || 0); safeSetText('stat-sold', vend || 0); safeSetText('stat-blocked', bloq || 0); safeSetText('stat-pending', pend || 0);
+    
+    safeSetText('stat-available', disp || 0); 
+    safeSetText('stat-sold', vend || 0); 
+    safeSetText('stat-blocked', bloq || 0); 
+    safeSetText('stat-pending', pend || 0);
 }
 
 window.switchTab = function(tab) {
@@ -145,7 +152,7 @@ function closeAllDropdowns() { document.querySelectorAll('.dropdown-menu').forEa
 window.openEditModal = async function(id) {
     const { data: orden } = await supabaseClient.from('ordenes').select('*').eq('id', id).single();
     if (!orden) return;
-    currentUnitPrice = orden.monto_total / orden.cantidad_boletos; if(isNaN(currentUnitPrice)) currentUnitPrice = 700;
+    currentUnitPrice = orden.monto_total / orden.cantidad_boletos; if(isNaN(currentUnitPrice)) currentUnitPrice = 0;
     
     document.getElementById('edit-id').value = orden.id;
     document.getElementById('edit-nombre').value = orden.nombre;
@@ -190,45 +197,72 @@ window.saveEditOrder = async function() {
         }
 
         if (nuevaCant !== originalCant) {
+            // Liberar tickets viejos
             await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).eq('id_orden', id);
-            const { data: newTickets, error: tickErr } = await supabaseClient.from('tickets').select('id').eq('estado', 'disponible').limit(nuevaCant);
-            if (tickErr || newTickets.length < nuevaCant) throw new Error("No hay suficientes tickets disponibles.");
+            
+            // Asignar nuevos
+            const raffleId = document.getElementById('raffle-title').dataset.id;
+            const { data: newTickets, error: tickErr } = await supabaseClient.from('tickets')
+                .select('id')
+                .eq('id_sorteo', raffleId) // Solo del sorteo activo
+                .eq('estado', 'disponible')
+                .limit(nuevaCant);
+            
+            if (tickErr || !newTickets || newTickets.length < nuevaCant) throw new Error("No hay suficientes tickets disponibles para el cambio.");
             
             const { data: currentOrder } = await supabaseClient.from('ordenes').select('estado').eq('id', id).single();
             const nuevoEstadoTicket = currentOrder.estado === 'aprobado' ? 'vendido' : 'bloqueado';
+            
             const ids = newTickets.map(t => t.id);
             await supabaseClient.from('tickets').update({ estado: nuevoEstadoTicket, id_orden: id }).in('id', ids);
         }
 
         const { error } = await supabaseClient.from('ordenes').update(updates).eq('id', id);
         if (error) throw error;
-        alert("Actualizado.");
+        Swal.fire('Éxito', 'Orden actualizada', 'success');
         closeModal('modal-edit');
         loadDashboardData();
-    } catch(e) { alert("Error: " + e.message); }
+    } catch(e) { Swal.fire('Error', e.message, 'error'); }
 }
 
 window.approveOrder = async function(id) {
-    if(!confirm("¿Aprobar?")) return;
+    if(!confirm("¿Aprobar orden?")) return;
+    
+    // Obtener orden para saber cuantos tickets son
+    const { data: orden } = await supabaseClient.from('ordenes').select('cantidad_boletos').eq('id', id).single();
+    
+    // Verificar si ya tiene tickets asignados (estado pendiente)
     const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_orden', id);
-    if (count === 0) {
-        const { data: orden } = await supabaseClient.from('ordenes').select('cantidad_boletos').eq('id', id).single();
-        const { data: newTickets } = await supabaseClient.from('tickets').select('id').eq('estado', 'disponible').limit(orden.cantidad_boletos);
-        if (newTickets.length < orden.cantidad_boletos) return alert("Sin stock para reactivar.");
-        const ids = newTickets.map(t => t.id);
-        await supabaseClient.from('tickets').update({ estado: 'vendido', id_orden: id }).in('id', ids);
+    
+    if (count < orden.cantidad_boletos) {
+         // Si por algun error no tenia tickets, intentamos asignarlos
+         const raffleId = document.getElementById('raffle-title').dataset.id;
+         const { data: newTickets } = await supabaseClient.from('tickets')
+             .select('id')
+             .eq('id_sorteo', raffleId)
+             .eq('estado', 'disponible')
+             .limit(orden.cantidad_boletos);
+             
+         if (newTickets.length < orden.cantidad_boletos) return Swal.fire('Error', 'Stock insuficiente para aprobar', 'error');
+         
+         const ids = newTickets.map(t => t.id);
+         await supabaseClient.from('tickets').update({ estado: 'vendido', id_orden: id }).in('id', ids);
     } else {
+        // Si ya tenia tickets, solo cambiar estado a vendido
         await supabaseClient.from('tickets').update({ estado: 'vendido' }).eq('id_orden', id);
     }
+    
     await supabaseClient.from('ordenes').update({ estado: 'aprobado' }).eq('id', id);
     loadDashboardData();
+    Swal.fire('Aprobado', 'Orden aprobada y tickets vendidos', 'success');
 }
 
 window.rejectOrder = async function(id) {
-    if(!confirm("¿Rechazar?")) return;
+    if(!confirm("¿Rechazar orden?")) return;
     await supabaseClient.from('ordenes').update({ estado: 'rechazado' }).eq('id', id);
     await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).eq('id_orden', id);
     loadDashboardData();
+    Swal.fire('Rechazado', 'Orden rechazada y tickets liberados', 'info');
 }
 
 window.viewProof = function(url) {
@@ -240,12 +274,11 @@ window.closeModal = function(id) { document.getElementById(id).classList.add('hi
 window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'admin_login.html'; }
 
 // ==========================================
-// 3. NUEVA LÓGICA: CONFIGURACIÓN SORTEO
+// 3. CONFIGURACIÓN Y TICKETS
 // ==========================================
 
 async function loadSorteoConfiguration() {
     try {
-        // Cargar Sorteo
         const { data: sorteo } = await supabaseClient.from('sorteos').select('*').eq('estado', 'activo').single();
         if(sorteo) {
             document.getElementById('conf-id').value = sorteo.id;
@@ -255,10 +288,59 @@ async function loadSorteoConfiguration() {
             document.getElementById('conf-fecha').value = sorteo.fecha_sorteo;
             document.getElementById('conf-estado').value = sorteo.estado;
             document.getElementById('conf-img-preview').src = sorteo.url_flyer || 'https://via.placeholder.com/150';
+            
+            // Contar tickets
+            const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteo.id);
+            document.getElementById('ticket-count-debug').innerText = count + " tickets generados.";
         }
-        // Cargar Métodos Pago
         loadPaymentMethods();
     } catch(e) { console.error(e); }
+}
+
+// 🔥 FUNCIÓN GENERAR TICKETS 🔥
+window.generateTickets = async function() {
+    const raffleId = document.getElementById('conf-id').value;
+    if(!raffleId) return Swal.fire('Error', 'No hay sorteo cargado', 'error');
+    
+    // Verificar si ya existen tickets para evitar duplicados masivos
+    const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', raffleId);
+    if(count > 0) {
+        if(!confirm(`Ya existen ${count} tickets para este sorteo. ¿Quieres generar más? (Podría duplicar si no limpias antes)`)) return;
+    }
+
+    Swal.fire({
+        title: 'Generando Tickets...',
+        html: 'Creando números del 000 al 999. Por favor espera.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const tickets = [];
+        // Generar 1000 tickets (000 - 999)
+        for (let i = 0; i < 1000; i++) {
+            tickets.push({
+                numero: i.toString().padStart(3, '0'), // "005"
+                id_sorteo: raffleId,
+                estado: 'disponible'
+            });
+        }
+
+        // Insertar en lotes de 100 para no saturar Supabase
+        const batchSize = 100;
+        for (let i = 0; i < tickets.length; i += batchSize) {
+            const batch = tickets.slice(i, i + batchSize);
+            const { error } = await supabaseClient.from('tickets').insert(batch);
+            if(error) throw error;
+        }
+
+        Swal.fire('¡Listo!', 'Se han generado 1000 tickets exitosamente.', 'success');
+        loadSorteoConfiguration(); // Recargar contador
+
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'Hubo un problema generando los tickets: ' + e.message, 'error');
+    }
 }
 
 async function saveSorteoConfig() {
@@ -278,7 +360,6 @@ async function saveSorteoConfig() {
         if(fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const fileName = `flyer_${Date.now()}.${file.name.split('.').pop()}`;
-            // Subir a bucket 'images' (Asegúrate que exista en Supabase)
             const { error: upErr } = await supabaseClient.storage.from('images').upload(fileName, file);
             if(upErr) throw upErr;
             const { data: publicUrl } = supabaseClient.storage.from('images').getPublicUrl(fileName);
@@ -288,11 +369,10 @@ async function saveSorteoConfig() {
         const { error } = await supabaseClient.from('sorteos').update(updates).eq('id', id);
         if(error) throw error;
         
-        alert("Configuración Guardada.");
-        // Refrescar si cambió estado
+        Swal.fire('Guardado', 'Configuración actualizada', 'success');
         if(updates.estado === 'finalizado') location.reload();
         
-    } catch(e) { alert("Error: " + e.message); }
+    } catch(e) { Swal.fire('Error', e.message, 'error'); }
 }
 
 async function loadPaymentMethods() {
@@ -360,7 +440,8 @@ window.savePaymentMethod = async function() {
         titular: document.getElementById('pay-titular').value,
         cedula: document.getElementById('pay-cedula').value,
         telefono: document.getElementById('pay-telefono').value,
-        tipo: document.getElementById('pay-tipo').value
+        tipo: document.getElementById('pay-tipo').value,
+        activo: true
     };
     
     if(!data.banco || !data.titular) return alert("Completa los datos.");
@@ -382,7 +463,7 @@ window.deletePaymentMethod = async function(id) {
 }
 
 window.createNewSorteo = async function() {
-    if(!confirm("⚠️ ¡PELIGRO! Esto archivará el sorteo actual y creará uno nuevo. ¿Estás seguro?")) return;
+    if(!confirm("⚠️ ¡PELIGRO! Esto archivará el sorteo actual y creará uno nuevo VACÍO. ¿Estás seguro?")) return;
     
     const titulo = prompt("Nombre del nuevo sorteo:");
     if(!titulo) return;
@@ -398,10 +479,11 @@ window.createNewSorteo = async function() {
         estado: 'activo'
     }]).select();
 
-    if(error) alert("Error: " + error.message);
+    if(error) Swal.fire('Error', error.message, 'error');
     else {
-        alert("Nuevo sorteo creado. Configúralo ahora.");
-        location.reload();
+        Swal.fire('Listo', 'Nuevo sorteo creado. Ve a configuración y GENERA LOS TICKETS.', 'success').then(() => {
+            location.reload();
+        });
     }
 }
 
