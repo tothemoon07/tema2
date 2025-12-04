@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN ROBUSTA
+// admin_panel.js - VERSIÓN CORREGIDA (LÓGICA REAL DE CONTADORES)
 
 // ⚠️ DATOS DE SUPABASE
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
@@ -17,7 +17,8 @@ function safeSetText(id, text) {
     if (el) {
         el.textContent = text;
     } else {
-        // Opcional: console.warn(`Elemento HTML con ID '${id}' no encontrado.`);
+        // Si no encuentra el ID, no rompe el código
+        // console.log(`Nota: ID ${id} no encontrado en el HTML`);
     }
 }
 
@@ -25,11 +26,9 @@ function safeSetText(id, text) {
 async function checkAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) {
-        // Si no hay sesión y estamos en el panel, mandar al login
-        // Comentar la siguiente línea si estás probando local sin login real
          window.location.href = 'admin_login.html';
-         console.log("No hay sesión, pero continuando para pruebas..."); // Solo para debug
-         loadDashboardData(); // Forzamos carga para probar
+         // console.log("No hay sesión, pero continuando para pruebas..."); // Debug
+         // loadDashboardData(); 
     } else {
         console.log("Sesión activa:", session.user.email);
         loadDashboardData();
@@ -72,28 +71,41 @@ async function loadDashboardData() {
     }
 }
 
-// 3. ESTADÍSTICAS
+// 3. ESTADÍSTICAS (AQUÍ ESTÁ LA CORRECCIÓN)
 async function loadTicketStats(sorteoId) {
     try {
-        // A. DISPONIBLES
+        // A. DISPONIBLES (Tickets libres para vender)
         const { count: disponibles } = await supabaseClient
             .from('tickets').select('*', { count: 'exact', head: true })
             .eq('id_sorteo', sorteoId).eq('estado', 'disponible');
 
-        // B. VENDIDOS
+        // B. VENDIDOS (Tickets pagados y aprobados)
         const { count: vendidos } = await supabaseClient
             .from('tickets').select('*', { count: 'exact', head: true })
             .eq('id_sorteo', sorteoId).eq('estado', 'vendido');
         
-        // C. BLOQUEADOS/PENDIENTES
+        // C. BLOQUEADOS (SOLO los del cronómetro de 15 min)
         const { count: ticketsBloqueados } = await supabaseClient
             .from('tickets').select('*', { count: 'exact', head: true })
-            .eq('id_sorteo', sorteoId).or('estado.eq.bloqueado,estado.eq.pendiente');
+            .eq('id_sorteo', sorteoId).eq('estado', 'bloqueado'); // 🔥 CAMBIO: Solo 'bloqueado'
 
-        // Actualizar HTML de forma segura
+        // D. VENTAS PENDIENTES (CLIENTES esperando aprobación)
+        // Consultamos la tabla ORDENES, no tickets
+        const { count: ordenesPendientes } = await supabaseClient
+            .from('ordenes').select('*', { count: 'exact', head: true })
+            .eq('estado', 'pendiente_validacion');
+
+        // Actualizar HTML
         safeSetText('stat-available', disponibles || 0);
         safeSetText('stat-sold', vendidos || 0);
+        
+        // "Tickets Bloqueados" (Gente comprando ahora mismo)
         safeSetText('stat-blocked', ticketsBloqueados || 0);
+
+        // "Ventas Pendientes" (Clientes que ya pagaron y esperan tu click)
+        // ⚠️ IMPORTANTE: Asegúrate de tener un elemento con id="stat-pending" en tu HTML
+        // Si usabas el mismo cuadro de bloqueados para esto, cambia el ID en tu HTML o aquí.
+        safeSetText('stat-pending', ordenesPendientes || 0);
 
     } catch (e) {
         console.error("Error cargando stats:", e);
@@ -110,7 +122,7 @@ window.switchTab = function(tabName) {
         const btn = document.getElementById(btnIds[i]);
         if (btn) {
             if (t === tabName) {
-                // Estilos activos simplificados para asegurar que funcionen
+                // Estilos activos
                 btn.classList.add('border-b-4', 'font-bold', 'bg-gray-50');
                 if(t === 'pendiente_validacion') btn.classList.add('border-gray-600', 'text-gray-800');
                 if(t === 'aprobado') btn.classList.add('border-green-500', 'text-green-800');
