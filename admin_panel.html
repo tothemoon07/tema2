@@ -13,234 +13,249 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         .tab-active { border-bottom: 2px solid #3b82f6; color: #1d4ed8; font-weight: 600; background-color: #eff6ff; }
-        .nav-btn-active { background-color: #eff6ff; color: #4f46e5; border: 1px solid #c7d2fe; }
+        
+        /* Sidebar Styles */
+        .sidebar-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; transition: all 0.2s; color: #64748b; font-weight: 500; cursor: pointer; }
+        .sidebar-link:hover { background-color: #f1f5f9; color: #334155; }
+        .sidebar-link.active { background-color: #eff6ff; color: #4f46e5; font-weight: 600; }
+        .sidebar-link i { width: 1.25rem; text-align: center; }
+
         .dropdown-menu { transform-origin: top right; transition: all 0.2s ease-out; transform: scale(0.95); opacity: 0; pointer-events: none; }
         .dropdown-menu.show { transform: scale(1); opacity: 1; pointer-events: auto; }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
     </style>
 </head>
-<body class="text-slate-600">
+<body class="text-slate-600 h-screen overflow-hidden flex">
 
-    <nav class="bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-40">
-        <div class="flex items-center gap-6">
-            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-3">
+    <aside id="sidebar" class="bg-white border-r border-slate-200 w-64 flex-shrink-0 flex flex-col h-full absolute md:relative z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-xl md:shadow-none">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-indigo-200 shadow-lg">
                     <i class="fa-solid fa-ticket"></i>
                 </div>
                 Panel Admin
             </h1>
-            
-            <div class="hidden md:flex bg-slate-100 p-1 rounded-lg">
-                <button onclick="switchView('dashboard')" id="btn-view-dashboard" class="nav-btn-active px-4 py-1.5 rounded-md text-sm font-semibold transition flex items-center gap-2">
-                    <i class="fa-solid fa-list-check"></i> Gestión Órdenes
-                </button>
-                <button onclick="switchView('settings')" id="btn-view-settings" class="px-4 py-1.5 rounded-md text-sm font-semibold text-slate-500 hover:text-slate-700 transition flex items-center gap-2">
-                    <i class="fa-solid fa-gear"></i> Configuración Sorteo
-                </button>
-            </div>
+            <button onclick="toggleSidebar()" class="md:hidden text-slate-400"><i class="fa-solid fa-times"></i></button>
         </div>
-        
-        <div class="flex items-center gap-4">
-            <a href="index.html" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-sm font-semibold flex items-center gap-2">
-                Ver Index <i class="fa-solid fa-arrow-up-right-from-square"></i>
+
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+            <p class="px-3 text-xs font-bold text-slate-400 uppercase mb-2 mt-2">Principal</p>
+            <div onclick="switchView('dashboard')" id="nav-dashboard" class="sidebar-link active">
+                <i class="fa-solid fa-list-check"></i> Gestión de Órdenes
+            </div>
+            
+            <p class="px-3 text-xs font-bold text-slate-400 uppercase mb-2 mt-6">Configuración</p>
+            <div onclick="switchView('active-raffle')" id="nav-active-raffle" class="sidebar-link">
+                <i class="fa-solid fa-sliders"></i> Sorteo Activo
+            </div>
+            <div onclick="switchView('payments')" id="nav-payments" class="sidebar-link">
+                <i class="fa-solid fa-wallet"></i> Métodos de Pago
+            </div>
+
+            <p class="px-3 text-xs font-bold text-red-400 uppercase mb-2 mt-6">Zona de Riesgo</p>
+            <div onclick="switchView('new-raffle')" id="nav-new-raffle" class="sidebar-link hover:bg-red-50 hover:text-red-600">
+                <i class="fa-solid fa-plus-circle"></i> Nuevo Sorteo
+            </div>
+        </nav>
+
+        <div class="p-4 border-t border-slate-100">
+            <a href="index.html" target="_blank" class="flex items-center gap-2 text-sm text-indigo-600 font-semibold hover:underline mb-3 px-3">
+                <i class="fa-solid fa-external-link-alt"></i> Ver Página Web
             </a>
-            <button onclick="logout()" class="text-slate-500 hover:text-red-600 font-medium text-sm flex items-center gap-2 transition px-4 py-2 hover:bg-red-50 rounded-lg">
-                <i class="fa-solid fa-right-from-bracket"></i> Salir
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-600 py-2 rounded-lg font-bold text-sm hover:bg-slate-200 transition">
+                <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
             </button>
         </div>
-    </nav>
+    </aside>
 
-    <div id="view-dashboard" class="px-6 py-8 max-w-[1600px] mx-auto fade-in">
-        <div class="mb-6">
-            <h2 class="text-2xl font-bold text-slate-800" id="raffle-title">Cargando sorteo...</h2>
-            <p class="text-sm text-slate-500">Resumen en tiempo real</p>
-        </div>
+    <main class="flex-1 flex flex-col h-full relative bg-slate-50/50">
+        <header class="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center">
+            <h2 class="font-bold text-slate-700">Panel de Administración</h2>
+            <button onclick="toggleSidebar()" class="p-2 bg-slate-100 rounded-lg text-slate-600"><i class="fa-solid fa-bars"></i></button>
+        </header>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition">
-                <div>
-                    <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Disponibles</p>
-                    <p class="text-slate-800 font-bold text-3xl" id="stat-available">--</p>
-                </div>
-                <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600 group-hover:scale-110 transition">
-                    <i class="fa-solid fa-ticket text-xl"></i>
-                </div>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition">
-                <div>
-                    <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Total Vendidos</p>
-                    <p class="text-emerald-600 font-bold text-3xl" id="stat-sold">--</p>
-                </div>
-                <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600 group-hover:scale-110 transition">
-                    <i class="fa-solid fa-check-double text-xl"></i>
-                </div>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition relative overflow-hidden">
-                <div>
-                    <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Por Revisar</p>
-                    <p class="text-amber-500 font-bold text-3xl" id="stat-pending">--</p>
-                </div>
-                <div class="bg-amber-50 p-3 rounded-xl text-amber-500 group-hover:scale-110 transition z-10">
-                    <i class="fa-solid fa-clock text-xl"></i>
-                </div>
-            </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition relative overflow-hidden">
-                <div class="absolute top-3 right-3 flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">En Compra (Live)</p>
-                    <p class="text-rose-500 font-bold text-3xl" id="stat-blocked">--</p>
-                </div>
-                <div class="bg-rose-50 p-3 rounded-xl text-rose-500 group-hover:scale-110 transition">
-                    <i class="fa-solid fa-cart-shopping text-xl"></i>
-                </div>
-            </div>
-        </div>
+        <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scroll">
 
-        <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
-            <div class="flex border-b border-slate-100">
-                <button onclick="switchTab('pendiente_validacion')" id="tab-pendientes" class="flex-1 py-5 text-center text-slate-500 hover:bg-slate-50 transition font-medium text-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-hourglass-half"></i> Pendientes
-                </button>
-                <button onclick="switchTab('aprobado')" id="tab-aprobados" class="flex-1 py-5 text-center text-slate-500 hover:bg-slate-50 transition font-medium text-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-circle-check"></i> Aprobados
-                </button>
-                <button onclick="switchTab('rechazado')" id="tab-rechazados" class="flex-1 py-5 text-center text-slate-500 hover:bg-slate-50 transition font-medium text-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-circle-xmark"></i> Rechazados
-                </button>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-100">
-                        <tr>
-                            <th class="px-6 py-4 font-semibold">ID</th>
-                            <th class="px-6 py-4 font-semibold">Cliente</th>
-                            <th class="px-6 py-4 font-semibold">Contacto</th>
-                            <th class="px-6 py-4 font-semibold">Método</th>
-                            <th class="px-6 py-4 font-semibold text-center">Cant.</th>
-                            <th class="px-6 py-4 font-semibold">Total</th>
-                            <th class="px-6 py-4 font-semibold">Ref</th>
-                            <th class="px-6 py-4 font-semibold text-center">Foto</th>
-                            <th class="px-6 py-4 font-semibold">Fecha</th>
-                            <th class="px-6 py-4 font-semibold text-right">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="orders-table-body" class="divide-y divide-slate-50">
-                        <tr><td colspan="10" class="text-center py-12 text-slate-400">Cargando datos...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+            <div id="view-dashboard" class="fade-in">
+                <div class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800" id="raffle-title">Cargando...</h2>
+                        <p class="text-sm text-slate-500">Gestión de ventas en tiempo real</p>
+                    </div>
+                    <div class="flex gap-2 text-xs font-mono bg-white px-3 py-1 rounded border border-slate-200">
+                        <span class="text-slate-400">ID Sorteo:</span> <span id="raffle-id-display">...</span>
+                    </div>
+                </div>
 
-    <div id="view-settings" class="px-6 py-8 max-w-5xl mx-auto hidden">
-        
-        <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <i class="fa-solid fa-sliders"></i> Configuración del Sorteo Activo
-        </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div><p class="text-xs text-slate-400 uppercase font-bold">Disponibles</p><p class="text-slate-800 font-bold text-2xl" id="stat-available">--</p></div>
+                        <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-ticket"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div><p class="text-xs text-slate-400 uppercase font-bold">Vendidos</p><p class="text-emerald-600 font-bold text-2xl" id="stat-sold">--</p></div>
+                        <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fa-solid fa-check"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div><p class="text-xs text-slate-400 uppercase font-bold">Por Validar</p><p class="text-amber-500 font-bold text-2xl" id="stat-pending">--</p></div>
+                        <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center"><i class="fa-solid fa-clock"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between relative overflow-hidden">
+                        <div><p class="text-xs text-slate-400 uppercase font-bold">En Proceso</p><p class="text-rose-500 font-bold text-2xl" id="stat-blocked">--</p></div>
+                        <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center"><i class="fa-solid fa-cart-shopping"></i></div>
+                    </div>
+                </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
-            <h3 class="text-lg font-bold text-indigo-700 mb-4 pb-2 border-b border-slate-100">1. Datos Generales</h3>
-            <form id="form-config-sorteo" class="space-y-6">
-                <input type="hidden" id="conf-id">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="flex border-b border-slate-100">
+                        <button onclick="switchTab('pendiente_validacion')" id="tab-pendientes" class="flex-1 py-4 text-center text-sm font-semibold text-slate-500 hover:bg-slate-50 transition">Pendientes</button>
+                        <button onclick="switchTab('aprobado')" id="tab-aprobados" class="flex-1 py-4 text-center text-sm font-semibold text-slate-500 hover:bg-slate-50 transition">Aprobados</button>
+                        <button onclick="switchTab('rechazado')" id="tab-rechazados" class="flex-1 py-4 text-center text-sm font-semibold text-slate-500 hover:bg-slate-50 transition">Rechazados</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
+                                <tr>
+                                    <th class="px-6 py-3">Cliente</th>
+                                    <th class="px-6 py-3">Contacto</th>
+                                    <th class="px-6 py-3 text-center">Cant.</th>
+                                    <th class="px-6 py-3">Total</th>
+                                    <th class="px-6 py-3">Ref</th>
+                                    <th class="px-6 py-3 text-center">Comprobante</th>
+                                    <th class="px-6 py-3 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table-body" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-active-raffle" class="hidden fade-in max-w-4xl mx-auto">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-200 pb-4">Editar Sorteo Activo</h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-2">Título del Sorteo</label>
-                        <input type="text" id="conf-titulo" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-2">Lotería / Juego</label>
-                        <input type="text" id="conf-loteria" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-6">
+                    <form id="form-config-sorteo" class="space-y-5">
+                        <input type="hidden" id="conf-id">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Título del Sorteo</label>
+                                <input type="text" id="conf-titulo" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Lotería / Juego</label>
+                                <input type="text" id="conf-loteria" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                        </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-2">Precio Boleto (Bs)</label>
-                        <input type="number" step="0.01" id="conf-precio" class="w-full border border-slate-300 rounded-lg p-3 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-2">Fecha del Sorteo</label>
-                        <input type="date" id="conf-fecha" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-2">Estado</label>
-                        <select id="conf-estado" class="w-full border border-slate-300 rounded-lg p-3 bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <option value="activo">🟢 Activo</option>
-                            <option value="finalizado">🔴 Finalizado</option>
-                        </select>
-                    </div>
-                </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Precio Boleto (Bs)</label>
+                                <input type="number" step="0.01" id="conf-precio" class="w-full border border-slate-300 rounded-lg p-2.5 font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Fecha Sorteo</label>
+                                <input type="date" id="conf-fecha" class="w-full border border-slate-300 rounded-lg p-2.5">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Estado</label>
+                                <select id="conf-estado" class="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50">
+                                    <option value="activo">Activo</option>
+                                    <option value="finalizado">Finalizado</option>
+                                </select>
+                            </div>
+                        </div>
 
-                <div>
-                    <label class="block text-sm font-bold text-slate-600 mb-2">Flyer / Banner Promocional</label>
-                    <div class="flex items-center gap-4">
-                        <img id="conf-img-preview" src="" class="h-24 w-36 object-cover rounded-lg border border-slate-200 bg-slate-100">
-                        <input type="file" id="conf-file" accept="image/*" class="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                    </div>
-                </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Flyer Promocional</label>
+                            <div class="flex items-start gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <img id="conf-img-preview" src="" class="h-32 w-auto object-contain rounded-lg shadow-sm bg-white">
+                                <div class="flex-1">
+                                    <input type="file" id="conf-file" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 mb-2">
+                                    <p class="text-xs text-slate-400">Sube una nueva imagen para reemplazar la actual.</p>
+                                </div>
+                            </div>
+                        </div>
 
-                <div class="flex justify-end pt-4">
-                    <button type="button" onclick="saveSorteoConfig()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition flex items-center gap-2">
-                        <i class="fa-solid fa-save"></i> Guardar Cambios
+                        <div class="flex justify-end pt-4">
+                            <button type="button" onclick="saveActiveRaffle()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-lg hover:bg-indigo-700 transition flex items-center gap-2">
+                                <i class="fa-solid fa-save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="view-payments" class="hidden fade-in max-w-5xl mx-auto">
+                <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-200">
+                    <h2 class="text-2xl font-bold text-slate-800">Métodos de Pago</h2>
+                    <button onclick="openPaymentModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700 transition shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Agregar Método
                     </button>
                 </div>
-            </form>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
-            <h3 class="text-lg font-bold text-blue-700 mb-4 pb-2 border-b border-slate-100">2. Gestión de Tickets (Stock)</h3>
-            <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                <div>
-                    <h4 class="font-bold text-blue-900">Generar Stock Inicial</h4>
-                    <p class="text-sm text-blue-600">Si el Index dice "Agotado", es porque faltan tickets. Pulsa aquí para crear los números del 000 al 999.</p>
+                
+                <div id="payments-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <p class="text-center text-slate-400 col-span-3">Cargando...</p>
                 </div>
-                <button onclick="generateTickets()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generar Tickets (000-999)
-                </button>
             </div>
-            <div class="mt-4 text-center text-xs text-slate-400">
-                Tickets actuales en base de datos para este sorteo: <span id="ticket-count-debug" class="font-mono font-bold">Calculando...</span>
-            </div>
-        </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div class="flex justify-between items-center mb-6 pb-2 border-b border-slate-100">
-                <h3 class="text-lg font-bold text-emerald-700">3. Métodos de Pago</h3>
-                <button onclick="openPaymentModal()" class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-100 transition flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i> Agregar Nuevo
-                </button>
-            </div>
-            
-            <div id="payment-methods-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <p class="text-slate-400 col-span-3 text-center py-4">Cargando métodos de pago...</p>
-            </div>
-        </div>
+            <div id="view-new-raffle" class="hidden fade-in max-w-2xl mx-auto mt-10">
+                <div class="bg-white rounded-2xl shadow-xl border border-red-100 overflow-hidden">
+                    <div class="bg-red-50 p-6 border-b border-red-100 flex items-center gap-4">
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div>
+                            <h2 class="text-xl font-bold text-red-700">Crear Nuevo Sorteo</h2>
+                            <p class="text-sm text-red-500">Esta acción archivará el sorteo actual y generará una nueva base de tickets.</p>
+                        </div>
+                    </div>
+                    
+                    <form id="form-new-raffle" class="p-8 space-y-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Nombre del Nuevo Sorteo</label>
+                            <input type="text" id="new-titulo" placeholder="Ej: Gran Rifa Navideña" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-red-500 outline-none">
+                        </div>
 
-        <div class="mt-12 p-6 border border-red-200 rounded-2xl bg-red-50">
-            <h3 class="text-red-800 font-bold mb-2">Zona de Peligro</h3>
-            <p class="text-red-600 text-sm mb-4">Estas acciones afectan la disponibilidad global de la rifa.</p>
-            <div class="flex gap-4">
-                <button onclick="createNewSorteo()" class="bg-white border border-red-300 text-red-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-red-100 transition">
-                    <i class="fa-solid fa-plus-circle"></i> Crear Nuevo Sorteo (Resetear)
-                </button>
-            </div>
-        </div>
-    </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Precio (Bs)</label>
+                                <input type="number" id="new-precio" step="0.01" class="w-full border border-slate-300 rounded-lg p-3">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Fecha</label>
+                                <input type="date" id="new-fecha" class="w-full border border-slate-300 rounded-lg p-3">
+                            </div>
+                        </div>
 
-    <div id="modal-proof" class="fixed inset-0 bg-slate-900/90 hidden z-[70] flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-2 relative shadow-2xl">
-            <button onclick="closeModal('modal-proof')" class="absolute -top-4 -right-4 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-red-700 transition z-50 cursor-pointer">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
-            <img id="proof-image" src="" alt="Comprobante" class="w-full h-auto rounded-xl max-h-[85vh] object-contain mx-auto bg-slate-100">
-            <div class="text-center mt-3 pb-1">
-                <a id="proof-download" href="#" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-semibold text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-download"></i> Descargar Original</a>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Cantidad de Tickets (Rango)</label>
+                            <select id="new-rango" class="w-full border border-slate-300 rounded-lg p-3 bg-slate-50 font-mono text-sm">
+                                <option value="100">00 - 99 (100 Tickets)</option>
+                                <option value="1000">000 - 999 (1.000 Tickets)</option>
+                                <option value="10000">0000 - 9999 (10.000 Tickets)</option>
+                            </select>
+                            <p class="text-xs text-slate-400 mt-1">Los tickets se generan automáticamente al crear.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Lotería</label>
+                            <input type="text" id="new-loteria" placeholder="Ej: Zulia 7:00 PM" class="w-full border border-slate-300 rounded-lg p-3">
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="button" onclick="processNewRaffle()" class="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg shadow-red-200">
+                                Crear Sorteo y Generar Tickets
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
+
         </div>
-    </div>
+    </main>
 
     <div id="modal-edit" class="fixed inset-0 bg-slate-900/60 hidden z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl relative my-8 max-h-[90vh] flex flex-col">
@@ -251,28 +266,28 @@
             <form id="form-edit" class="p-6 space-y-4 overflow-y-auto">
                 <input type="hidden" id="edit-id">
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="edit-nombre" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula</label><input type="text" id="edit-cedula" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label><input type="text" id="edit-nombre" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula</label><input type="text" id="edit-cedula" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none"></div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label><input type="text" id="edit-telefono" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label><input type="email" id="edit-email" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label><input type="text" id="edit-telefono" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label><input type="email" id="edit-email" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none"></div>
                 </div>
                 <hr class="border-slate-100 my-2">
                 <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
                     <label class="block text-xs font-bold text-indigo-800 uppercase mb-1 flex justify-between">
-                        <span>Cantidad de Tickets</span><span class="text-[10px] bg-indigo-200 px-2 py-0.5 rounded text-indigo-700">⚠️ Auto-cálculo</span>
+                        <span>Cantidad de Tickets</span>
                     </label>
                     <div class="flex gap-2">
-                        <input type="number" id="edit-cantidad" class="w-full border border-indigo-200 rounded-lg p-2.5 text-sm font-bold text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                        <input type="number" id="edit-cantidad" class="w-full border border-indigo-200 rounded-lg p-2.5 text-sm font-bold text-indigo-900 outline-none bg-white">
                         <div class="bg-white border border-indigo-200 px-3 py-2 rounded-lg flex flex-col justify-center items-center min-w-[80px]">
                             <span class="text-[10px] text-slate-400 uppercase">Unitario</span><span class="text-xs font-bold text-indigo-600" id="display-unit-price">Bs. 0</span>
                         </div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Monto Total (Bs)</label><input type="number" step="0.01" id="edit-monto" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold bg-slate-50"></div>
-                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Referencia</label><input type="text" id="edit-referencia" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-mono"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Monto Total</label><input type="number" step="0.01" id="edit-monto" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm font-bold bg-slate-50"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Referencia</label><input type="text" id="edit-referencia" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm font-mono"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Actualizar Comprobante</label>
@@ -281,7 +296,7 @@
             </form>
             <div class="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3 mt-auto">
                 <button onclick="closeModal('modal-edit')" class="px-5 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 transition">Cancelar</button>
-                <button onclick="saveEditOrder()" class="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 transition flex items-center gap-2"><i class="fa-solid fa-save"></i> Guardar Cambios</button>
+                <button onclick="saveEditOrder()" class="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 transition flex items-center gap-2"><i class="fa-solid fa-save"></i> Guardar</button>
             </div>
         </div>
     </div>
@@ -291,21 +306,29 @@
             <div class="p-5 border-b border-slate-100"><h3 class="font-bold text-slate-800">Método de Pago</h3></div>
             <div class="p-5 space-y-3">
                 <input type="hidden" id="pay-id">
-                <input type="text" id="pay-banco" placeholder="Banco (Ej: Banco de Venezuela)" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
-                <input type="text" id="pay-titular" placeholder="Titular" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
-                <input type="text" id="pay-cedula" placeholder="Cédula" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
-                <input type="text" id="pay-telefono" placeholder="Teléfono" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
-                <select id="pay-tipo" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
+                <input type="text" id="pay-banco" placeholder="Banco (Ej: Venezuela)" class="w-full border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-indigo-500">
+                <input type="text" id="pay-titular" placeholder="Titular" class="w-full border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-indigo-500">
+                <input type="text" id="pay-cedula" placeholder="Cédula/RIF" class="w-full border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-indigo-500">
+                <input type="text" id="pay-telefono" placeholder="Teléfono/Cuenta" class="w-full border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-indigo-500">
+                <select id="pay-tipo" class="w-full border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-indigo-500 bg-white">
                     <option value="pago_movil">Pago Móvil</option>
                     <option value="transferencia">Transferencia</option>
-                    <option value="cuenta_corriente">Cuenta Corriente</option>
-                    <option value="cuenta_ahorro">Cuenta Ahorro</option>
+                    <option value="zelle">Zelle</option>
+                    <option value="binance">Binance</option>
                 </select>
             </div>
             <div class="p-5 flex justify-end gap-2 bg-slate-50 rounded-b-2xl">
-                <button onclick="closeModal('modal-payment')" class="px-4 py-2 text-sm text-slate-500">Cancelar</button>
-                <button onclick="savePaymentMethod()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Guardar</button>
+                <button onclick="closeModal('modal-payment')" class="px-4 py-2 text-sm text-slate-500 font-bold">Cancelar</button>
+                <button onclick="savePaymentMethod()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-emerald-700">Guardar</button>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-proof" class="fixed inset-0 bg-slate-900/90 hidden z-[90] flex items-center justify-center p-4">
+        <div class="relative w-full max-w-2xl">
+            <button onclick="closeModal('modal-proof')" class="absolute -top-10 right-0 text-white text-3xl hover:text-red-400">&times;</button>
+            <img id="proof-image" src="" class="w-full h-auto rounded-xl max-h-[80vh] object-contain bg-black/50">
+            <div class="text-center mt-4"><a id="proof-download" href="#" target="_blank" class="text-white underline text-sm">Descargar Original</a></div>
         </div>
     </div>
 
