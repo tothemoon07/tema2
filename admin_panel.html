@@ -6,151 +6,221 @@
     <title>Panel Admin | Capi Rifas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .font-mono { font-family: 'Roboto Mono', monospace; }
-        .tab-active { border-bottom: 3px solid; font-weight: bold; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #1d4ed8; font-weight: 600; background-color: #eff6ff; }
         
-        /* Estilos para la tabla tipo Excel */
-        th { white-space: nowrap; }
-        td { vertical-align: middle; }
+        /* Dropdown Menu Animation */
+        .dropdown-menu { transform-origin: top right; transition: all 0.2s ease-out; transform: scale(0.95); opacity: 0; pointer-events: none; }
+        .dropdown-menu.show { transform: scale(1); opacity: 1; pointer-events: auto; }
+        
+        /* Modal Transition */
+        .modal-bg { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="text-slate-600">
 
-    <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center sticky top-0 z-30">
+    <nav class="bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-30">
         <div class="flex items-center gap-4">
-            <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <i class="fa-solid fa-ticket text-red-600"></i>
-                Panel Administrativo
+            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-3">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-indigo-200 shadow-lg">
+                    <i class="fa-solid fa-ticket"></i>
+                </div>
+                Panel Admin
             </h1>
-            <div class="h-6 w-px bg-gray-300"></div>
-            <a href="index.html" target="_blank" class="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition bg-blue-50 px-3 py-1 rounded-full text-sm font-medium">
-                <span id="raffle-title">Cargando rifa...</span>
-                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            <div class="h-6 w-px bg-slate-200 mx-2"></div>
+            <a href="index.html" target="_blank" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 transition bg-indigo-50 px-3 py-1.5 rounded-full text-sm font-semibold border border-indigo-100">
+                <span id="raffle-title">Cargando...</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
             </a>
         </div>
-        <button onclick="logout()" class="text-gray-500 hover:text-red-600 font-medium text-sm flex items-center gap-2 transition">
+        <button onclick="logout()" class="text-slate-500 hover:text-red-600 font-medium text-sm flex items-center gap-2 transition px-4 py-2 hover:bg-red-50 rounded-lg">
             <i class="fa-solid fa-right-from-bracket"></i> Salir
         </button>
     </nav>
 
-    <div class="bg-yellow-50 border-b border-yellow-100 px-6 py-4">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="px-6 py-8 max-w-[1600px] mx-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-blue-200">
-                <div class="flex justify-between">
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase font-bold">Disponibles</p>
-                        <p class="text-blue-600 font-bold text-2xl" id="stat-available">--</p>
-                    </div>
-                    <div class="bg-blue-100 p-2 rounded-full h-10 w-10 flex items-center justify-center text-blue-600">
-                        <i class="fa-solid fa-ticket"></i>
-                    </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition">
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Disponibles</p>
+                    <p class="text-slate-800 font-bold text-3xl" id="stat-available">--</p>
+                </div>
+                <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-ticket text-xl"></i>
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-green-200">
-                <div class="flex justify-between">
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase font-bold">Total Vendidos</p>
-                        <p class="text-green-600 font-bold text-2xl" id="stat-sold">--</p>
-                    </div>
-                    <div class="bg-green-100 p-2 rounded-full h-10 w-10 flex items-center justify-center text-green-600">
-                        <i class="fa-solid fa-check-double"></i>
-                    </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition">
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Total Vendidos</p>
+                    <p class="text-emerald-600 font-bold text-3xl" id="stat-sold">--</p>
+                </div>
+                <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-check-double text-xl"></i>
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-yellow-200">
-                <div class="flex justify-between">
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase font-bold">Ventas Pendientes</p>
-                        <p class="text-yellow-600 font-bold text-2xl" id="stat-pending">--</p>
-                        <p class="text-[10px] text-gray-400">Clientes esperando</p>
-                    </div>
-                    <div class="bg-yellow-100 p-2 rounded-full h-10 w-10 flex items-center justify-center text-yellow-600">
-                        <i class="fa-solid fa-clock"></i>
-                    </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition relative overflow-hidden">
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Por Revisar</p>
+                    <p class="text-amber-500 font-bold text-3xl" id="stat-pending">--</p>
+                </div>
+                <div class="bg-amber-50 p-3 rounded-xl text-amber-500 group-hover:scale-110 transition z-10">
+                    <i class="fa-solid fa-clock text-xl"></i>
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-red-200 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-1">
-                    <span class="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition relative overflow-hidden">
+                <div class="absolute top-3 right-3 flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
                 </div>
-                <div class="flex justify-between">
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase font-bold">Tickets Bloqueados</p>
-                        <p class="text-red-600 font-bold text-2xl" id="stat-blocked">--</p>
-                        <p class="text-[10px] text-gray-400">En compra + Revisión</p>
-                    </div>
-                    <div class="bg-red-100 p-2 rounded-full h-10 w-10 flex items-center justify-center text-red-600">
-                        <i class="fa-solid fa-lock"></i>
-                    </div>
+                <div>
+                    <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">En Compra (Live)</p>
+                    <p class="text-rose-500 font-bold text-3xl" id="stat-blocked">--</p>
+                </div>
+                <div class="bg-rose-50 p-3 rounded-xl text-rose-500 group-hover:scale-110 transition">
+                    <i class="fa-solid fa-cart-shopping text-xl"></i>
                 </div>
             </div>
 
         </div>
-    </div>
 
-    <div class="max-w-[98%] mx-auto p-4">
-        
-        <div class="flex border-b border-gray-200 mb-6 bg-white rounded-t-lg shadow-sm">
-            <button onclick="switchTab('pendiente_validacion')" id="tab-pendientes" class="flex-1 py-4 text-center text-gray-600 hover:bg-gray-50 tab-active border-gray-500 text-gray-800 transition">
-                <i class="fa-solid fa-clock text-gray-400 mr-2"></i> Pendientes
-            </button>
-            <button onclick="switchTab('aprobado')" id="tab-aprobados" class="flex-1 py-4 text-center text-gray-600 hover:bg-green-50 hover:text-green-700 transition">
-                <i class="fa-solid fa-check-circle text-green-500 mr-2"></i> Aprobados
-            </button>
-            <button onclick="switchTab('rechazado')" id="tab-rechazados" class="flex-1 py-4 text-center text-gray-600 hover:bg-red-50 hover:text-red-700 transition">
-                <i class="fa-solid fa-circle-xmark text-red-500 mr-2"></i> Rechazados
-            </button>
-        </div>
+        <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+            
+            <div class="flex border-b border-slate-100">
+                <button onclick="switchTab('pendiente_validacion')" id="tab-pendientes" class="flex-1 py-5 text-center text-slate-500 hover:bg-slate-50 transition font-medium text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-hourglass-half"></i> Pendientes
+                </button>
+                <button onclick="switchTab('aprobado')" id="tab-aprobados" class="flex-1 py-5 text-center text-slate-500 hover:bg-slate-50 transition font-medium text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-circle-check"></i> Aprobados
+                </button>
+                <button onclick="switchTab('rechazado')" id="tab-rechazados" class="flex-1 py-5 text-center text-slate-500 hover:bg-slate-50 transition font-medium text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-circle-xmark"></i> Rechazados
+                </button>
+            </div>
 
-        <div class="bg-white rounded-b-lg shadow-lg overflow-hidden border border-gray-200">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b border-gray-300">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-100">
                         <tr>
-                            <th class="px-4 py-3 border-r border-gray-200">ID</th>
-                            <th class="px-4 py-3 border-r border-gray-200">Cliente</th>
-                            <th class="px-4 py-3 border-r border-gray-200">Teléfono</th>
-                            <th class="px-4 py-3 border-r border-gray-200">Correo</th>
-                            <th class="px-4 py-3 border-r border-gray-200">Cédula</th>
-                            <th class="px-4 py-3 border-r border-gray-200 text-center">Tickets</th>
-                            <th class="px-4 py-3 border-r border-gray-200">Pago</th>
-                            <th class="px-4 py-3 border-r border-gray-200">Monto</th>
-                            <th class="px-4 py-3 border-r border-gray-200">Referencia</th>
-                            <th class="px-4 py-3 border-r border-gray-200 text-center">Foto</th>
-                            <th class="px-4 py-3 border-r border-gray-200">Fecha</th>
-                            <th class="px-4 py-3 text-right sticky right-0 bg-gray-100 z-10">Acciones</th>
+                            <th class="px-6 py-4 font-semibold">ID</th>
+                            <th class="px-6 py-4 font-semibold">Cliente</th>
+                            <th class="px-6 py-4 font-semibold">Contacto</th>
+                            <th class="px-6 py-4 font-semibold">Método</th>
+                            <th class="px-6 py-4 font-semibold text-center">Cant.</th>
+                            <th class="px-6 py-4 font-semibold">Total</th>
+                            <th class="px-6 py-4 font-semibold">Ref</th>
+                            <th class="px-6 py-4 font-semibold text-center">Foto</th>
+                            <th class="px-6 py-4 font-semibold">Fecha</th>
+                            <th class="px-6 py-4 font-semibold text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="orders-table-body" class="divide-y divide-gray-100">
+                    <tbody id="orders-table-body" class="divide-y divide-slate-50">
                         <tr>
-                            <td colspan="12" class="text-center py-8 text-gray-400">Cargando órdenes...</td>
+                            <td colspan="10" class="text-center py-12 text-slate-400">
+                                <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>Cargando datos...
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <div class="px-4 py-3 bg-gray-50 border-t flex justify-end">
-                <span class="text-xs text-gray-400">Mostrando últimos resultados</span>
+            
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                <span class="text-xs text-slate-400 font-medium">Panel V2.0 - Modo Avanzado</span>
+                <span class="text-xs text-slate-400">Mostrando últimos registros</span>
             </div>
         </div>
     </div>
 
-    <div id="modal-proof" class="fixed inset-0 bg-black bg-opacity-80 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg max-w-2xl w-full p-2 relative">
-            <button onclick="closeModal('modal-proof')" class="absolute -top-4 -right-4 bg-red-600 text-white rounded-full p-2 hover:bg-red-700">
+    <div id="modal-proof" class="fixed inset-0 bg-slate-900/80 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300 opacity-0 pointer-events-none" style="opacity: 0;">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-2 relative shadow-2xl transform scale-95 transition-all duration-300">
+            <button onclick="closeModal('modal-proof')" class="absolute -top-4 -right-4 bg-slate-800 text-white rounded-full p-2 hover:bg-black shadow-lg z-10 w-10 h-10 flex items-center justify-center transition">
                 <i class="fa-solid fa-times"></i>
             </button>
-            <img id="proof-image" src="" alt="Comprobante" class="w-full h-auto rounded max-h-[80vh] object-contain mx-auto">
-            <div class="text-center mt-2">
-                <a id="proof-download" href="#" target="_blank" class="text-blue-600 underline text-sm">Ver original / Descargar</a>
+            <img id="proof-image" src="" alt="Comprobante" class="w-full h-auto rounded-xl max-h-[80vh] object-contain mx-auto bg-slate-100">
+            <div class="text-center mt-3 pb-1">
+                <a id="proof-download" href="#" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-semibold text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-download"></i> Descargar Imagen Original
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edit" class="fixed inset-0 bg-slate-900/60 hidden z-[60] flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl relative my-8">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                <h3 class="font-bold text-slate-800 text-lg">Editar Orden <span id="edit-order-id" class="text-slate-400 font-mono text-sm ml-2">#0000</span></h3>
+                <button onclick="closeModal('modal-edit')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            
+            <form id="form-edit" class="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scroll">
+                <input type="hidden" id="edit-id">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label>
+                        <input type="text" id="edit-nombre" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula</label>
+                        <input type="text" id="edit-cedula" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+                        <input type="text" id="edit-telefono" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                        <input type="email" id="edit-email" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <hr class="border-slate-100 my-2">
+
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                    <label class="block text-xs font-bold text-indigo-800 uppercase mb-1 flex justify-between">
+                        <span>Cantidad de Tickets</span>
+                        <span class="text-[10px] bg-indigo-200 px-2 py-0.5 rounded text-indigo-700">⚠️ Regenerará tickets</span>
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="number" id="edit-cantidad" class="w-full border border-indigo-200 rounded-lg p-2.5 text-sm font-bold text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                        <button type="button" class="bg-indigo-600 text-white px-3 rounded-lg text-xs font-bold shadow-md cursor-default pointer-events-none">Tickets</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Monto (Bs)</label>
+                        <input type="number" step="0.01" id="edit-monto" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Referencia</label>
+                        <input type="text" id="edit-referencia" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Actualizar Comprobante</label>
+                    <input type="file" id="edit-file" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+
+            </form>
+            
+            <div class="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+                <button onclick="closeModal('modal-edit')" class="px-5 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 transition">Cancelar</button>
+                <button onclick="saveEditOrder()" class="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 transition flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i> Guardar Cambios
+                </button>
             </div>
         </div>
     </div>
