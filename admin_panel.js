@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN PRO: EDICIÓN AVANZADA Y REGENERACIÓN
+// admin_panel.js - CORREGIDO: MODAL Y CÁLCULO DE PRECIO
 
 // ⚠️ TUS CLAVES
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
@@ -9,7 +9,8 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentTab = 'pendiente_validacion';
 let refreshInterval;
-let activeDropdown = null; // Para controlar menús abiertos
+let activeDropdown = null;
+let currentUnitPrice = 0; // 🔥 Variable para almacenar el precio por ticket de la orden actual
 
 function safeSetText(id, text) {
     const el = document.getElementById(id);
@@ -23,7 +24,6 @@ async function checkAuth() {
         window.location.href = 'admin_login.html';
     } else {
         loadDashboardData();
-        // Cierra dropdowns al hacer click fuera
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.relative')) closeAllDropdowns();
         });
@@ -71,7 +71,7 @@ window.switchTab = function(tab) {
     loadOrders(tab);
 }
 
-// 3. CARGAR TABLA (ESTILO MODERNO)
+// 3. CARGAR TABLA
 async function loadOrders(estado) {
     const tbody = document.getElementById('orders-table-body');
     tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-2xl"></i></td></tr>`;
@@ -88,7 +88,6 @@ async function loadOrders(estado) {
     ordenes.forEach(orden => {
         const fecha = new Date(orden.creado_en).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' });
         
-        // MENÚ CONTEXTUAL DINÁMICO
         let menuItems = `
             <button onclick="openEditModal('${orden.id}')" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition">
                 <i class="fa-solid fa-pen-to-square w-5"></i> Editar Info
@@ -156,7 +155,7 @@ async function loadOrders(estado) {
     tbody.innerHTML = html;
 }
 
-// 4. LÓGICA DE DROPDOWNS
+// 4. DROPDOWNS
 window.toggleDropdown = function(id, event) {
     event.stopPropagation();
     closeAllDropdowns();
@@ -168,10 +167,14 @@ function closeAllDropdowns() {
     document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('show'));
 }
 
-// 5. EDICIÓN AVANZADA
+// 5. EDICIÓN AVANZADA + CÁLCULO PRECIO
 window.openEditModal = async function(id) {
     const { data: orden } = await supabaseClient.from('ordenes').select('*').eq('id', id).single();
     if (!orden) return;
+
+    // Calcular precio unitario original
+    currentUnitPrice = orden.monto_total / orden.cantidad_boletos;
+    if(isNaN(currentUnitPrice)) currentUnitPrice = 700; // Fallback por seguridad
 
     // Llenar datos
     document.getElementById('edit-id').value = orden.id;
@@ -180,17 +183,31 @@ window.openEditModal = async function(id) {
     document.getElementById('edit-telefono').value = orden.telefono;
     document.getElementById('edit-email').value = orden.email;
     document.getElementById('edit-cantidad').value = orden.cantidad_boletos;
-    document.getElementById('edit-cantidad').dataset.original = orden.cantidad_boletos; // Guardar original para comparar
+    document.getElementById('edit-cantidad').dataset.original = orden.cantidad_boletos;
     document.getElementById('edit-monto').value = orden.monto_total;
     document.getElementById('edit-referencia').value = orden.referencia_pago;
     document.getElementById('edit-order-id').innerText = '#' + orden.id.slice(0,6);
-    document.getElementById('edit-file').value = ''; // Reset file input
+    document.getElementById('edit-file').value = '';
+    
+    // Mostrar Precio Unitario en la UI
+    document.getElementById('display-unit-price').innerText = `Bs. ${currentUnitPrice.toFixed(2)}`;
 
     // Mostrar Modal
-    const modal = document.getElementById('modal-edit');
-    modal.classList.remove('hidden');
-    modal.querySelector('div').classList.add('opacity-100');
+    document.getElementById('modal-edit').classList.remove('hidden');
 }
+
+// 🔥 LISTENER PARA CÁLCULO AUTOMÁTICO
+document.addEventListener('DOMContentLoaded', () => {
+    const qtyInput = document.getElementById('edit-cantidad');
+    if(qtyInput) {
+        qtyInput.addEventListener('input', function() {
+            const newQty = parseInt(this.value) || 0;
+            // Cálculo automático: Nueva Cantidad * Precio Unitario Original
+            const newTotal = newQty * currentUnitPrice;
+            document.getElementById('edit-monto').value = newTotal.toFixed(2);
+        });
+    }
+});
 
 window.saveEditOrder = async function() {
     const id = document.getElementById('edit-id').value;
@@ -211,7 +228,6 @@ window.saveEditOrder = async function() {
     };
 
     try {
-        // 1. Si subió nueva foto
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const fileName = `${Date.now()}_edited.${file.name.split('.').pop()}`;
@@ -221,26 +237,21 @@ window.saveEditOrder = async function() {
             updates.url_comprobante = publicUrl.publicUrl;
         }
 
-        // 2. Si cambió la cantidad -> REGENERAR TICKETS
         if (nuevaCant !== originalCant) {
-            // A. Liberar tickets viejos
             await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).eq('id_orden', id);
             
-            // B. Buscar nuevos disponibles
             const { data: newTickets, error: tickErr } = await supabaseClient
                 .from('tickets').select('id').eq('estado', 'disponible').limit(nuevaCant);
             
             if (tickErr || newTickets.length < nuevaCant) throw new Error("No hay suficientes tickets disponibles para el cambio.");
 
-            // C. Asignar nuevos (Manteniendo el estado actual de la orden: si estaba aprobada, quedan vendidos)
             const { data: currentOrder } = await supabaseClient.from('ordenes').select('estado').eq('id', id).single();
-            const nuevoEstadoTicket = currentOrder.estado === 'aprobado' ? 'vendido' : 'bloqueado'; // O pendiente
+            const nuevoEstadoTicket = currentOrder.estado === 'aprobado' ? 'vendido' : 'bloqueado';
 
             const ids = newTickets.map(t => t.id);
             await supabaseClient.from('tickets').update({ estado: nuevoEstadoTicket, id_orden: id }).in('id', ids);
         }
 
-        // 3. Actualizar orden
         const { error } = await supabaseClient.from('ordenes').update(updates).eq('id', id);
         if (error) throw error;
 
@@ -253,28 +264,19 @@ window.saveEditOrder = async function() {
     }
 }
 
-// 6. ACCIONES DE ESTADO (APROBAR / RECHAZAR)
+// 6. ACCIONES
 window.approveOrder = async function(id) {
     if(!confirm("¿Aprobar orden?")) return;
-    
-    // Si viene de rechazado, primero intentamos asignar tickets
-    // Verificar si ya tiene tickets (si viene de pendiente los tiene, si viene de rechazado NO)
     const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_orden', id);
-    
     if (count === 0) {
-        // Caso: Reactivar desde Rechazado (Necesita nuevos tickets)
         const { data: orden } = await supabaseClient.from('ordenes').select('cantidad_boletos').eq('id', id).single();
         const { data: newTickets } = await supabaseClient.from('tickets').select('id').eq('estado', 'disponible').limit(orden.cantidad_boletos);
-        
         if (newTickets.length < orden.cantidad_boletos) return alert("No hay stock suficiente para reactivar.");
-        
         const ids = newTickets.map(t => t.id);
         await supabaseClient.from('tickets').update({ estado: 'vendido', id_orden: id }).in('id', ids);
     } else {
-        // Caso: Normal (Ya tiene tickets, solo cambiar estado)
         await supabaseClient.from('tickets').update({ estado: 'vendido' }).eq('id_orden', id);
     }
-
     await supabaseClient.from('ordenes').update({ estado: 'aprobado' }).eq('id', id);
     loadDashboardData();
 }
@@ -286,19 +288,19 @@ window.rejectOrder = async function(id) {
     loadDashboardData();
 }
 
-// UTILIDADES
+// UTILIDADES (CIERRE ROBUSTO)
 window.viewProof = function(url) {
     const el = document.getElementById('modal-proof');
     document.getElementById('proof-image').src = url;
     document.getElementById('proof-download').href = url;
     el.classList.remove('hidden');
-    setTimeout(() => el.style.opacity = '1', 10);
 }
+
 window.closeModal = function(id) {
-    const el = document.getElementById(id);
-    if(id === 'modal-proof') el.style.opacity = '0';
-    setTimeout(() => el.classList.add('hidden'), 300);
+    // Cierre inmediato sin animaciones complejas para evitar bugs
+    document.getElementById(id).classList.add('hidden');
 }
+
 window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'admin_login.html'; }
 
 checkAuth();
