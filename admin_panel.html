@@ -6,6 +6,7 @@
     <title>Panel Admin | Capi Rifas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -13,14 +14,8 @@
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         .tab-active { border-bottom: 2px solid #3b82f6; color: #1d4ed8; font-weight: 600; background-color: #eff6ff; }
         .nav-btn-active { background-color: #eff6ff; color: #4f46e5; border: 1px solid #c7d2fe; }
-        
-        /* Dropdown & Modal */
         .dropdown-menu { transform-origin: top right; transition: all 0.2s ease-out; transform: scale(0.95); opacity: 0; pointer-events: none; }
         .dropdown-menu.show { transform: scale(1); opacity: 1; pointer-events: auto; }
-        
-        /* Switch Toggle */
-        .toggle-checkbox:checked { right: 0; border-color: #68D391; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
     </style>
 </head>
 <body class="text-slate-600">
@@ -55,6 +50,11 @@
     </nav>
 
     <div id="view-dashboard" class="px-6 py-8 max-w-[1600px] mx-auto fade-in">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-slate-800" id="raffle-title">Cargando sorteo...</h2>
+            <p class="text-sm text-slate-500">Resumen en tiempo real</p>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition">
                 <div>
@@ -190,9 +190,25 @@
             </form>
         </div>
 
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h3 class="text-lg font-bold text-blue-700 mb-4 pb-2 border-b border-slate-100">2. Gestión de Tickets (Stock)</h3>
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <div>
+                    <h4 class="font-bold text-blue-900">Generar Stock Inicial</h4>
+                    <p class="text-sm text-blue-600">Si el Index dice "Agotado", es porque faltan tickets. Pulsa aquí para crear los números del 000 al 999.</p>
+                </div>
+                <button onclick="generateTickets()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generar Tickets (000-999)
+                </button>
+            </div>
+            <div class="mt-4 text-center text-xs text-slate-400">
+                Tickets actuales en base de datos para este sorteo: <span id="ticket-count-debug" class="font-mono font-bold">Calculando...</span>
+            </div>
+        </div>
+
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div class="flex justify-between items-center mb-6 pb-2 border-b border-slate-100">
-                <h3 class="text-lg font-bold text-emerald-700">2. Métodos de Pago</h3>
+                <h3 class="text-lg font-bold text-emerald-700">3. Métodos de Pago</h3>
                 <button onclick="openPaymentModal()" class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-100 transition flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Agregar Nuevo
                 </button>
@@ -212,7 +228,6 @@
                 </button>
             </div>
         </div>
-
     </div>
 
     <div id="modal-proof" class="fixed inset-0 bg-slate-900/90 hidden z-[70] flex items-center justify-center p-4">
@@ -283,6 +298,8 @@
                 <select id="pay-tipo" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm">
                     <option value="pago_movil">Pago Móvil</option>
                     <option value="transferencia">Transferencia</option>
+                    <option value="cuenta_corriente">Cuenta Corriente</option>
+                    <option value="cuenta_ahorro">Cuenta Ahorro</option>
                 </select>
             </div>
             <div class="p-5 flex justify-end gap-2 bg-slate-50 rounded-b-2xl">
