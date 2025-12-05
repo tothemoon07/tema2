@@ -1,6 +1,5 @@
-// client_logic.js - VERSIÓN FINAL DINÁMICA CONECTADA A SUPABASE
+// client_logic.js - VERSIÓN FINAL: DINÁMICA, FLEXIBLE Y SEGURA
 
-// ⚠️ TUS CLAVES DE SUPABASE
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
 
@@ -11,113 +10,85 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentStep = 1; 
 let ticketsReservados = []; 
 let intervaloTimer = null;
-let activeRaffle = null; // Guardará la información del sorteo activo
+let activeRaffle = null;
 
 // ==========================================
-// 1. CARGA INICIAL DE DATOS (SORTEO Y PAGOS)
+// 1. CARGA INICIAL
 // ==========================================
 
 window.onload = async function() {
-    try {
-        console.log("Iniciando carga de datos...");
+    console.log("Iniciando sistema...");
 
-        // 1. Cargar Info del Sorteo Activo
-        const { data: sorteo, error } = await supabaseClient
-            .from('sorteos')
-            .select('*')
-            .eq('estado', 'activo')
-            .single();
+    // 1. Cargar Info del Sorteo Activo
+    const { data: sorteo } = await supabaseClient
+        .from('sorteos')
+        .select('*')
+        .eq('estado', 'activo')
+        .single();
 
-        if (sorteo) {
-            console.log("Sorteo activo encontrado:", sorteo.titulo);
-            activeRaffle = sorteo;
-            
-            // Inyectar datos en el HTML (Inputs ocultos para la lógica)
-            const raffleIdInput = document.getElementById('raffle-id');
-            const rafflePriceInput = document.getElementById('raffle-price');
-            
-            if(raffleIdInput) raffleIdInput.value = sorteo.id;
-            if(rafflePriceInput) rafflePriceInput.value = sorteo.precio_boleto;
-            
-            // Inyectar textos visibles (Título, fecha, lotería)
-            const titleEl = document.getElementById('landing-title');
-            if(titleEl) titleEl.innerText = sorteo.titulo;
+    if (sorteo) {
+        activeRaffle = sorteo;
+        
+        // Inyectar datos en HTML
+        document.getElementById('raffle-id').value = sorteo.id;
+        document.getElementById('raffle-price').value = sorteo.precio_boleto;
+        
+        setText('landing-title', sorteo.titulo);
+        setText('landing-price-display', `Bs. ${sorteo.precio_boleto.toFixed(2)}`);
+        setText('landing-date', sorteo.fecha_sorteo);
+        setText('landing-lottery', sorteo.loteria);
 
-            const priceEl = document.getElementById('landing-price-display');
-            if(priceEl) priceEl.innerText = `Bs. ${sorteo.precio_boleto.toFixed(2)}`;
+        if(sorteo.url_flyer) document.getElementById('landing-image').src = sorteo.url_flyer;
 
-            const dateEl = document.getElementById('landing-date');
-            if(dateEl) dateEl.innerText = sorteo.fecha_sorteo;
-
-            const lotoEl = document.getElementById('landing-lottery');
-            if(lotoEl) lotoEl.innerText = sorteo.loteria;
-
-            // Inyectar Imagen del Flyer
-            const imgEl = document.getElementById('landing-image');
-            if(imgEl && sorteo.url_flyer) imgEl.src = sorteo.url_flyer;
-
-            // Actualizar total inicial en modales
-            updateTotal();
-        } else {
-            console.warn("No hay sorteo activo en la base de datos.");
-            const titleEl = document.getElementById('landing-title');
-            if(titleEl) titleEl.innerText = "No hay sorteo activo por el momento.";
-            disablePurchaseButtons();
-        }
-
-        // 2. Cargar Métodos de Pago
-        loadPaymentMethodsForModal();
-
-    } catch(e) { 
-        console.error("Error en la carga inicial:", e); 
+        updateTotal(); // Actualizar cálculos iniciales
+    } else {
+        setText('landing-title', "No hay sorteo activo");
+        disablePurchaseButtons();
     }
+
+    // 2. Cargar Métodos de Pago
+    loadPaymentMethodsForModal();
 };
+
+function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
 
 async function loadPaymentMethodsForModal() {
     const container = document.getElementById('payment-methods-container');
-    if(!container) return;
-    
-    // Traer bancos activos
-    const { data: methods } = await supabaseClient
-        .from('metodos_pago')
-        .select('*')
-        .eq('activo', true);
+    const { data: methods } = await supabaseClient.from('metodos_pago').select('*').eq('activo', true);
     
     if(!methods || methods.length === 0) {
-        container.innerHTML = '<p class="text-center text-xs text-red-400">No hay métodos de pago disponibles en este momento.</p>';
+        container.innerHTML = '<p class="text-center text-xs text-red-400">No hay métodos de pago disponibles.</p>';
         return;
     }
 
     let html = '';
     methods.forEach(m => {
-        // Formatear tipo de cuenta (corriente/ahorro/pago movil)
-        let tipoBadge = m.tipo.replace('_', ' ').toUpperCase();
+        let details = '';
+        if(m.titular) details += `<div class="text-xs text-gray-500 mb-1">${m.titular}</div>`;
         
+        let extraInfo = '';
+        if(m.cedula) extraInfo += `
+            <div class="flex justify-between items-center text-xs">
+                <span class="text-gray-400 font-bold">ID:</span>
+                <div class="flex gap-1"><span class="font-bold text-gray-800">${m.cedula}</span><button onclick="copiarTexto('${m.cedula}')" class="text-blue-400"><iconify-icon icon="solar:copy-bold"></iconify-icon></button></div>
+            </div>`;
+        if(m.telefono) extraInfo += `
+            <div class="flex justify-between items-center text-xs mt-1">
+                <span class="text-gray-400 font-bold">Cuenta/Tel:</span>
+                <div class="flex gap-1"><span class="font-bold text-gray-800">${m.telefono}</span><button onclick="copiarTexto('${m.telefono}')" class="text-blue-400"><iconify-icon icon="solar:copy-bold"></iconify-icon></button></div>
+            </div>`;
+
         html += `
-            <div class="border-b border-gray-100 pb-2 last:border-0 mb-3">
+            <div class="border-b border-gray-100 pb-3 last:border-0 mb-3">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="text-gray-700 text-xs font-black uppercase flex items-center gap-1">
+                    <span class="font-bold text-gray-800 uppercase flex items-center gap-1">
                         <iconify-icon icon="solar:card-bold" class="text-blue-500"></iconify-icon> ${m.banco}
                     </span>
-                    <span class="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold">${tipoBadge}</span>
+                    <span class="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold uppercase">${m.tipo.replace('_',' ')}</span>
                 </div>
-                <div class="text-xs text-gray-500 mb-1">${m.titular}</div>
-                
-                <div class="bg-gray-50 p-2 rounded-lg space-y-1">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-400 text-[10px] uppercase font-bold">Cédula / RIF</span>
-                        <div class="flex items-center gap-1">
-                            <span class="font-bold text-gray-800 text-xs">${m.cedula}</span>
-                            <button onclick="copiarTexto('${m.cedula}')" class="text-blue-400 hover:text-blue-600"><iconify-icon icon="solar:copy-bold" width="12"></iconify-icon></button>
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-400 text-[10px] uppercase font-bold">Teléfono / Cuenta</span>
-                        <div class="flex items-center gap-1">
-                            <span class="font-bold text-gray-800 text-xs">${m.telefono}</span>
-                            <button onclick="copiarTexto('${m.telefono}')" class="text-blue-400 hover:text-blue-600"><iconify-icon icon="solar:copy-bold" width="12"></iconify-icon></button>
-                        </div>
-                    </div>
+                ${details}
+                <div class="bg-gray-50 p-2 rounded-lg mt-1 border border-gray-100">
+                    ${extraInfo || '<span class="text-xs text-gray-400 italic">Sin datos adicionales</span>'}
                 </div>
             </div>
         `;
@@ -126,37 +97,28 @@ async function loadPaymentMethodsForModal() {
 }
 
 function disablePurchaseButtons() {
-    const btns = document.querySelectorAll('button[onclick="abrirModalCompra()"]');
-    btns.forEach(b => { 
+    document.querySelectorAll('button[onclick="abrirModalCompra()"]').forEach(b => { 
         b.disabled = true; 
-        b.innerHTML = '<i class="fas fa-lock"></i> NO DISPONIBLE'; 
-        b.classList.add('bg-gray-400');
-        b.classList.remove('bg-red-600', 'hover:bg-red-700');
+        b.innerHTML = 'NO DISPONIBLE'; 
+        b.classList.replace('bg-red-500','bg-gray-400');
     });
 }
 
 // ==========================================
-// 2. FUNCIONES UI (NAVEGACIÓN)
+// 2. NAVEGACIÓN Y UI
 // ==========================================
 
 window.toggleMenu = function() {
     const menu = document.getElementById('side-menu');
     const overlay = document.getElementById('menu-overlay');
-    if (menu.classList.contains('menu-open')) {
-        menu.classList.remove('menu-open');
-        overlay.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-    } else {
-        menu.classList.add('menu-open');
-        overlay.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
+    menu.classList.toggle('menu-open');
+    overlay.classList.toggle('hidden');
+    document.body.style.overflow = menu.classList.contains('menu-open') ? 'hidden' : 'auto';
 }
 
 window.menuAction = function(action) {
     window.toggleMenu(); 
     document.getElementById('view-home').classList.add('hidden');
-    // document.getElementById('view-raffles').classList.add('hidden'); // Si usas vista de sorteos
     document.getElementById('view-terms').classList.add('hidden');
     document.getElementById('floating-btn').classList.add('hidden');
     window.scrollTo(0,0);
@@ -173,13 +135,12 @@ window.menuAction = function(action) {
 }
 window.navigateTo = function(view) { window.menuAction(view); }
 
-
 // ==========================================
-// 3. LÓGICA DE COMPRA Y CÁLCULOS
+// 3. LÓGICA DE COMPRA (CANTIDAD Y PRECIO)
 // ==========================================
 
 window.selectQty = function(n, btn) {
-    document.querySelectorAll('.qty-btn').forEach(b => { b.classList.remove('qty-btn-selected'); });
+    document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
     btn.classList.add('qty-btn-selected');
     document.getElementById('custom-qty').value = n; 
     window.updateTotal(); 
@@ -196,27 +157,14 @@ window.changeQty = function(n) {
 
 window.updateTotal = function() {
     let val = parseInt(document.getElementById('custom-qty').value) || 1;
-    // OBTENER PRECIO DINÁMICO DEL INPUT OCULTO
-    let priceInput = document.getElementById('raffle-price');
-    let price = priceInput ? parseFloat(priceInput.value) : 0; 
-    
+    let price = parseFloat(document.getElementById('raffle-price').value) || 0; 
     let total = val * price;
     let text = "Bs. " + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
     
-    const el2 = document.getElementById('step2-total');
-    const el4 = document.getElementById('step4-total');
-    const elS = document.getElementById('success-total');
-    
-    if(el2) el2.innerText = text;
-    if(el4) el4.innerText = text;
-    if(elS) elS.innerText = text;
-}
-
-window.previewImage = function(input) {
-    if (input.files && input.files[0]) {
-        document.getElementById('upload-placeholder').classList.add('hidden');
-        document.getElementById('file-preview').classList.remove('hidden');
-    }
+    ['step2-total', 'step4-total', 'success-total'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.innerText = text;
+    });
 }
 
 window.copiarTexto = function(texto) {
@@ -226,212 +174,151 @@ window.copiarTexto = function(texto) {
     });
 }
 
-// --- MODALES ---
+window.previewImage = function(input) {
+    if (input.files && input.files[0]) {
+        document.getElementById('upload-placeholder').classList.add('hidden');
+        document.getElementById('file-preview').classList.remove('hidden');
+    }
+}
+
+// ==========================================
+// 4. MODALES Y PASOS (WIZARD)
+// ==========================================
 
 window.abrirModalCompra = function() {
-    const btn = document.querySelector('button[onclick="abrirModalCompra()"]');
-    if (btn && (btn.disabled)) return; // Si está deshabilitado no abre
-
-    const modal = document.getElementById('checkoutModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        currentStep = 1;
-        window.mostrarPaso(1);
-    }
+    if(document.querySelector('button[onclick="abrirModalCompra()"]').disabled) return;
+    document.getElementById('checkoutModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    currentStep = 1;
+    window.mostrarPaso(1);
 }
 
 window.cerrarModalCompra = function() {
-    const modal = document.getElementById('checkoutModal');
-    const pasoExito = document.getElementById('step-success');
-    
-    // Si ya compró, recargar página al cerrar
-    if (!pasoExito.classList.contains('hidden')) {
-        location.reload();
-        return; 
-    }
-    
-    if (modal) modal.classList.add('hidden');
+    if (!document.getElementById('step-success').classList.contains('hidden')) location.reload();
+    document.getElementById('checkoutModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
-    liberarTickets(); // Liberar si cerró sin comprar
+    liberarTickets();
 }
 
-window.abrirModalVerificar = function() { document.getElementById('checkTicketsModal').classList.remove('hidden'); }
-window.cerrarModalVerificar = function() { document.getElementById('checkTicketsModal').classList.add('hidden'); }
-
 window.mostrarPaso = function(paso) {
-    for(let i=1; i<=5; i++){
-        const el = document.getElementById(`step-${i}`);
-        if(el) el.classList.add('hidden');
-    }
-    const actual = document.getElementById(`step-${paso}`);
-    if(actual) actual.classList.remove('hidden');
+    for(let i=1; i<=4; i++) document.getElementById(`step-${i}`).classList.add('hidden');
+    document.getElementById(`step-${paso}`).classList.remove('hidden');
     window.updateModalHeader();
 }
 
 window.updateModalHeader = function() {
-    const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "Realiza el Pago", "Comprobante de Pago"];
-    const icons = ["solar:card-2-bold-duotone", "solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:wallet-money-bold-duotone", "solar:upload-track-bold-duotone"];
+    const titles = ["Cantidad de Boletos", "Datos Personales", "Realiza el Pago", "Confirmar"];
+    const icons = ["solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:wallet-money-bold-duotone", "solar:upload-track-bold-duotone"];
     
-    const titleEl = document.getElementById('header-title');
-    if(titleEl) titleEl.innerText = titles[currentStep - 1];
-    
-    const stepEl = document.getElementById('header-step');
-    if(stepEl) stepEl.innerText = `Paso ${currentStep} de 5`;
-    
-    const iconEl = document.getElementById('header-icon');
-    if(iconEl) iconEl.setAttribute('icon', icons[currentStep - 1]);
-    
-    const prog = document.getElementById('progress-bar');
-    if(prog) prog.style.width = `${currentStep * 20}%`;
+    document.getElementById('header-title').innerText = titles[currentStep - 1];
+    document.getElementById('header-step').innerText = `Paso ${currentStep} de 4`;
+    document.getElementById('header-icon').setAttribute('icon', icons[currentStep - 1]);
+    document.getElementById('progress-bar').style.width = `${currentStep * 25}%`;
 
     const btnBack = document.getElementById('btn-back');
-    if(btnBack) {
-        if(currentStep === 1) { btnBack.disabled = true; btnBack.classList.add('opacity-50'); }
-        else { btnBack.disabled = false; btnBack.classList.remove('opacity-50'); }
-    }
+    btnBack.disabled = (currentStep === 1);
+    btnBack.classList.toggle('opacity-50', currentStep === 1);
 
     const btnNext = document.getElementById('btn-next');
-    if(btnNext) {
-        if(currentStep === 5) btnNext.innerHTML = `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>`;
-        else btnNext.innerHTML = `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`;
-    }
+    btnNext.innerHTML = (currentStep === 4) 
+        ? `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>` 
+        : `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`;
 }
 
 window.prevStep = function() {
     if (currentStep > 1) {
-        document.getElementById(`step-${currentStep}`).classList.add('hidden');
         currentStep--;
-        document.getElementById(`step-${currentStep}`).classList.remove('hidden');
-        window.updateModalHeader();
+        window.mostrarPaso(currentStep);
     }
 }
 
-window.dismissInstructions = function() {
-    document.getElementById('payment-instructions').classList.add('hidden');
-    document.getElementById(`step-4`).classList.add('hidden');
-    currentStep = 5;
-    document.getElementById(`step-5`).classList.remove('hidden');
-    window.updateModalHeader();
+// ==========================================
+// 5. VALIDACIÓN DE STOCK REAL
+// ==========================================
+
+async function validarStockReal() {
+    const raffleId = document.getElementById('raffle-id').value;
+    const cantidad = parseInt(document.getElementById('custom-qty').value);
+    
+    if (!raffleId || cantidad <= 0) return false;
+
+    // Verificar stock DISPONIBLE solo del sorteo ACTIVO
+    const { count, error } = await supabaseClient
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('id_sorteo', raffleId)
+        .eq('estado', 'disponible');
+
+    if (error) { console.error(error); return false; }
+
+    if (count < cantidad) {
+        window.mostrarAlertaStock(cantidad, count);
+        return false;
+    }
+
+    return await reservarTicketsEnDB(cantidad, raffleId);
 }
 
-// Alerta Stock Sutil
-window.cerrarAlertaStock = function() { document.getElementById('modal-stock-sutil').classList.add('hidden'); }
+async function reservarTicketsEnDB(cantidad, raffleId) {
+    // Tomar tickets disponibles
+    const { data: tickets, error } = await supabaseClient
+        .from('tickets')
+        .select('id, numero')
+        .eq('id_sorteo', raffleId)
+        .eq('estado', 'disponible')
+        .limit(cantidad);
+
+    if (error || !tickets || tickets.length < cantidad) {
+        Swal.fire('Lo sentimos', 'Alguien compró los boletos antes que tú.', 'warning');
+        return false;
+    }
+
+    // Bloquearlos
+    const ids = tickets.map(t => t.id);
+    await supabaseClient.from('tickets').update({ estado: 'bloqueado' }).in('id', ids);
+    ticketsReservados = tickets;
+    return true;
+}
+
 window.mostrarAlertaStock = function(pedidos, disponibles) {
     document.getElementById('stock-pedido-val').innerText = pedidos;
     document.getElementById('stock-disponible-val').innerText = disponibles;
     document.getElementById('modal-stock-sutil').classList.remove('hidden');
 }
-
-
-// ==========================================
-// 4. VALIDACIÓN DE STOCK REAL
-// ==========================================
-
-async function validarStockReal() {
-    // Usar el ID del sorteo cargado dinámicamente
-    const raffleId = document.getElementById('raffle-id').value;
-    const cantidadSolicitada = parseInt(document.getElementById('custom-qty').value, 10);
-    
-    if (!raffleId) {
-        Swal.fire('Error', 'No se ha cargado la información del sorteo.', 'error');
-        return false;
-    }
-
-    if (!cantidadSolicitada || cantidadSolicitada <= 0) {
-        Swal.fire('Error', 'Selecciona al menos 1 boleto.', 'error');
-        return false;
-    }
-
-    const { count, error } = await supabaseClient
-        .from('tickets')
-        .select('*', { count: 'exact', head: true })
-        .eq('id_sorteo', raffleId) // 🔥 Solo del sorteo actual
-        .eq('estado', 'disponible');
-
-    if (error) { console.error("Error DB:", error); return false; }
-
-    const stockReal = Number(count);
-    if (stockReal < cantidadSolicitada) {
-        window.mostrarAlertaStock(cantidadSolicitada, stockReal);
-        return false;
-    }
-
-    return await reservarTicketsEnDB(cantidadSolicitada, raffleId);
-}
-
-async function reservarTicketsEnDB(cantidad, raffleId) {
-    try {
-        const { data: ticketsLibres, error } = await supabaseClient
-            .from('tickets')
-            .select('id, numero')
-            .eq('id_sorteo', raffleId)
-            .eq('estado', 'disponible')
-            .limit(cantidad);
-
-        if (error || !ticketsLibres || ticketsLibres.length < cantidad) {
-            Swal.fire({ icon: 'warning', title: 'Boletos agotados', text: 'Intenta de nuevo.' });
-            return false;
-        }
-
-        const ids = ticketsLibres.map(t => t.id);
-        // Bloquear temporalmente
-        await supabaseClient.from('tickets').update({ estado: 'bloqueado' }).in('id', ids);
-
-        ticketsReservados = ticketsLibres;
-        return true;
-
-    } catch (e) { console.error(e); return false; }
-}
+window.cerrarAlertaStock = function() { document.getElementById('modal-stock-sutil').classList.add('hidden'); }
 
 // ==========================================
-// 5. CONTROL DE PASOS Y SUBIDA
+// 6. CONTROL DE PASOS
 // ==========================================
 
 window.nextStep = async function() {
-    // Paso 1: Método
+    // Paso 1: Cantidad
     if(currentStep === 1) {
-        const method = document.querySelector('input[name="payment_method"]:checked');
-        if(!method) { Swal.fire({ icon: 'error', text: 'Selecciona un método de pago.' }); return; }
-    }
-
-    // Paso 2: Cantidad y Stock
-    if(currentStep === 2) {
         const btn = document.getElementById('btn-next');
-        const txt = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Verificando...';
         btn.disabled = true;
 
         const check = await validarStockReal();
-        
-        btn.innerHTML = txt;
+        btn.innerHTML = originalText;
         btn.disabled = false;
 
         if (!check) return; 
-
         iniciarTimer();
     }
 
-    // Paso 3: Datos
-    if(currentStep === 3) {
+    // Paso 2: Datos
+    if(currentStep === 2) {
         const name = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
         const phone = document.getElementById('input-phone').value;
-        const email = document.getElementById('input-email').value;
-        if(!name || !cedula || !phone || !email) { Swal.fire({ icon: 'warning', text: 'Completa todos los datos.' }); return; }
+        if(!name || !cedula || !phone) { Swal.fire({ icon: 'warning', text: 'Completa nombre, cédula y teléfono.' }); return; }
     }
 
-    // Avance normal
-    if (currentStep < 5) {
-        if (currentStep === 4) {
-            document.getElementById('payment-instructions').classList.remove('hidden');
-            return; 
-        }
-        
-        document.getElementById(`step-${currentStep}`).classList.add('hidden');
-        currentStep++; 
-        document.getElementById(`step-${currentStep}`).classList.remove('hidden');
-        window.updateModalHeader();
+    // Avanzar
+    if (currentStep < 4) {
+        currentStep++;
+        window.mostrarPaso(currentStep);
     } else {
         procesarCompraFinal();
     }
@@ -441,18 +328,14 @@ function iniciarTimer() {
     clearInterval(intervaloTimer);
     let timeLeft = 900; 
     document.getElementById('timer-container').classList.remove('hidden');
-    
     intervaloTimer = setInterval(() => {
         let min = Math.floor(timeLeft / 60);
         let sec = timeLeft % 60;
-        sec = sec < 10 ? '0' + sec : sec;
-        const el = document.getElementById('countdown');
-        if(el) el.innerText = `${min}:${sec}`;
-
+        document.getElementById('countdown').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
         if (timeLeft <= 0) {
             clearInterval(intervaloTimer);
             liberarTickets();
-            Swal.fire({ title: 'Tiempo Agotado', icon: 'error', confirmButtonText: 'Reiniciar' }).then(() => location.reload());
+            Swal.fire('Tiempo Agotado', 'Se liberaron tus boletos.', 'error').then(() => location.reload());
         }
         timeLeft--;
     }, 1000);
@@ -465,173 +348,123 @@ async function liberarTickets() {
     ticketsReservados = [];
 }
 
-async function subirComprobante(file) {
-    const fileName = `${Date.now()}.${file.name.split('.').pop()}`;
-    // Usar bucket 'comprobantes'
-    const { error } = await supabaseClient.storage.from('comprobantes').upload(fileName, file);
-    if (error) throw error;
-    
-    // Obtener URL pública
-    const { data } = supabaseClient.storage.from('comprobantes').getPublicUrl(fileName);
-    return data.publicUrl;
-}
+// ==========================================
+// 7. PROCESAR COMPRA FINAL
+// ==========================================
 
 async function procesarCompraFinal() {
     const ref = document.getElementById('input-referencia').value;
     const file = document.getElementById('input-comprobante');
     
-    if (!ref || ref.length < 4) { Swal.fire({ icon: 'error', text: 'Falta referencia correcta.' }); return; }
-    if (!file.files.length) { Swal.fire({ icon: 'error', text: 'Falta subir el comprobante.' }); return; }
+    if (!ref || ref.length < 4) { Swal.fire('Error', 'Ingresa una referencia válida.', 'warning'); return; }
+    if (!file.files.length) { Swal.fire('Error', 'Sube la foto del pago.', 'warning'); return; }
 
-    Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: 'Enviando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     try {
-        const urlImagen = await subirComprobante(file.files[0]);
+        // 1. Subir Imagen
+        const imgFile = file.files[0];
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${imgFile.name.split('.').pop()}`;
+        const { error: upErr } = await supabaseClient.storage.from('comprobantes').upload(fileName, imgFile);
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = supabaseClient.storage.from('comprobantes').getPublicUrl(fileName);
+
+        // 2. Datos
         const nombre = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
-        
-        // Unir código de país y teléfono
-        const countryCode = document.getElementById('input-country-code') ? document.getElementById('input-country-code').value : '+58';
-        const phoneRaw = document.getElementById('input-phone').value;
-        const telefono = countryCode + phoneRaw;
-
+        const country = document.getElementById('input-country-code').value;
+        const phone = document.getElementById('input-phone').value;
         const email = document.getElementById('input-email').value;
-        const cantidad = parseInt(document.getElementById('custom-qty').value);
         const raffleId = document.getElementById('raffle-id').value;
+        const cantidad = parseInt(document.getElementById('custom-qty').value);
+        
+        let montoStr = document.getElementById('step4-total').innerText.replace('Bs.', '').replace(/\./g,'').replace(',','.');
+        let monto = parseFloat(montoStr);
 
-        // Calcular monto final limpio
-        let montoTexto = document.getElementById('step4-total').innerText;
-        let montoFinal = parseFloat(montoTexto.replace('Bs.', '').replace(/\./g, '').replace(',', '.').trim());
-
-        // 1. Crear Orden
-        const { data: orden, error } = await supabaseClient
-            .from('ordenes')
-            .insert([{
-                id_sorteo: raffleId, // Asociar al sorteo actual
-                nombre, cedula, telefono, email,
-                metodo_pago: 'pago_movil',
-                referencia_pago: ref,
-                url_comprobante: urlImagen,
-                monto_total: montoFinal,
-                cantidad_boletos: cantidad,
-                estado: 'pendiente_validacion'
-            }])
-            .select().single();
+        // 3. Crear Orden
+        const { data: orden, error } = await supabaseClient.from('ordenes').insert([{
+            id_sorteo: raffleId,
+            nombre, cedula, telefono: country + phone, email,
+            metodo_pago: 'pago_movil',
+            referencia_pago: ref,
+            url_comprobante: publicUrl,
+            monto_total: monto,
+            cantidad_boletos: cantidad,
+            estado: 'pendiente_validacion'
+        }]).select().single();
 
         if (error) throw error;
 
-        // 2. Asignar Tickets a la Orden y ponerlos en 'pendiente'
+        // 4. Asignar Tickets a la Orden
         const ids = ticketsReservados.map(t => t.id);
         const numeros = ticketsReservados.map(t => t.numero);
+        
+        await supabaseClient.from('tickets').update({ estado: 'pendiente', id_orden: orden.id }).in('id', ids);
 
-        await supabaseClient
-            .from('tickets')
-            .update({ estado: 'pendiente', id_orden: orden.id })
-            .in('id', ids);
-
+        // 5. Finalizar
         ticketsReservados = [];
         clearInterval(intervaloTimer);
         Swal.close();
 
-        // 3. Mostrar Éxito
+        // UI Éxito
         const container = document.getElementById('assigned-tickets');
-        if(container) {
-            container.innerHTML = numeros.map(n => 
-                `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`
-            ).join('');
-        }
+        if(container) container.innerHTML = numeros.map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('');
         
-        const successTotal = document.getElementById('success-total');
-        if(successTotal) successTotal.innerText = montoTexto;
-
-        document.getElementById('step-5').classList.add('hidden');
         document.getElementById('modal-footer').classList.add('hidden');
+        document.getElementById('step-4').classList.add('hidden');
         document.getElementById('step-success').classList.remove('hidden');
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 
     } catch (err) {
         console.error(err);
-        Swal.fire('Error', 'Hubo un error al procesar. Contacta a soporte.', 'error');
+        Swal.fire('Error', 'Hubo un error enviando la orden. Intenta de nuevo.', 'error');
     }
 }
 
+// ==========================================
+// 8. CONSULTA (VERIFICAR)
+// ==========================================
 
-// ==========================================
-// 6. CONSULTA DE TICKETS (VERIFICACIÓN)
-// ==========================================
+window.abrirModalVerificar = function() { document.getElementById('checkTicketsModal').classList.remove('hidden'); }
+window.cerrarModalVerificar = function() { document.getElementById('checkTicketsModal').classList.add('hidden'); }
 
 window.consultarTicketsReales = async function() {
-    const cedulaInput = document.getElementById('cedula-consult'); // Asegurate que el ID en HTML sea este
-    // Si tu HTML tiene otro ID para el input de cédula en el modal de verificar, ajústalo aquí.
-    // En tu código HTML anterior vi: <input type="number" id="cedula-consult" ... >
-    
-    if(!cedulaInput) {
-        // Fallback por si el ID en HTML es diferente
-        const inputs = document.querySelectorAll('#search-inputs input');
-        if(inputs.length > 0) cedulaInput = inputs[0]; 
-    }
-    
-    const cedula = cedulaInput ? cedulaInput.value : '';
-
+    const cedula = document.getElementById('cedula-consult').value;
     if(!cedula) return Swal.fire('Error', 'Ingresa tu cédula', 'warning');
     
-    const resultsDiv = document.getElementById('ticket-results');
-    resultsDiv.innerHTML = '<p class="text-center text-gray-400 py-4"><iconify-icon icon="line-md:loading-loop" width="24"></iconify-icon><br>Buscando...</p>';
-    resultsDiv.classList.remove('hidden');
+    const div = document.getElementById('ticket-results');
+    div.innerHTML = '<p class="text-center text-gray-400 py-4">Buscando...</p>';
+    div.classList.remove('hidden');
 
-    // Buscar Ordenes
-    const { data: ordenes } = await supabaseClient
-        .from('ordenes')
-        .select('*')
-        .eq('cedula', cedula)
-        .order('creado_en', {ascending:false});
+    const { data: ordenes } = await supabaseClient.from('ordenes').select('*').eq('cedula', cedula).order('creado_en', {ascending:false});
     
     if(!ordenes || ordenes.length === 0) {
-        resultsDiv.innerHTML = '<div class="p-4 text-center"><iconify-icon icon="solar:confounded-square-bold-duotone" class="text-gray-300 text-4xl mb-2"></iconify-icon><p class="text-xs text-gray-500">No encontramos compras registradas con esa cédula.</p></div>';
+        div.innerHTML = '<p class="text-center text-gray-400 p-4">No se encontraron compras con esa cédula.</p>';
         return;
     }
 
     let html = '';
     for (let orden of ordenes) {
-        // Buscar tickets de esa orden
+        // Traer tickets de la orden
         const { data: tickets } = await supabaseClient.from('tickets').select('numero').eq('id_orden', orden.id);
-        
-        let nums = 'Pendientes';
-        if(tickets && tickets.length > 0) {
-            nums = tickets.map(t => `<span class="bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">${t.numero}</span>`).join(' ');
-        }
+        const nums = tickets ? tickets.map(t => `<span class="bg-gray-100 px-1 rounded border">${t.numero}</span>`).join(' ') : 'Pendientes';
         
         let color = orden.estado === 'aprobado' ? 'green' : (orden.estado === 'rechazado' ? 'red' : 'yellow');
-        let icon = orden.estado === 'aprobado' ? 'solar:check-circle-bold' : (orden.estado === 'rechazado' ? 'solar:close-circle-bold' : 'solar:clock-circle-bold');
-        let estadoTxt = orden.estado === 'aprobado' ? 'APROBADO' : (orden.estado === 'rechazado' ? 'RECHAZADO' : 'VERIFICANDO');
-        let fecha = new Date(orden.creado_en).toLocaleDateString('es-VE');
+        let estado = orden.estado === 'aprobado' ? 'APROBADO' : (orden.estado === 'rechazado' ? 'RECHAZADO' : 'VERIFICANDO');
 
         html += `
-            <div class="bg-white rounded-2xl p-4 text-left border border-gray-100 shadow-sm mb-3 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-16 h-16 bg-${color}-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
-                
-                <div class="relative z-10 flex items-center gap-3 mb-3 border-b border-gray-50 pb-3">
-                    <div class="w-10 h-10 bg-${color}-100 rounded-full flex items-center justify-center text-${color}-600 flex-shrink-0 shadow-sm">
-                        <iconify-icon icon="${icon}" width="20"></iconify-icon>
+            <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-4 h-full bg-${color}-500"></div>
+                <div class="pr-6">
+                    <div class="flex justify-between mb-1">
+                        <span class="font-bold text-xs">#${orden.id.slice(0,6)}</span>
+                        <span class="text-[10px] font-bold text-${color}-600 bg-${color}-50 px-2 rounded">${estado}</span>
                     </div>
-                    <div>
-                        <h4 class="font-bold text-gray-800 text-xs">Orden #${orden.id.toString().slice(0,6)}</h4>
-                        <p class="text-[9px] font-black text-${color}-500 uppercase tracking-wide bg-${color}-50 px-1.5 rounded inline-block mt-0.5">${estadoTxt}</p>
-                    </div>
-                    <div class="ml-auto text-right">
-                        <span class="text-[10px] text-gray-400 font-medium block">${fecha}</span>
-                        <span class="font-black text-gray-800 text-sm">Bs. ${orden.monto_total}</span>
-                    </div>
-                </div>
-                
-                <div class="relative z-10">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1"><iconify-icon icon="solar:ticket-sale-bold"></iconify-icon> Boletos Asignados:</p>
-                    <div class="flex flex-wrap gap-1.5 text-xs font-mono text-gray-600 font-bold leading-relaxed">
-                        ${nums}
-                    </div>
+                    <p class="text-[10px] text-gray-400 mb-2">${new Date(orden.creado_en).toLocaleDateString()}</p>
+                    <div class="flex flex-wrap gap-1 text-xs font-mono font-bold text-gray-700">${nums}</div>
                 </div>
             </div>
         `;
     }
-    resultsDiv.innerHTML = html;
+    div.innerHTML = html;
 }
