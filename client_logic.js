@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN BLINDADA CONTRA BLOQUEOS ETERNOS
+// client_logic.js - VERSIÓN BLINDADA + FLUJO OPTIMIZADO (Acordeón Pagos)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -20,7 +20,6 @@ window.onload = async function() {
     console.log("Iniciando sistema...");
 
     // 🧹 EL CONSERJE: Limpiar tickets "zombies" (bloqueados hace mucho tiempo)
-    // Esto ayuda a que si alguien cerró la ventana mal, el siguiente visitante arregle el stock.
     limpiarBloqueosHuerfanos();
 
     // 1. Cargar Info del Sorteo Activo
@@ -45,7 +44,7 @@ window.onload = async function() {
         setText('landing-date', sorteo.fecha_sorteo);
         setText('landing-lottery', sorteo.loteria);
 
-        // Actualizar Flyer (Si existe el elemento)
+        // Actualizar Flyer
         if(sorteo.url_flyer) {
             const imgEl = document.getElementById('landing-image');
             if(imgEl) imgEl.src = sorteo.url_flyer;
@@ -57,7 +56,7 @@ window.onload = async function() {
         disablePurchaseButtons();
     }
 
-    // 2. Cargar Métodos de Pago
+    // 2. Cargar Métodos de Pago en el PASO 1
     loadPaymentMethodsForModal();
 };
 
@@ -65,89 +64,134 @@ function setText(id, text) { const el = document.getElementById(id); if(el) el.i
 
 // 🔥 FUNCIÓN DE LIMPIEZA AUTOMÁTICA
 async function limpiarBloqueosHuerfanos() {
-    // Calculamos una fecha hace 20 minutos
     const hace20min = new Date(Date.now() - 20 * 60 * 1000).toISOString();
-
-    // Buscamos tickets que sigan 'bloqueado' pero que su ultima actualización sea vieja
-    // IMPORTANTE: Esto asume que Supabase actualiza la columna 'updated_at' o 'created_at'
-    // Si tu tabla no tiene 'updated_at', esto podría no funcionar perfecto, pero intentará con created_at o lógica similar.
-    
     try {
-        // Primero obtenemos los IDs para no hacer un update masivo a ciegas
         const { data: zombies } = await supabaseClient
             .from('tickets')
             .select('id')
             .eq('estado', 'bloqueado')
-            .lt('created_at', hace20min); // Usamos created_at o updated_at según tengas en tu DB
+            .lt('created_at', hace20min);
 
         if(zombies && zombies.length > 0) {
             console.log(`🧹 Encontrados ${zombies.length} tickets zombies. Liberando...`);
             const ids = zombies.map(t => t.id);
             await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).in('id', ids);
         }
-    } catch (e) {
-        console.warn("Auto-limpieza:", e);
-    }
+    } catch (e) { console.warn("Auto-limpieza:", e); }
 }
 
 // 🛡️ PROTECCIÓN AL CERRAR PESTAÑA
 window.addEventListener('beforeunload', function (e) {
     if (ticketsReservados.length > 0) {
-        // Intentamos liberar inmediatamente. 
-        // Nota: Los navegadores modernos a veces bloquean esto si es muy lento, pero es el mejor intento posible.
         const ids = ticketsReservados.map(t => t.id);
-        
-        // Usamos beacon o una llamada asíncrona que no bloquee (fetch keepalive si fuera posible, aqui usamos supabase standard)
         supabaseClient.from('tickets').update({ estado: 'disponible' }).in('id', ids).then(() => {});
-        
-        // Mensaje estándar de navegador "Seguro que quieres salir?"
         e.preventDefault(); 
         e.returnValue = '';
     }
 });
 
+// 🔥 NUEVA LÓGICA: CARGAR MÉTODOS EN PASO 1 (ACORDEÓN)
 async function loadPaymentMethodsForModal() {
-    const container = document.getElementById('payment-methods-container');
+    const container = document.getElementById('payment-methods-list');
+    if(!container) return;
+    
+    container.innerHTML = '<p class="text-center text-xs text-gray-400 animate-pulse">Cargando métodos de pago...</p>';
+    
     const { data: methods } = await supabaseClient.from('metodos_pago').select('*').eq('activo', true);
     
     if(!methods || methods.length === 0) {
-        if(container) container.innerHTML = '<p class="text-center text-xs text-red-400">No hay métodos de pago disponibles.</p>';
+        container.innerHTML = '<p class="text-center text-xs text-red-400">No hay métodos de pago disponibles.</p>';
         return;
     }
 
+    // Mapa de Iconos Bonitos
+    const icons = {
+        'pago_movil': { icon: 'solar:smartphone-2-bold-duotone', color: 'text-blue-500', bg: 'bg-blue-50', label: 'Pago Móvil' },
+        'transferencia': { icon: 'solar:bank-bold-duotone', color: 'text-green-500', bg: 'bg-green-50', label: 'Transferencia' },
+        'binance': { icon: 'simple-icons:binance', color: 'text-yellow-500', bg: 'bg-yellow-50', label: 'Binance' },
+        'zelle': { icon: 'simple-icons:zelle', color: 'text-purple-600', bg: 'bg-purple-50', label: 'Zelle' },
+        'zinli': { icon: 'simple-icons:zinli', color: 'text-indigo-500', bg: 'bg-indigo-50', label: 'Zinli' },
+        'paypal': { icon: 'logos:paypal', color: 'text-blue-600', bg: 'bg-blue-50', label: 'PayPal' },
+        'default': { icon: 'solar:card-bold', color: 'text-gray-500', bg: 'bg-gray-100', label: 'Otro' }
+    };
+
     let html = '';
-    methods.forEach(m => {
-        let details = '';
-        if(m.titular) details += `<div class="text-xs text-gray-500 mb-1">${m.titular}</div>`;
+    methods.forEach((m, index) => {
+        const style = icons[m.tipo] || icons['default'];
+        const isFirst = index === 0 ? 'checked' : ''; // Pre-seleccionar el primero opcionalmente
         
-        let extraInfo = '';
-        if(m.cedula) extraInfo += `
-            <div class="flex justify-between items-center text-xs">
-                <span class="text-gray-400 font-bold">ID:</span>
-                <div class="flex gap-1"><span class="font-bold text-gray-800">${m.cedula}</span><button onclick="copiarTexto('${m.cedula}')" class="text-blue-400"><iconify-icon icon="solar:copy-bold"></iconify-icon></button></div>
+        let detailsHtml = '';
+        if(m.titular) detailsHtml += `<div class="mb-2"><p class="text-[10px] text-gray-400 uppercase font-bold">Titular</p><p class="text-sm font-medium text-gray-800">${m.titular}</p></div>`;
+        
+        if(m.cedula) detailsHtml += `
+            <div class="mb-2">
+                <p class="text-[10px] text-gray-400 uppercase font-bold">Documento / ID</p>
+                <div class="flex items-center gap-2">
+                    <p class="text-sm font-medium text-gray-800">${m.cedula}</p>
+                    <button type="button" onclick="copiarTexto('${m.cedula}')" class="text-blue-500 hover:text-blue-700"><iconify-icon icon="solar:copy-bold"></iconify-icon></button>
+                </div>
             </div>`;
-        if(m.telefono) extraInfo += `
-            <div class="flex justify-between items-center text-xs mt-1">
-                <span class="text-gray-400 font-bold">Cuenta/Tel:</span>
-                <div class="flex gap-1"><span class="font-bold text-gray-800">${m.telefono}</span><button onclick="copiarTexto('${m.telefono}')" class="text-blue-400"><iconify-icon icon="solar:copy-bold"></iconify-icon></button></div>
+            
+        if(m.telefono) detailsHtml += `
+            <div class="mb-2">
+                <p class="text-[10px] text-gray-400 uppercase font-bold">Cuenta / Teléfono</p>
+                <div class="flex items-center gap-2">
+                    <p class="text-sm font-medium text-gray-800">${m.telefono}</p>
+                    <button type="button" onclick="copiarTexto('${m.telefono}')" class="text-blue-500 hover:text-blue-700"><iconify-icon icon="solar:copy-bold"></iconify-icon></button>
+                </div>
             </div>`;
 
         html += `
-            <div class="border-b border-gray-100 pb-3 last:border-0 mb-3">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="font-bold text-gray-800 uppercase flex items-center gap-1">
-                        <iconify-icon icon="solar:card-bold" class="text-blue-500"></iconify-icon> ${m.banco}
-                    </span>
-                    <span class="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold uppercase">${m.tipo.replace('_',' ')}</span>
+            <label class="block relative cursor-pointer group">
+                <input type="radio" name="payment_method" value="${m.tipo}" class="peer hidden" ${isFirst} onchange="togglePaymentDetails(this)">
+                
+                <div class="border-2 border-gray-100 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:shadow-md rounded-2xl p-4 flex items-center gap-4 transition-all bg-white relative z-10 hover:border-red-200">
+                    <div class="w-10 h-10 ${style.bg} ${style.color} rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                        <iconify-icon icon="${style.icon}"></iconify-icon>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-bold text-gray-800 text-sm">${m.banco || style.label}</h4>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold opacity-70">${style.label}</p>
+                    </div>
+                    <div class="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:border-red-500 peer-checked:bg-red-500 flex items-center justify-center text-white text-xs">
+                        <iconify-icon icon="mingcute:check-line"></iconify-icon>
+                    </div>
                 </div>
-                ${details}
-                <div class="bg-gray-50 p-2 rounded-lg mt-1 border border-gray-100">
-                    ${extraInfo || '<span class="text-xs text-gray-400 italic">Sin datos adicionales</span>'}
+
+                <div class="payment-details-enter bg-white border-x-2 border-b-2 border-red-100 rounded-b-2xl mx-2 relative z-0 shadow-sm" style="${isFirst ? 'max-height: 300px; opacity: 1; margin-top: -10px; padding-top: 20px;' : ''}">
+                    <div class="p-4 pt-2">
+                        ${detailsHtml}
+                        <div class="mt-3 p-2 bg-blue-50 rounded-lg flex items-start gap-2">
+                            <iconify-icon icon="solar:info-circle-bold" class="text-blue-500 mt-0.5"></iconify-icon>
+                            <p class="text-[10px] text-blue-700 leading-tight">Copia estos datos para realizar tu pago. Los necesitarás en el último paso.</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </label>
         `;
     });
-    if(container) container.innerHTML = html;
+    
+    container.innerHTML = html;
+}
+
+// Función auxiliar para animar el acordeón manualmente si cambia
+window.togglePaymentDetails = function(radio) {
+    // Cerrar todos los detalles
+    document.querySelectorAll('.payment-details-enter').forEach(el => {
+        el.style.maxHeight = '0';
+        el.style.opacity = '0';
+        el.style.marginTop = '0';
+        el.style.paddingTop = '0';
+    });
+
+    // Abrir el seleccionado
+    const details = radio.parentNode.querySelector('.payment-details-enter');
+    if(details) {
+        details.style.maxHeight = '300px';
+        details.style.opacity = '1';
+        details.style.marginTop = '-10px';
+        details.style.paddingTop = '20px';
+    }
 }
 
 function disablePurchaseButtons() {
@@ -215,7 +259,7 @@ window.updateTotal = function() {
     let total = val * price;
     let text = "Bs. " + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
     
-    ['step2-total', 'step4-total', 'success-total'].forEach(id => {
+    ['step2-total', 'step5-total-display', 'success-total'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.innerText = text;
     });
@@ -249,16 +293,13 @@ window.abrirModalCompra = function() {
     window.mostrarPaso(1);
 }
 
-// ⚠️ MODIFICADO: Ahora es async para esperar que libere tickets
 window.cerrarModalCompra = async function() {
-    // Si ya completó el éxito, solo recargamos
     const successStep = document.getElementById('step-success');
     if (successStep && !successStep.classList.contains('hidden')) {
         location.reload();
         return;
     }
     
-    // Si cancela a mitad de camino, liberamos primero
     if(ticketsReservados.length > 0) {
         await liberarTickets();
     }
@@ -277,21 +318,26 @@ window.mostrarPaso = function(paso) {
     window.updateModalHeader();
 }
 
+// ⚠️ ACTUALIZADO: Manejo de pasos (Saltando el 4)
 window.updateModalHeader = function() {
-    const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "Realiza el Pago", "Comprobante"];
+    const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "X", "Confirmar Pago"];
     const icons = ["solar:card-2-bold-duotone", "solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:wallet-money-bold-duotone", "solar:upload-track-bold-duotone"];
+    
+    // Ajuste visual para simular 4 pasos
+    let visualStep = currentStep;
+    if(currentStep === 5) visualStep = 4; 
     
     const titleEl = document.getElementById('header-title');
     if(titleEl) titleEl.innerText = titles[currentStep - 1];
     
     const stepEl = document.getElementById('header-step');
-    if(stepEl) stepEl.innerText = `Paso ${currentStep} de 5`;
+    if(stepEl) stepEl.innerText = `Paso ${visualStep} de 4`;
     
     const iconEl = document.getElementById('header-icon');
     if(iconEl) iconEl.setAttribute('icon', icons[currentStep - 1]);
     
     const prog = document.getElementById('progress-bar');
-    if(prog) prog.style.width = `${currentStep * 20}%`;
+    if(prog) prog.style.width = `${visualStep * 25}%`;
 
     const btnBack = document.getElementById('btn-back');
     if(btnBack) {
@@ -309,23 +355,14 @@ window.updateModalHeader = function() {
 
 window.prevStep = function() {
     if (currentStep > 1) {
-        if(currentStep === 5 && !document.getElementById('payment-instructions').classList.contains('hidden')) {
-            document.getElementById('payment-instructions').classList.add('hidden');
-            document.getElementById('step-4').classList.remove('hidden');
-            currentStep = 4;
+        if(currentStep === 5) {
+            // Si estamos en 5, volver a 3 (saltar el 4 que eliminamos)
+            currentStep = 3;
         } else {
             currentStep--;
         }
         window.mostrarPaso(currentStep);
     }
-}
-
-window.dismissInstructions = function() {
-    document.getElementById('payment-instructions').classList.add('hidden');
-    document.getElementById(`step-4`).classList.add('hidden');
-    currentStep = 5;
-    document.getElementById(`step-5`).classList.remove('hidden');
-    window.updateModalHeader();
 }
 
 
@@ -340,7 +377,6 @@ async function validarStockReal() {
     
     if (!raffleId || cantidad <= 0) return false;
 
-    // Verificar stock DISPONIBLE solo del sorteo ACTIVO
     const { count, error } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
@@ -358,7 +394,6 @@ async function validarStockReal() {
 }
 
 async function reservarTicketsEnDB(cantidad, raffleId) {
-    // Tomar tickets disponibles
     const { data: tickets, error } = await supabaseClient
         .from('tickets')
         .select('id, numero')
@@ -371,7 +406,6 @@ async function reservarTicketsEnDB(cantidad, raffleId) {
         return false;
     }
 
-    // Bloquearlos
     const ids = tickets.map(t => t.id);
     await supabaseClient.from('tickets').update({ estado: 'bloqueado' }).in('id', ids);
     ticketsReservados = tickets;
@@ -393,7 +427,7 @@ window.nextStep = async function() {
     // Paso 1: Método de pago
     if(currentStep === 1) {
         const method = document.querySelector('input[name="payment_method"]:checked');
-        if(!method) { Swal.fire({ icon: 'warning', text: 'Selecciona un método.' }); return; }
+        if(!method) { Swal.fire({ icon: 'warning', text: 'Selecciona un método para ver los datos.' }); return; }
     }
 
     // Paso 2: Cantidad (Validar Stock)
@@ -417,15 +451,14 @@ window.nextStep = async function() {
         const cedula = document.getElementById('input-cedula').value;
         const phone = document.getElementById('input-phone').value;
         if(!name || !cedula || !phone) { Swal.fire({ icon: 'warning', text: 'Completa nombre, cédula y teléfono.' }); return; }
+        
+        // 🚀 SALTO MÁGICO: Del paso 3 al 5 (Saltamos instrucciones redundantes)
+        currentStep = 5;
+        window.mostrarPaso(5);
+        return;
     }
 
-    // Paso 4: Pago -> Instrucciones -> Paso 5
-    if (currentStep === 4) {
-        document.getElementById('payment-instructions').classList.remove('hidden');
-        return; 
-    }
-
-    // Avanzar normal
+    // Avanzar normal (1 -> 2 -> 3)
     if (currentStep < 5) {
         currentStep++;
         window.mostrarPaso(currentStep);
@@ -494,15 +527,17 @@ async function procesarCompraFinal() {
         const email = document.getElementById('input-email').value;
         const raffleId = document.getElementById('raffle-id').value;
         const cantidad = parseInt(document.getElementById('custom-qty').value);
+        const method = document.querySelector('input[name="payment_method"]:checked').value;
         
-        let montoStr = document.getElementById('step4-total').innerText.replace('Bs.', '').replace(/\./g,'').replace(',','.');
+        // Obtener Total del elemento display (ya calculado)
+        let montoStr = document.getElementById('step5-total-display').innerText.replace('Bs.', '').replace(/\./g,'').replace(',','.');
         let monto = parseFloat(montoStr);
 
         // 3. Crear Orden
         const { data: orden, error } = await supabaseClient.from('ordenes').insert([{
             id_sorteo: raffleId,
             nombre, cedula, telefono: country + phone, email,
-            metodo_pago: 'pago_movil',
+            metodo_pago: method,
             referencia_pago: ref,
             url_comprobante: publicUrl,
             monto_total: monto,
@@ -528,7 +563,6 @@ async function procesarCompraFinal() {
         if(container) container.innerHTML = numeros.map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('');
         
         document.getElementById('modal-footer').classList.add('hidden');
-        document.getElementById('step-4').classList.add('hidden'); // O step-5 si estamos ahí
         document.getElementById('step-5').classList.add('hidden');
         document.getElementById('step-success').classList.remove('hidden');
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
@@ -565,7 +599,6 @@ window.consultarTicketsReales = async function() {
 
     let html = '';
     for (let orden of ordenes) {
-        // Traer tickets de la orden
         const { data: tickets } = await supabaseClient.from('tickets').select('numero').eq('id_orden', orden.id);
         const nums = tickets ? tickets.map(t => `<span class="bg-gray-100 px-1 rounded border">${t.numero}</span>`).join(' ') : 'Pendientes';
         
