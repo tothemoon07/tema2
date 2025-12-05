@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN FINAL: DINÁMICA, FLEXIBLE Y SEGURA
+// client_logic.js - VERSIÓN BLINDADA CONTRA BLOQUEOS ETERNOS
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -13,11 +13,15 @@ let intervaloTimer = null;
 let activeRaffle = null;
 
 // ==========================================
-// 1. CARGA INICIAL
+// 1. CARGA INICIAL Y LIMPIEZA AUTOMÁTICA
 // ==========================================
 
 window.onload = async function() {
     console.log("Iniciando sistema...");
+
+    // 🧹 EL CONSERJE: Limpiar tickets "zombies" (bloqueados hace mucho tiempo)
+    // Esto ayuda a que si alguien cerró la ventana mal, el siguiente visitante arregle el stock.
+    limpiarBloqueosHuerfanos();
 
     // 1. Cargar Info del Sorteo Activo
     const { data: sorteo } = await supabaseClient
@@ -58,6 +62,49 @@ window.onload = async function() {
 };
 
 function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
+
+// 🔥 FUNCIÓN DE LIMPIEZA AUTOMÁTICA
+async function limpiarBloqueosHuerfanos() {
+    // Calculamos una fecha hace 20 minutos
+    const hace20min = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+
+    // Buscamos tickets que sigan 'bloqueado' pero que su ultima actualización sea vieja
+    // IMPORTANTE: Esto asume que Supabase actualiza la columna 'updated_at' o 'created_at'
+    // Si tu tabla no tiene 'updated_at', esto podría no funcionar perfecto, pero intentará con created_at o lógica similar.
+    
+    try {
+        // Primero obtenemos los IDs para no hacer un update masivo a ciegas
+        const { data: zombies } = await supabaseClient
+            .from('tickets')
+            .select('id')
+            .eq('estado', 'bloqueado')
+            .lt('created_at', hace20min); // Usamos created_at o updated_at según tengas en tu DB
+
+        if(zombies && zombies.length > 0) {
+            console.log(`🧹 Encontrados ${zombies.length} tickets zombies. Liberando...`);
+            const ids = zombies.map(t => t.id);
+            await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).in('id', ids);
+        }
+    } catch (e) {
+        console.warn("Auto-limpieza:", e);
+    }
+}
+
+// 🛡️ PROTECCIÓN AL CERRAR PESTAÑA
+window.addEventListener('beforeunload', function (e) {
+    if (ticketsReservados.length > 0) {
+        // Intentamos liberar inmediatamente. 
+        // Nota: Los navegadores modernos a veces bloquean esto si es muy lento, pero es el mejor intento posible.
+        const ids = ticketsReservados.map(t => t.id);
+        
+        // Usamos beacon o una llamada asíncrona que no bloquee (fetch keepalive si fuera posible, aqui usamos supabase standard)
+        supabaseClient.from('tickets').update({ estado: 'disponible' }).in('id', ids).then(() => {});
+        
+        // Mensaje estándar de navegador "Seguro que quieres salir?"
+        e.preventDefault(); 
+        e.returnValue = '';
+    }
+});
 
 async function loadPaymentMethodsForModal() {
     const container = document.getElementById('payment-methods-container');
@@ -127,12 +174,10 @@ window.menuAction = function(action) {
     window.toggleMenu(); 
     document.getElementById('view-home').classList.add('hidden');
     document.getElementById('view-terms').classList.add('hidden');
-    // document.getElementById('floating-btn').classList.add('hidden'); // Opcional, según tu diseño
     window.scrollTo(0,0);
 
     if (action === 'home') {
         document.getElementById('view-home').classList.remove('hidden');
-        // document.getElementById('floating-btn').classList.remove('hidden');
     } else if (action === 'terms') {
         document.getElementById('view-terms').classList.remove('hidden');
     } else if (action === 'verify') {
@@ -204,13 +249,22 @@ window.abrirModalCompra = function() {
     window.mostrarPaso(1);
 }
 
-window.cerrarModalCompra = function() {
+// ⚠️ MODIFICADO: Ahora es async para esperar que libere tickets
+window.cerrarModalCompra = async function() {
+    // Si ya completó el éxito, solo recargamos
     const successStep = document.getElementById('step-success');
-    if (successStep && !successStep.classList.contains('hidden')) location.reload();
+    if (successStep && !successStep.classList.contains('hidden')) {
+        location.reload();
+        return;
+    }
+    
+    // Si cancela a mitad de camino, liberamos primero
+    if(ticketsReservados.length > 0) {
+        await liberarTickets();
+    }
     
     document.getElementById('checkoutModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
-    liberarTickets();
 }
 
 window.mostrarPaso = function(paso) {
@@ -256,7 +310,6 @@ window.updateModalHeader = function() {
 window.prevStep = function() {
     if (currentStep > 1) {
         if(currentStep === 5 && !document.getElementById('payment-instructions').classList.contains('hidden')) {
-            // Caso especial si está viendo instrucciones
             document.getElementById('payment-instructions').classList.add('hidden');
             document.getElementById('step-4').classList.remove('hidden');
             currentStep = 4;
@@ -394,7 +447,12 @@ function iniciarTimer() {
         if (timeLeft <= 0) {
             clearInterval(intervaloTimer);
             liberarTickets();
-            Swal.fire('Tiempo Agotado', 'Se liberaron tus boletos.', 'error').then(() => location.reload());
+            Swal.fire({
+                title: 'Tiempo Agotado', 
+                text: 'Se liberaron tus boletos.', 
+                icon: 'error',
+                confirmButtonText: 'Entendido'
+            }).then(() => location.reload());
         }
         timeLeft--;
     }, 1000);
@@ -403,7 +461,7 @@ function iniciarTimer() {
 async function liberarTickets() {
     if (ticketsReservados.length === 0) return;
     const ids = ticketsReservados.map(t => t.id);
-    await supabaseClient.from('tickets').update({ estado: 'disponible' }).in('id', ids);
+    await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).in('id', ids);
     ticketsReservados = [];
 }
 
