@@ -30,15 +30,22 @@ window.onload = async function() {
         activeRaffle = sorteo;
         
         // Inyectar datos en HTML
-        document.getElementById('raffle-id').value = sorteo.id;
-        document.getElementById('raffle-price').value = sorteo.precio_boleto;
+        const idInput = document.getElementById('raffle-id');
+        const priceInput = document.getElementById('raffle-price');
+        
+        if(idInput) idInput.value = sorteo.id;
+        if(priceInput) priceInput.value = sorteo.precio_boleto;
         
         setText('landing-title', sorteo.titulo);
         setText('landing-price-display', `Bs. ${sorteo.precio_boleto.toFixed(2)}`);
         setText('landing-date', sorteo.fecha_sorteo);
         setText('landing-lottery', sorteo.loteria);
 
-        if(sorteo.url_flyer) document.getElementById('landing-image').src = sorteo.url_flyer;
+        // Actualizar Flyer (Si existe el elemento)
+        if(sorteo.url_flyer) {
+            const imgEl = document.getElementById('landing-image');
+            if(imgEl) imgEl.src = sorteo.url_flyer;
+        }
 
         updateTotal(); // Actualizar cálculos iniciales
     } else {
@@ -57,7 +64,7 @@ async function loadPaymentMethodsForModal() {
     const { data: methods } = await supabaseClient.from('metodos_pago').select('*').eq('activo', true);
     
     if(!methods || methods.length === 0) {
-        container.innerHTML = '<p class="text-center text-xs text-red-400">No hay métodos de pago disponibles.</p>';
+        if(container) container.innerHTML = '<p class="text-center text-xs text-red-400">No hay métodos de pago disponibles.</p>';
         return;
     }
 
@@ -93,7 +100,7 @@ async function loadPaymentMethodsForModal() {
             </div>
         `;
     });
-    container.innerHTML = html;
+    if(container) container.innerHTML = html;
 }
 
 function disablePurchaseButtons() {
@@ -120,12 +127,12 @@ window.menuAction = function(action) {
     window.toggleMenu(); 
     document.getElementById('view-home').classList.add('hidden');
     document.getElementById('view-terms').classList.add('hidden');
-    document.getElementById('floating-btn').classList.add('hidden');
+    // document.getElementById('floating-btn').classList.add('hidden'); // Opcional, según tu diseño
     window.scrollTo(0,0);
 
     if (action === 'home') {
         document.getElementById('view-home').classList.remove('hidden');
-        document.getElementById('floating-btn').classList.remove('hidden');
+        // document.getElementById('floating-btn').classList.remove('hidden');
     } else if (action === 'terms') {
         document.getElementById('view-terms').classList.remove('hidden');
     } else if (action === 'verify') {
@@ -157,7 +164,9 @@ window.changeQty = function(n) {
 
 window.updateTotal = function() {
     let val = parseInt(document.getElementById('custom-qty').value) || 1;
-    let price = parseFloat(document.getElementById('raffle-price').value) || 0; 
+    let priceInput = document.getElementById('raffle-price');
+    let price = priceInput ? parseFloat(priceInput.value) : 0; 
+    
     let total = val * price;
     let text = "Bs. " + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
     
@@ -186,7 +195,9 @@ window.previewImage = function(input) {
 // ==========================================
 
 window.abrirModalCompra = function() {
-    if(document.querySelector('button[onclick="abrirModalCompra()"]').disabled) return;
+    const btn = document.querySelector('button[onclick="abrirModalCompra()"]');
+    if(btn && btn.disabled) return;
+    
     document.getElementById('checkoutModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     currentStep = 1;
@@ -194,50 +205,84 @@ window.abrirModalCompra = function() {
 }
 
 window.cerrarModalCompra = function() {
-    if (!document.getElementById('step-success').classList.contains('hidden')) location.reload();
+    const successStep = document.getElementById('step-success');
+    if (successStep && !successStep.classList.contains('hidden')) location.reload();
+    
     document.getElementById('checkoutModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
     liberarTickets();
 }
 
 window.mostrarPaso = function(paso) {
-    for(let i=1; i<=4; i++) document.getElementById(`step-${i}`).classList.add('hidden');
-    document.getElementById(`step-${paso}`).classList.remove('hidden');
+    for(let i=1; i<=5; i++) {
+        const el = document.getElementById(`step-${i}`);
+        if(el) el.classList.add('hidden');
+    }
+    const stepEl = document.getElementById(`step-${paso}`);
+    if(stepEl) stepEl.classList.remove('hidden');
     window.updateModalHeader();
 }
 
 window.updateModalHeader = function() {
-    const titles = ["Cantidad de Boletos", "Datos Personales", "Realiza el Pago", "Confirmar"];
-    const icons = ["solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:wallet-money-bold-duotone", "solar:upload-track-bold-duotone"];
+    const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "Realiza el Pago", "Comprobante"];
+    const icons = ["solar:card-2-bold-duotone", "solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:wallet-money-bold-duotone", "solar:upload-track-bold-duotone"];
     
-    document.getElementById('header-title').innerText = titles[currentStep - 1];
-    document.getElementById('header-step').innerText = `Paso ${currentStep} de 4`;
-    document.getElementById('header-icon').setAttribute('icon', icons[currentStep - 1]);
-    document.getElementById('progress-bar').style.width = `${currentStep * 25}%`;
+    const titleEl = document.getElementById('header-title');
+    if(titleEl) titleEl.innerText = titles[currentStep - 1];
+    
+    const stepEl = document.getElementById('header-step');
+    if(stepEl) stepEl.innerText = `Paso ${currentStep} de 5`;
+    
+    const iconEl = document.getElementById('header-icon');
+    if(iconEl) iconEl.setAttribute('icon', icons[currentStep - 1]);
+    
+    const prog = document.getElementById('progress-bar');
+    if(prog) prog.style.width = `${currentStep * 20}%`;
 
     const btnBack = document.getElementById('btn-back');
-    btnBack.disabled = (currentStep === 1);
-    btnBack.classList.toggle('opacity-50', currentStep === 1);
+    if(btnBack) {
+        btnBack.disabled = (currentStep === 1);
+        btnBack.classList.toggle('opacity-50', currentStep === 1);
+    }
 
     const btnNext = document.getElementById('btn-next');
-    btnNext.innerHTML = (currentStep === 4) 
-        ? `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>` 
-        : `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`;
+    if(btnNext) {
+        btnNext.innerHTML = (currentStep === 5) 
+            ? `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>` 
+            : `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`;
+    }
 }
 
 window.prevStep = function() {
     if (currentStep > 1) {
-        currentStep--;
+        if(currentStep === 5 && !document.getElementById('payment-instructions').classList.contains('hidden')) {
+            // Caso especial si está viendo instrucciones
+            document.getElementById('payment-instructions').classList.add('hidden');
+            document.getElementById('step-4').classList.remove('hidden');
+            currentStep = 4;
+        } else {
+            currentStep--;
+        }
         window.mostrarPaso(currentStep);
     }
 }
+
+window.dismissInstructions = function() {
+    document.getElementById('payment-instructions').classList.add('hidden');
+    document.getElementById(`step-4`).classList.add('hidden');
+    currentStep = 5;
+    document.getElementById(`step-5`).classList.remove('hidden');
+    window.updateModalHeader();
+}
+
 
 // ==========================================
 // 5. VALIDACIÓN DE STOCK REAL
 // ==========================================
 
 async function validarStockReal() {
-    const raffleId = document.getElementById('raffle-id').value;
+    const raffleIdInput = document.getElementById('raffle-id');
+    const raffleId = raffleIdInput ? raffleIdInput.value : null;
     const cantidad = parseInt(document.getElementById('custom-qty').value);
     
     if (!raffleId || cantidad <= 0) return false;
@@ -292,8 +337,14 @@ window.cerrarAlertaStock = function() { document.getElementById('modal-stock-sut
 // ==========================================
 
 window.nextStep = async function() {
-    // Paso 1: Cantidad
+    // Paso 1: Método de pago
     if(currentStep === 1) {
+        const method = document.querySelector('input[name="payment_method"]:checked');
+        if(!method) { Swal.fire({ icon: 'warning', text: 'Selecciona un método.' }); return; }
+    }
+
+    // Paso 2: Cantidad (Validar Stock)
+    if(currentStep === 2) {
         const btn = document.getElementById('btn-next');
         const originalText = btn.innerHTML;
         btn.innerHTML = 'Verificando...';
@@ -307,16 +358,22 @@ window.nextStep = async function() {
         iniciarTimer();
     }
 
-    // Paso 2: Datos
-    if(currentStep === 2) {
+    // Paso 3: Datos
+    if(currentStep === 3) {
         const name = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
         const phone = document.getElementById('input-phone').value;
         if(!name || !cedula || !phone) { Swal.fire({ icon: 'warning', text: 'Completa nombre, cédula y teléfono.' }); return; }
     }
 
-    // Avanzar
-    if (currentStep < 4) {
+    // Paso 4: Pago -> Instrucciones -> Paso 5
+    if (currentStep === 4) {
+        document.getElementById('payment-instructions').classList.remove('hidden');
+        return; 
+    }
+
+    // Avanzar normal
+    if (currentStep < 5) {
         currentStep++;
         window.mostrarPaso(currentStep);
     } else {
@@ -331,7 +388,9 @@ function iniciarTimer() {
     intervaloTimer = setInterval(() => {
         let min = Math.floor(timeLeft / 60);
         let sec = timeLeft % 60;
-        document.getElementById('countdown').innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
+        const el = document.getElementById('countdown');
+        if(el) el.innerText = `${min}:${sec < 10 ? '0'+sec : sec}`;
+        
         if (timeLeft <= 0) {
             clearInterval(intervaloTimer);
             liberarTickets();
@@ -411,7 +470,8 @@ async function procesarCompraFinal() {
         if(container) container.innerHTML = numeros.map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('');
         
         document.getElementById('modal-footer').classList.add('hidden');
-        document.getElementById('step-4').classList.add('hidden');
+        document.getElementById('step-4').classList.add('hidden'); // O step-5 si estamos ahí
+        document.getElementById('step-5').classList.add('hidden');
         document.getElementById('step-success').classList.remove('hidden');
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 
@@ -429,7 +489,9 @@ window.abrirModalVerificar = function() { document.getElementById('checkTicketsM
 window.cerrarModalVerificar = function() { document.getElementById('checkTicketsModal').classList.add('hidden'); }
 
 window.consultarTicketsReales = async function() {
-    const cedula = document.getElementById('cedula-consult').value;
+    const cedulaInput = document.getElementById('cedula-consult');
+    const cedula = cedulaInput ? cedulaInput.value : '';
+    
     if(!cedula) return Swal.fire('Error', 'Ingresa tu cédula', 'warning');
     
     const div = document.getElementById('ticket-results');
@@ -453,7 +515,7 @@ window.consultarTicketsReales = async function() {
         let estado = orden.estado === 'aprobado' ? 'APROBADO' : (orden.estado === 'rechazado' ? 'RECHAZADO' : 'VERIFICANDO');
 
         html += `
-            <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm relative overflow-hidden">
+            <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm relative overflow-hidden mb-2">
                 <div class="absolute top-0 right-0 w-4 h-full bg-${color}-500"></div>
                 <div class="pr-6">
                     <div class="flex justify-between mb-1">
