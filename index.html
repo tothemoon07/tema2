@@ -12,6 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick-theme.min.css" />
+
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #f3f4f6; }
         .animate-wave-pulse { animation: waves 2s infinite ease-out; }
@@ -24,9 +27,11 @@
         .custom-scroll::-webkit-scrollbar { width: 5px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        .lottery-slider img { width: 100%; height: 100%; object-fit: contain; background-color: #f9fafb; }
         
         #side-menu { transition: transform 0.3s ease-in-out; }
         .menu-open { transform: translateX(0) !important; }
+        .sold-out-filter { filter: grayscale(100%); opacity: 0.8; pointer-events: none; }
 
         .qty-btn-selected {
             background-color: #ef4444 !important;
@@ -44,8 +49,8 @@
     <header class="fixed top-0 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-200">
         <nav class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
             <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('home')">
-                <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center bg-gray-50">
-                    <iconify-icon icon="solar:gift-bold-duotone" class="text-red-500 text-2xl"></iconify-icon>
+                <div class="w-10 h-10 rounded-xl overflow-hidden border border-gray-100">
+                    <img src="https://cdn.inteliticket.com/platform/logos/690fb6cfa0634_graciela.png" class="w-full h-full object-contain">
                 </div>
                 <div>
                     <h1 class="text-base font-bold leading-tight text-gray-800">Gana con Graciela</h1>
@@ -62,17 +67,19 @@
     <div id="side-menu" class="fixed top-0 right-0 bottom-0 w-80 bg-white z-[60] shadow-2xl transform translate-x-full flex flex-col">
         <div class="p-5 border-b border-gray-100 flex justify-between items-center">
              <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                    <iconify-icon icon="solar:user-bold" class="text-gray-400"></iconify-icon>
+                <div class="w-8 h-8 rounded-full overflow-hidden">
+                    <img src="https://cdn.inteliticket.com/platform/logos/690fb6cfa0634_graciela.png" class="w-full h-full object-cover">
                 </div>
                 <div>
-                    <h3 class="font-bold text-sm">Menú</h3>
+                    <h3 class="font-bold text-sm">Gana con Graciela</h3>
+                    <p class="text-[10px] text-gray-400">@gracielavarelaaa</p>
                 </div>
             </div>
             <button onclick="toggleMenu()" class="text-gray-400 hover:text-gray-600"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
         </div>
         
         <div class="flex-1 overflow-y-auto py-4">
+            <div class="px-6 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Navegación</div>
             <nav class="space-y-1 px-3">
                 <a href="#" onclick="menuAction('home')" class="flex items-center gap-4 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
                     <iconify-icon icon="solar:home-smile-bold-duotone" width="22"></iconify-icon> <span class="font-medium">Inicio</span>
@@ -95,8 +102,8 @@
             </div>
 
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="aspect-square md:aspect-video relative bg-gray-50 border-b border-gray-100">
-                    <img id="landing-image" src="https://placehold.co/600x600?text=Cargando..." class="object-contain w-full h-full">
+                <div class="lottery-slider aspect-square md:aspect-video relative bg-gray-50 border-b border-gray-100">
+                    <div><img id="landing-image" src="" class="object-cover w-full h-full bg-gray-100"></div>
                 </div>
 
                 <div class="p-6">
@@ -120,19 +127,40 @@
 
                     <div class="px-1 mb-2">
                         <div class="h-3 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner mb-2">
-                            <div class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[80%] animate-pulse"></div>
+                            <div class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[80%]"></div>
                         </div>
-                        <p class="text-center text-[10px] text-gray-400 font-bold">¡Quedan pocos boletos!</p>
+                        <p class="text-center text-[10px] text-gray-400 font-bold">Boletos volando 🚀</p>
+                    </div>
+
+                    <div class="flex justify-center gap-6 mt-8 opacity-80 grayscale hover:grayscale-0 transition-all">
+                        <img src="https://cdn.inteliticket.com/lotteries/logos/65f46b627993a_conalot.png" class="h-8 object-contain">
+                        <img src="https://cdn.inteliticket.com/lotteries/logos/66e07b34d748f_super-gana.png" class="h-8 object-contain">
+                        <img src="https://cdn.inteliticket.com/lotteries/logos/6604240751322_tachira.png" class="h-8 object-contain">
                     </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
                 <h3 class="font-bold text-gray-800 text-lg mb-1">Verificar Boletos</h3>
-                <p class="text-xs text-gray-500 mb-6">Consulta el estado de tus compras</p>
+                <p class="text-xs text-gray-500 mb-6">Click aquí para consultar tus boletos</p>
                 <button onclick="abrirModalVerificar()" class="w-full md:w-auto px-12 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-100 transition flex items-center justify-center gap-2 mx-auto">
                     <iconify-icon icon="solar:magnifer-bold" width="20"></iconify-icon> Buscar
                 </button>
+            </div>
+
+            <div id="contact-section-home" class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
+                <h3 class="font-bold text-gray-800 text-lg mb-1">¿Necesitas Ayuda?</h3>
+                <p class="text-xs text-gray-500 mb-6">Contacta con nuestro equipo de soporte</p>
+                <div class="flex justify-center gap-4">
+                    <a href="https://wa.me/584243011181" target="_blank" class="flex flex-col items-center gap-2 group">
+                        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition">
+                            <iconify-icon icon="logos:whatsapp-icon" width="24"></iconify-icon>
+                        </div>
+                        <div class="text-center">
+                            <span class="block text-[10px] font-bold text-gray-800">WhatsApp</span>
+                        </div>
+                    </a>
+                </div>
             </div>
 
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
@@ -148,13 +176,23 @@
             <div class="text-center mb-6">
                 <h2 class="text-2xl font-black text-gray-800">Términos y Condiciones</h2>
             </div>
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 text-sm text-gray-600 leading-relaxed">
-                <p>Al participar en este sorteo, aceptas que los boletos no son reembolsables y que el sorteo se realizará en la fecha estipulada con la lotería indicada.</p>
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8 text-sm text-gray-600 leading-relaxed space-y-6">
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">1. Participación</h4>
+                    <p class="text-xs">Al comprar un boleto, aceptas todas las reglas del sorteo activo.</p>
+                </div>
+                 <div>
+                    <h4 class="font-bold text-gray-900 mb-2">2. Pagos</h4>
+                    <p class="text-xs">Los pagos deben ser reportados inmediatamente para garantizar la reserva de los boletos.</p>
+                </div>
             </div>
         </div>
 
         <div class="text-center pb-8 pt-4">
-            <p class="text-[10px] text-gray-400">Plataforma segura</p>
+            <p class="text-[10px] text-gray-400">Plataforma de rifas construida por</p>
+            <div class="font-black text-gray-300 text-sm flex items-center justify-center gap-1 mt-1">
+                MOUSE <span class="text-red-300">77</span>
+            </div>
         </div>
 
     </div>
@@ -173,27 +211,39 @@
                 <button onclick="cerrarModalCompra()" class="absolute top-5 right-5 text-white/80 hover:text-white"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                        <iconify-icon id="header-icon" icon="solar:ticket-bold-duotone" width="24"></iconify-icon>
+                        <iconify-icon id="header-icon" icon="solar:card-2-bold-duotone" width="24"></iconify-icon>
                     </div>
                     <div>
-                        <h3 id="header-title" class="font-bold text-lg">Cantidad</h3>
-                        <p id="header-step" class="text-xs text-white/80">Paso 1 de 4</p>
+                        <h3 id="header-title" class="font-bold text-lg">Método de Pago</h3>
+                        <p id="header-step" class="text-xs text-white/80">Paso 1 de 5</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-gray-100 h-1 w-full flex-shrink-0"><div id="progress-bar" class="bg-red-600 h-full transition-all duration-300" style="width: 25%"></div></div>
+            <div class="bg-gray-100 h-1 w-full flex-shrink-0"><div id="progress-bar" class="bg-red-600 h-full transition-all duration-300" style="width: 20%"></div></div>
             
             <div class="flex-1 overflow-y-auto p-5 custom-scroll bg-white relative">
                 
                 <div id="timer-container" class="text-center mb-6 hidden"><div class="text-3xl font-black text-red-500 animate-pulse font-mono" id="countdown">15:00</div></div>
 
                 <div id="step-1" class="step-content">
+                    <h2 class="text-lg font-bold text-center text-gray-800 mb-6">Selecciona tu método de pago</h2>
+                    <label class="cursor-pointer group block relative">
+                        <input type="radio" name="payment_method" value="pago_movil" class="peer hidden" checked>
+                        <div class="border-2 border-gray-100 peer-checked:border-red-500 peer-checked:bg-red-50 rounded-2xl p-4 flex items-center gap-4 transition-all">
+                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><iconify-icon icon="solar:smartphone-2-bold-duotone" width="24"></iconify-icon></div>
+                            <div class="flex-1"><h4 class="font-bold text-gray-800">Pago Móvil / Transferencia</h4><p class="text-xs text-gray-500">Pago instantáneo</p></div>
+                            <div class="w-6 h-6 rounded-full border-2 border-gray-300 peer-checked:border-red-500 peer-checked:bg-red-500 flex items-center justify-center text-white"><iconify-icon icon="mingcute:check-line"></iconify-icon></div>
+                        </div>
+                    </label>
+                </div>
+                
+                <div id="step-2" class="step-content hidden">
                     <div class="grid grid-cols-3 gap-2 mb-6">
                         <button onclick="selectQty(1, this)" class="qty-btn qty-btn-selected border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">1<br><span class="text-[10px] text-gray-400 font-normal">Boleto</span></button>
                         <button onclick="selectQty(2, this)" class="qty-btn border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">2<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
                         <button onclick="selectQty(5, this)" class="qty-btn border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">5<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
                         <button onclick="selectQty(10, this)" class="qty-btn border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">10<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
-                        <button onclick="selectQty(20, this)" class="qty-btn border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">20<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
+                        <button onclick="selectQty(25, this)" class="qty-btn border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">25<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
                         <button onclick="selectQty(50, this)" class="qty-btn border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">50<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
                     </div>
                     <div class="flex items-center gap-3 mb-6">
@@ -206,29 +256,34 @@
                     </div>
                 </div>
 
-                <div id="step-2" class="step-content hidden">
+                <div id="step-3" class="step-content hidden">
                     <form class="space-y-4">
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre y Apellido</label><input type="text" id="input-name" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Cédula</label><input type="number" id="input-cedula" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre y Apellido <span class="text-red-500">*</span></label><input type="text" id="input-name" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Cédula <span class="text-red-500">*</span></label><input type="number" id="input-cedula" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                         <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Teléfono WhatsApp</label>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Teléfono WhatsApp <span class="text-red-500">*</span></label>
                             <div class="flex gap-2">
-                                <select id="input-country-code" class="w-24 border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none font-bold">
-                                    <option value="+58">🇻🇪 +58</option>
-                                    <option value="+1">🇺🇸 +1</option>
-                                </select>
-                                <input type="tel" id="input-phone" class="flex-1 border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none" placeholder="4121234567">
+                                <div class="relative w-32">
+                                    <select id="input-country-code" class="w-full h-full border border-gray-200 bg-gray-50 rounded-xl p-3 pr-8 text-sm appearance-none outline-none focus:bg-white focus:border-red-500 transition font-bold text-gray-700">
+                                        <option value="+58">🇻🇪 +58</option>
+                                        <option value="+1">🇺🇸 +1</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
+                                        <iconify-icon icon="solar:alt-arrow-down-bold" width="12"></iconify-icon>
+                                    </div>
+                                </div>
+                                <input type="tel" id="input-phone" class="flex-1 border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-red-500 outline-none transition" placeholder="4121234567">
                             </div>
                         </div>
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Correo (Opcional)</label><input type="email" id="input-email" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Correo <span class="text-red-500">*</span></label><input type="email" id="input-email" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                     </form>
                 </div>
 
-                <div id="step-3" class="step-content hidden">
-                     <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-6 text-sm space-y-4 shadow-sm">
+                <div id="step-4" class="step-content hidden">
+                      <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-6 text-sm space-y-4 shadow-sm">
                         <div class="flex items-center gap-3 pb-3 border-b border-blue-100">
                             <iconify-icon icon="solar:wallet-bold-duotone" class="text-blue-500 text-xl"></iconify-icon>
-                            <span class="font-bold text-blue-900">Cuentas Disponibles</span>
+                            <span class="font-bold text-blue-900">Datos para el pago</span>
                         </div>
                         
                         <div id="payment-methods-container" class="space-y-4">
@@ -242,15 +297,14 @@
                                 <button onclick="copiarTexto(document.getElementById('step4-total').innerText.replace('Bs.','').trim())" class="text-blue-400 hover:text-blue-600 transition"><iconify-icon icon="solar:copy-bold" width="16"></iconify-icon></button>
                             </div>
                         </div>
-                     </div>
-                     <p class="text-xs text-center text-gray-400">Realiza el pago y guarda el comprobante.</p>
+                      </div>
                 </div>
 
-                <div id="step-4" class="step-content hidden">
+                <div id="step-5" class="step-content hidden">
                     <form class="space-y-4">
-                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Referencia / # Comprobante</label><input type="text" id="input-referencia" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none font-mono"></div>
+                        <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Referencia (Últimos 6 dígitos) <span class="text-red-500">*</span></label><input type="number" id="input-referencia" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                         <div class="space-y-1">
-                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Subir Capture</label>
+                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Comprobante <span class="text-red-500">*</span></label>
                             <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 cursor-pointer relative transition group">
                                 <input type="file" id="input-comprobante" class="absolute inset-0 opacity-0 cursor-pointer z-20" accept="image/*" onchange="previewImage(this)">
                                 <div id="upload-placeholder" class="group-hover:scale-105 transition-transform">
@@ -267,21 +321,32 @@
                 </div>
 
                 <div id="step-success" class="step-content hidden text-center py-4 relative">
-                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500 animate-bounce"><iconify-icon icon="solar:check-circle-bold" width="40"></iconify-icon></div>
-                    <div id="success-message-container">
-                        <h2 class="text-2xl font-black text-gray-800 mb-2">¡Todo Listo!</h2>
-                        <p class="text-xs text-gray-500 mb-6">Tu compra ha sido registrada y está en revisión.</p>
-                    </div>
-                    <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100">
-                        <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
-                             <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0"><iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon></div>
-                            <div><h4 class="font-bold text-gray-800 text-sm">PENDIENTE</h4><p class="text-[10px] font-bold text-yellow-600 uppercase">Validando Pago</p></div>
-                            <div class="ml-auto text-right"><span class="text-xs font-bold text-gray-400">TOTAL</span><br><span class="font-black text-gray-900" id="success-total">--</span></div>
+                    <div class="relative z-10">
+                        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500 animate-bounce"><iconify-icon icon="solar:check-circle-bold" width="40"></iconify-icon></div>
+                        <div id="success-message-container">
+                            <h2 class="text-2xl font-black text-gray-800 mb-2">¡Todo Listo!</h2>
+                            <p class="text-xs text-gray-500 mb-6">Tu compra ha sido registrada.</p>
                         </div>
-                        <p class="text-xs font-bold text-gray-700 mb-2">Números reservados:</p>
-                        <div class="flex flex-wrap gap-2" id="assigned-tickets"></div>
+                        <div class="bg-gray-50 rounded-2xl p-4 text-left border border-gray-100">
+                            <div class="flex items-center gap-3 mb-3 border-b border-gray-200 pb-3">
+                                 <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 flex-shrink-0"><iconify-icon icon="solar:clock-circle-bold" width="20"></iconify-icon></div>
+                                <div><h4 class="font-bold text-gray-800 text-sm">#PENDIENTE</h4><p class="text-[10px] font-bold text-yellow-600 uppercase">Verificando Pago</p></div>
+                                <div class="ml-auto text-right"><span class="text-xs font-bold text-gray-400">TOTAL</span><br><span class="font-black text-gray-900" id="success-total">--</span></div>
+                            </div>
+                            <p class="text-xs font-bold text-gray-700 mb-2">Tus Boletos Asignados:</p>
+                            <div class="flex flex-wrap gap-2" id="assigned-tickets"></div>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <div id="payment-instructions" class="absolute inset-0 z-20 hidden flex items-center justify-center p-4">
+                 <div class="bg-white/95 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-gray-100 w-full max-w-sm mx-4 text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 shadow-sm"><iconify-icon icon="solar:info-circle-bold" width="32"></iconify-icon></div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Instrucciones de pago</h3>
+                    <p class="text-sm text-gray-600 mb-6 leading-relaxed">Haz el pago a los datos mostrados y asegúrate de colocar la <strong class="text-gray-900">referencia exacta</strong>.</p>
+                    <button onclick="dismissInstructions()" class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold shadow-md shadow-blue-200 transition transform active:scale-95">Entendido</button>
+                 </div>
             </div>
 
             <div id="modal-footer" class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-shrink-0">
@@ -296,10 +361,10 @@
             <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-500 animate-pulse">
                 <iconify-icon icon="solar:info-circle-bold" width="28"></iconify-icon>
             </div>
-            <h3 class="font-bold text-gray-800 text-base mb-1">Stock Insuficiente</h3>
-            <p class="text-xs text-gray-500 mb-4">Quedan menos boletos de los que pediste.</p>
+            <h3 class="font-bold text-gray-800 text-base mb-1">Stock Limitado</h3>
+            <p class="text-xs text-gray-500 mb-4">La cantidad supera los boletos disponibles.</p>
             <div class="bg-gray-50 rounded-xl p-3 border border-gray-100 mb-4 text-xs">
-                <div class="flex justify-between mb-1"><span class="text-gray-400">Tu pedido:</span><span class="font-bold text-red-500" id="stock-pedido-val">--</span></div>
+                <div class="flex justify-between mb-1"><span class="text-gray-400">Pediste:</span><span class="font-bold text-red-500" id="stock-pedido-val">--</span></div>
                 <div class="flex justify-between"><span class="text-gray-400">Disponibles:</span><span class="font-bold text-green-500" id="stock-disponible-val">--</span></div>
             </div>
             <button onclick="cerrarAlertaStock()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-amber-200 transition">Entendido</button>
@@ -312,9 +377,10 @@
             <button onclick="cerrarModalVerificar()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-50 z-20 transition"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
             <div class="flex-1 overflow-y-auto p-6 md:p-8 text-center custom-scroll">
                 <h2 class="text-xl font-bold text-gray-800 mb-2 mt-4" id="consult-title">Consultar Boletos</h2>
-                <p class="text-xs text-gray-500 mb-8" id="consult-subtitle">Ingresa tu cédula para ver tus compras</p>
+                <p class="text-xs text-gray-500 mb-8" id="consult-subtitle">Ingresa tu cédula para ver todas tus compras</p>
                 <div id="search-inputs">
-                    <div class="mb-6 text-left"><label class="text-xs font-bold text-gray-700 ml-1 mb-1 block">Cédula de Identidad</label><input type="number" id="cedula-consult" class="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 transition" placeholder="Ej: 12345678"></div>
+                    <div class="mb-6"><span class="text-red-500 font-bold text-sm bg-red-50 px-4 py-2 rounded-full"><iconify-icon icon="solar:list-bold" class="mr-1 relative top-0.5"></iconify-icon> Ver mis compras</span></div>
+                    <div class="mb-6 text-left"><label class="text-xs font-bold text-gray-700 ml-1 mb-1 block">Cédula de Identidad</label><input type="number" id="cedula-consult" class="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-red-500 transition" placeholder="Escribe tu número de cédula"></div>
                     <button onclick="consultarTicketsReales()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-200 mb-8 flex items-center justify-center gap-2"><iconify-icon icon="solar:magnifer-bold"></iconify-icon> Buscar</button>
                 </div>
                 <div id="ticket-results" class="hidden space-y-4"></div>
@@ -323,6 +389,13 @@
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js"></script>
     <script src="client_logic.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('.lottery-slider').slick({ dots: true, arrows: false, autoplay: true, autoplaySpeed: 3000, fade: true });
+        });
+    </script>
 </body>
 </html>
