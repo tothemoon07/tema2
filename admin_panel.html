@@ -12,7 +12,6 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .tab-active { border-bottom: 2px solid #3b82f6; color: #1d4ed8; font-weight: 600; background-color: #eff6ff; }
         
         /* Sidebar Styles */
         .sidebar-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; transition: all 0.2s; color: #64748b; font-weight: 500; cursor: pointer; }
@@ -20,8 +19,10 @@
         .sidebar-link.active { background-color: #eff6ff; color: #4f46e5; font-weight: 600; }
         .sidebar-link i { width: 1.25rem; text-align: center; }
 
-        .dropdown-menu { transform-origin: top right; transition: all 0.2s ease-out; transform: scale(0.95); opacity: 0; pointer-events: none; }
-        .dropdown-menu.show { transform: scale(1); opacity: 1; pointer-events: auto; }
+        /* Range Buttons */
+        .range-btn { border: 2px solid #e2e8f0; background: #fff; color: #64748b; transition: all 0.2s; }
+        .range-btn:hover { border-color: #cbd5e1; }
+        .range-btn.selected { border-color: #4f46e5; background-color: #eff6ff; color: #4f46e5; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1), 0 2px 4px -1px rgba(79, 70, 229, 0.06); }
 
         /* Toggle Switch */
         .toggle-checkbox:checked { right: 0; border-color: #10b981; }
@@ -225,29 +226,44 @@
                                 <input type="number" id="new-precio" step="0.01" class="w-full border border-slate-300 rounded-lg p-3">
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1">Fecha</label>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Fecha Sorteo</label>
                                 <input type="date" id="new-fecha" class="w-full border border-slate-300 rounded-lg p-3">
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Cantidad de Tickets (Rango)</label>
-                            <select id="new-rango" class="w-full border border-slate-300 rounded-lg p-3 bg-slate-50 font-mono text-sm">
-                                <option value="100">00 - 99 (100 Tickets)</option>
-                                <option value="1000">000 - 999 (1.000 Tickets)</option>
-                                <option value="10000">0000 - 9999 (10.000 Tickets)</option>
-                            </select>
-                            <p class="text-xs text-slate-400 mt-1">Los tickets se generan automáticamente al crear.</p>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Cantidad de Tickets</label>
+                            
+                            <input type="hidden" id="new-rango-value" value="1000"> <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <button type="button" onclick="selectRange(100, this)" class="range-btn p-4 rounded-xl flex flex-col items-center justify-center gap-1 group">
+                                    <span class="text-lg font-black block">100</span>
+                                    <span class="text-[10px] uppercase font-bold opacity-60">00 - 99</span>
+                                </button>
+                                <button type="button" onclick="selectRange(1000, this)" class="range-btn selected p-4 rounded-xl flex flex-col items-center justify-center gap-1 group">
+                                    <span class="text-lg font-black block">1.000</span>
+                                    <span class="text-[10px] uppercase font-bold opacity-60">000 - 999</span>
+                                </button>
+                                <button type="button" onclick="selectRange(10000, this)" class="range-btn p-4 rounded-xl flex flex-col items-center justify-center gap-1 group">
+                                    <span class="text-lg font-black block">10.000</span>
+                                    <span class="text-[10px] uppercase font-bold opacity-60">0000 - 9999</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Lotería</label>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Lotería / Juego</label>
                             <input type="text" id="new-loteria" placeholder="Ej: Zulia 7:00 PM" class="w-full border border-slate-300 rounded-lg p-3">
                         </div>
 
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Flyer / Imagen Promocional</label>
+                            <input type="file" id="new-file" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 border border-slate-200 rounded-xl">
+                            <p class="text-xs text-slate-400 mt-1 ml-1">Recomendado: 1080x1080px (Cuadrado)</p>
+                        </div>
+
                         <div class="pt-4">
-                            <button type="button" onclick="processNewRaffle()" class="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg shadow-red-200">
-                                Crear Sorteo y Generar Tickets
+                            <button type="button" onclick="processNewRaffle()" class="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg shadow-red-200 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-rocket"></i> Crear Sorteo y Generar Tickets
                             </button>
                         </div>
                     </form>
