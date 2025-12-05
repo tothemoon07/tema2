@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN FINAL: FILTRADO POR SORTEO Y PAGOS FLEXIBLES
+// admin_panel.js - VERSIÓN FINAL: NUEVO SORTEO + FLYER + RANGO MEJORADO
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -48,6 +48,18 @@ window.switchView = function(view) {
     if(view === 'dashboard') loadDashboardData();
     if(view === 'active-raffle') loadActiveRaffle();
     if(view === 'payments') loadPaymentMethods();
+}
+
+// 🔥 SELECCIONADOR DE RANGO (BOTONES) 🔥
+window.selectRange = function(value, btnElement) {
+    // Actualizar input oculto
+    document.getElementById('new-rango-value').value = value;
+    
+    // Quitar clase 'selected' a todos
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('selected'));
+    
+    // Agregar clase 'selected' al clickeado
+    btnElement.classList.add('selected');
 }
 
 // ==========================================
@@ -366,13 +378,15 @@ window.processNewRaffle = async function() {
     const titulo = document.getElementById('new-titulo').value;
     const precio = document.getElementById('new-precio').value;
     const fecha = document.getElementById('new-fecha').value;
-    const rango = document.getElementById('new-rango').value; // 100, 1000, 10000
+    const rango = document.getElementById('new-rango-value').value; // USAMOS EL VALOR OCULTO
+    const fileInput = document.getElementById('new-file');
 
-    if(!titulo || !precio || !fecha) return Swal.fire('Atención', 'Completa todos los campos', 'warning');
+    if(!titulo || !precio || !fecha) return Swal.fire('Faltan Datos', 'Completa título, precio y fecha', 'warning');
+    if(fileInput.files.length === 0) return Swal.fire('Falta Flyer', 'Debes subir una imagen para el sorteo', 'warning');
 
     Swal.fire({
         title: '¿Crear nuevo sorteo?',
-        text: `Esto archivará el actual y generará ${rango} tickets nuevos. No se puede deshacer.`,
+        text: `Esto archivará el actual y generará ${rango} tickets nuevos.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, crear',
@@ -380,23 +394,31 @@ window.processNewRaffle = async function() {
     }).then(async (result) => {
         if (result.isConfirmed) {
             try {
-                Swal.fire({ title: 'Procesando...', html: 'Archivando anterior y generando tickets...', didOpen: () => Swal.showLoading() });
+                Swal.fire({ title: 'Subiendo y Generando...', html: 'Por favor espera, esto puede tardar unos segundos.', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
-                // 1. Archivar anterior
+                // 1. Subir Imagen
+                const file = fileInput.files[0];
+                const fileName = `flyer_new_${Date.now()}.${file.name.split('.').pop()}`;
+                const { error: upErr } = await supabaseClient.storage.from('images').upload(fileName, file);
+                if(upErr) throw upErr;
+                const { data: publicUrl } = supabaseClient.storage.from('images').getPublicUrl(fileName);
+
+                // 2. Archivar anterior
                 await supabaseClient.from('sorteos').update({ estado: 'finalizado' }).eq('estado', 'activo');
 
-                // 2. Crear nuevo
+                // 3. Crear nuevo
                 const { data: newSorteo, error } = await supabaseClient.from('sorteos').insert([{
                     titulo,
                     precio_boleto: parseFloat(precio),
                     fecha_sorteo: fecha,
                     loteria: document.getElementById('new-loteria').value,
+                    url_flyer: publicUrl.publicUrl,
                     estado: 'activo'
                 }]).select().single();
 
                 if(error) throw error;
 
-                // 3. Generar tickets (Batch insert para evitar timeout)
+                // 4. Generar tickets (Batch insert)
                 const limit = parseInt(rango);
                 const digits = limit === 100 ? 2 : (limit === 1000 ? 3 : 4);
                 let tickets = [];
@@ -409,13 +431,11 @@ window.processNewRaffle = async function() {
                         estado: 'disponible'
                     });
 
-                    // Insertar en lotes
                     if(tickets.length >= batchSize) {
                         await supabaseClient.from('tickets').insert(tickets);
                         tickets = [];
                     }
                 }
-                // Insertar restantes
                 if(tickets.length > 0) await supabaseClient.from('tickets').insert(tickets);
 
                 Swal.fire('¡Éxito!', 'Nuevo sorteo creado y tickets generados.', 'success').then(() => {
