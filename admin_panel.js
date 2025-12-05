@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN FINAL: ACTUALIZACIÓN EN VIVO (5 SEGUNDOS) + EFECTO LATIDO
+// admin_panel.js - VERSIÓN MONITOR EN VIVO (TU CÓDIGO ORIGINAL + AUTO-REFRESH INTELIGENTE)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -9,6 +9,8 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentTab = 'pendiente_validacion';
 let refreshInterval;
 let currentUnitPrice = 0;
+// NUEVO: Variable para recordar cuántas órdenes había antes
+let lastPendingCount = -1; 
 
 // ==========================================
 // 1. NAVEGACIÓN Y UI
@@ -142,6 +144,21 @@ async function loadTicketStats(sorteoId) {
             blockedEl.classList.remove('scale-125', 'text-rose-600');
         }, 200);
     }
+
+    // 🔥 DETECTOR INTELIGENTE DE NUEVAS ÓRDENES 🔥
+    // Si lastPendingCount no es -1 (significa que ya cargó al menos una vez) Y hay más pendientes que antes...
+    if (lastPendingCount !== -1 && pend > lastPendingCount) {
+        // 1. Mostrar Notificación
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true });
+        Toast.fire({ icon: 'success', title: '¡Nueva Orden Recibida!' });
+        
+        // 2. Si estamos en la pestaña de pendientes, actualizar la tabla automáticamente
+        if (currentTab === 'pendiente_validacion') {
+            loadOrders('pendiente_validacion', true); // Pasamos true para indicar que es refresco automático
+        }
+    }
+    // Actualizamos el contador para la próxima vez
+    lastPendingCount = pend;
 }
 
 // 🛑 LIMPIEZA MANUAL DE BLOQUEOS
@@ -190,7 +207,8 @@ window.switchTab = function(tab) {
     loadOrders(tab);
 }
 
-async function loadOrders(estado) {
+// Modificamos esta función para aceptar un parámetro de "es refresco automático"
+async function loadOrders(estado, isAutoRefresh = false) {
     const tbody = document.getElementById('orders-table-body');
     const raffleId = document.getElementById('raffle-title').dataset.id;
 
@@ -199,9 +217,11 @@ async function loadOrders(estado) {
         return;
     }
 
-    // Solo mostramos loading si es la primera carga o cambio de tab, no en el refresh automático de stats
-    if(tbody.innerHTML.includes('No hay registros') || tbody.innerHTML === '') {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-2xl"></i></td></tr>`;
+    // Solo mostramos el spinner de carga si NO es un refresco automático (para que no parpadee feo)
+    if (!isAutoRefresh) {
+        if(tbody.innerHTML.includes('No hay registros') || tbody.innerHTML === '') {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-2xl"></i></td></tr>`;
+        }
     }
     
     const { data: ordenes } = await supabaseClient
@@ -237,8 +257,9 @@ async function loadOrders(estado) {
              btns = `<button onclick="approveOrder('${orden.id}')" class="bg-indigo-100 text-indigo-700 p-2 rounded-lg hover:bg-indigo-200 transition" title="Reactivar"><i class="fa-solid fa-rotate-left"></i></button>`;
         }
 
+        // Agregamos una pequeña animación fade-in a las filas
         html += `
-            <tr class="bg-white hover:bg-slate-50 border-b border-slate-50 transition">
+            <tr class="bg-white hover:bg-slate-50 border-b border-slate-50 transition animate-[fadeIn_0.5s_ease-out]">
                 <td class="px-6 py-4">
                     <p class="font-bold text-slate-800 text-sm uppercase">${orden.nombre}</p>
                     <p class="text-xs text-slate-400 font-mono">#${orden.id.slice(0,6)}</p>
