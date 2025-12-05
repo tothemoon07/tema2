@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN FINAL: NUEVO SORTEO + FLYER + RANGO MEJORADO
+// admin_panel.js - VERSIÓN FINAL: ACTUALIZACIÓN EN VIVO (5 SEGUNDOS) + EFECTO LATIDO
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -95,8 +95,10 @@ async function loadDashboardData() {
             loadTicketStats(sorteo.id);
             loadOrders(currentTab);
             
+            // 🔥 ACTUALIZACIÓN EN VIVO (CADA 5 SEGUNDOS) 🔥
             if (refreshInterval) clearInterval(refreshInterval);
-            refreshInterval = setInterval(() => loadTicketStats(sorteo.id), 15000);
+            refreshInterval = setInterval(() => loadTicketStats(sorteo.id), 5000); 
+
         } else {
              document.getElementById('raffle-title').innerText = "Sin sorteo activo";
              document.getElementById('raffle-id-display').innerText = "-";
@@ -119,20 +121,60 @@ function safeSetText(id, text) { const el = document.getElementById(id); if (el)
 async function loadTicketStats(sorteoId) {
     if(!sorteoId) return;
 
-    // 🔥 AHORA FILTRAMOS TODO POR EL ID DEL SORTEO
+    // Obtener datos
     const { count: disp } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'disponible');
     const { count: vend } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'vendido');
     const { count: bloq } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'bloqueado');
+    const { count: pend } = await supabaseClient.from('ordenes').select('*', { count: 'exact', head: true }).eq('estado', 'pendiente_validacion').eq('id_sorteo', sorteoId);
     
-    // Las ordenes pendientes TAMBIÉN se filtran por id_sorteo para no contar las viejas
-    const { count: pend } = await supabaseClient.from('ordenes').select('*', { count: 'exact', head: true })
-        .eq('estado', 'pendiente_validacion')
-        .eq('id_sorteo', sorteoId);
-    
+    // Actualizar Textos
     safeSetText('stat-available', disp || 0); 
     safeSetText('stat-sold', vend || 0); 
-    safeSetText('stat-blocked', bloq || 0); 
     safeSetText('stat-pending', pend || 0);
+    
+    // Actualizar "En Proceso" con Efecto de Latido ❤️
+    const blockedEl = document.getElementById('stat-blocked');
+    if(blockedEl) {
+        blockedEl.innerText = bloq || 0;
+        // Agregar clase para animación rápida
+        blockedEl.classList.add('scale-125', 'transition-transform', 'duration-200', 'text-rose-600');
+        setTimeout(() => {
+            blockedEl.classList.remove('scale-125', 'text-rose-600');
+        }, 200);
+    }
+}
+
+// 🛑 LIMPIEZA MANUAL DE BLOQUEOS
+window.liberarBloqueosManual = async function() {
+    const sorteoId = document.getElementById('raffle-title').dataset.id;
+    if(!sorteoId) return Swal.fire('Error', 'No hay sorteo activo.', 'error');
+
+    Swal.fire({
+        title: '¿Liberar bloqueos?',
+        text: "Esto pondrá como 'disponible' todos los tickets que se quedaron trabados en el carrito de compra (estado 'bloqueado'). Úsalo si notas que el stock no se libera.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f97316',
+        confirmButtonText: 'Sí, liberar'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            // Buscamos tickets bloqueados de este sorteo
+            const { data: ticketsBloqueados } = await supabaseClient
+                .from('tickets')
+                .select('id')
+                .eq('id_sorteo', sorteoId)
+                .eq('estado', 'bloqueado');
+
+            if(ticketsBloqueados && ticketsBloqueados.length > 0) {
+                const ids = ticketsBloqueados.map(t => t.id);
+                await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).in('id', ids);
+                Swal.fire('Listo', `Se liberaron ${ticketsBloqueados.length} tickets.`, 'success');
+                loadTicketStats(sorteoId);
+            } else {
+                Swal.fire('Info', 'No hay tickets bloqueados para liberar.', 'info');
+            }
+        }
+    });
 }
 
 window.switchTab = function(tab) {
@@ -152,16 +194,16 @@ async function loadOrders(estado) {
     const tbody = document.getElementById('orders-table-body');
     const raffleId = document.getElementById('raffle-title').dataset.id;
 
-    // Si no hay sorteo activo, no cargar nada
     if(!raffleId) {
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay sorteo activo. Crea uno nuevo para ver órdenes.</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-2xl"></i></td></tr>`;
+    // Solo mostramos loading si es la primera carga o cambio de tab, no en el refresh automático de stats
+    if(tbody.innerHTML.includes('No hay registros') || tbody.innerHTML === '') {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-2xl"></i></td></tr>`;
+    }
     
-    // 🔥 FILTRADO CRÍTICO: .eq('id_sorteo', raffleId)
-    // Esto asegura que solo veas las órdenes del sorteo ACTUAL
     const { data: ordenes } = await supabaseClient
         .from('ordenes')
         .select('*')
@@ -241,10 +283,16 @@ window.approveOrder = async function(id) {
 }
 
 window.rejectOrder = async function(id) {
-    if(!confirm("¿Rechazar y liberar tickets?")) return;
+    if(!confirm("¿Rechazar orden y liberar sus tickets?")) return;
+    
+    // 1. Marcar orden como rechazada
     await supabaseClient.from('ordenes').update({ estado: 'rechazado' }).eq('id', id);
+    
+    // 2. Liberar los tickets asociados a esa orden
     await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).eq('id_orden', id);
+    
     loadDashboardData();
+    loadTicketStats(document.getElementById('raffle-title').dataset.id); 
 }
 
 window.openEditModal = async function(id) {
