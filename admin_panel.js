@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN FINAL ORGANIZADA
+// admin_panel.js - VERSIÓN FINAL: FILTRADO POR SORTEO Y PAGOS FLEXIBLES
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -88,6 +88,16 @@ async function loadDashboardData() {
         } else {
              document.getElementById('raffle-title').innerText = "Sin sorteo activo";
              document.getElementById('raffle-id-display').innerText = "-";
+             document.getElementById('raffle-title').dataset.id = ""; // Limpiar ID
+             
+             // Limpiar tabla si no hay sorteo
+             document.getElementById('orders-table-body').innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay sorteo activo. Las órdenes anteriores están archivadas.</td></tr>`;
+             
+             // Limpiar stats
+             safeSetText('stat-available', '-'); 
+             safeSetText('stat-sold', '-'); 
+             safeSetText('stat-blocked', '-'); 
+             safeSetText('stat-pending', '-');
         }
     } catch(e) { console.error(e); }
 }
@@ -95,10 +105,17 @@ async function loadDashboardData() {
 function safeSetText(id, text) { const el = document.getElementById(id); if (el) el.innerText = text; }
 
 async function loadTicketStats(sorteoId) {
+    if(!sorteoId) return;
+
+    // 🔥 AHORA FILTRAMOS TODO POR EL ID DEL SORTEO
     const { count: disp } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'disponible');
     const { count: vend } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'vendido');
     const { count: bloq } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'bloqueado');
-    const { count: pend } = await supabaseClient.from('ordenes').select('*', { count: 'exact', head: true }).eq('estado', 'pendiente_validacion');
+    
+    // Las ordenes pendientes TAMBIÉN se filtran por id_sorteo para no contar las viejas
+    const { count: pend } = await supabaseClient.from('ordenes').select('*', { count: 'exact', head: true })
+        .eq('estado', 'pendiente_validacion')
+        .eq('id_sorteo', sorteoId);
     
     safeSetText('stat-available', disp || 0); 
     safeSetText('stat-sold', vend || 0); 
@@ -121,12 +138,27 @@ window.switchTab = function(tab) {
 
 async function loadOrders(estado) {
     const tbody = document.getElementById('orders-table-body');
+    const raffleId = document.getElementById('raffle-title').dataset.id;
+
+    // Si no hay sorteo activo, no cargar nada
+    if(!raffleId) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay sorteo activo. Crea uno nuevo para ver órdenes.</td></tr>`;
+        return;
+    }
+
     tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-2xl"></i></td></tr>`;
     
-    const { data: ordenes } = await supabaseClient.from('ordenes').select('*').eq('estado', estado).order('creado_en', { ascending: false });
+    // 🔥 FILTRADO CRÍTICO: .eq('id_sorteo', raffleId)
+    // Esto asegura que solo veas las órdenes del sorteo ACTUAL
+    const { data: ordenes } = await supabaseClient
+        .from('ordenes')
+        .select('*')
+        .eq('estado', estado)
+        .eq('id_sorteo', raffleId) 
+        .order('creado_en', { ascending: false });
 
     if (!ordenes || ordenes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay registros en esta sección.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay registros en esta sección para el sorteo actual.</td></tr>`;
         return;
     }
 
@@ -399,7 +431,7 @@ window.processNewRaffle = async function() {
 }
 
 // ==========================================
-// 5. MÉTODOS DE PAGO (TOGGLE + CRUD)
+// 5. MÉTODOS DE PAGO (FLEXIBLES)
 // ==========================================
 
 async function loadPaymentMethods() {
@@ -418,6 +450,12 @@ async function loadPaymentMethods() {
         const isChecked = m.activo ? 'checked' : '';
         const statusColor = m.activo ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200 opacity-70';
         
+        // Renderizado dinámico de campos (Solo muestra lo que existe)
+        let detailsHtml = '';
+        if(m.titular) detailsHtml += `<p><span class="font-semibold text-slate-400 text-xs uppercase w-16 inline-block">Titular:</span> ${m.titular}</p>`;
+        if(m.cedula) detailsHtml += `<p><span class="font-semibold text-slate-400 text-xs uppercase w-16 inline-block">ID:</span> ${m.cedula}</p>`;
+        if(m.telefono) detailsHtml += `<p><span class="font-semibold text-slate-400 text-xs uppercase w-16 inline-block">Tel/Cta:</span> ${m.telefono}</p>`;
+
         html += `
             <div class="border rounded-xl p-5 relative transition-all ${statusColor}">
                 <div class="flex justify-between items-start mb-3">
@@ -437,10 +475,8 @@ async function loadPaymentMethods() {
                     </label>
                 </div>
 
-                <div class="space-y-1 text-sm text-slate-600 mb-4 bg-white/50 p-3 rounded-lg">
-                    <p><span class="font-semibold text-slate-400 text-xs uppercase w-16 inline-block">Titular:</span> ${m.titular}</p>
-                    <p><span class="font-semibold text-slate-400 text-xs uppercase w-16 inline-block">ID:</span> ${m.cedula}</p>
-                    <p><span class="font-semibold text-slate-400 text-xs uppercase w-16 inline-block">Tel/Cta:</span> ${m.telefono}</p>
+                <div class="space-y-1 text-sm text-slate-600 mb-4 bg-white/50 p-3 rounded-lg min-h-[80px]">
+                    ${detailsHtml || '<p class="text-xs text-slate-400 italic">Solo información básica configurada.</p>'}
                 </div>
 
                 <div class="flex gap-2 justify-end">
@@ -458,7 +494,7 @@ window.togglePaymentStatus = async function(id, isActive) {
         await supabaseClient.from('metodos_pago').update({ activo: isActive }).eq('id', id);
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
         Toast.fire({ icon: 'success', title: isActive ? 'Método activado' : 'Método desactivado' });
-        loadPaymentMethods(); // Recargar para actualizar estilos
+        loadPaymentMethods(); 
     } catch(e) { console.error(e); }
 }
 
@@ -486,16 +522,19 @@ window.editPaymentMethod = async function(id) {
 
 window.savePaymentMethod = async function() {
     const id = document.getElementById('pay-id').value;
+    const banco = document.getElementById('pay-banco').value;
+    
+    // Validación relajada: Solo exigimos el nombre del banco/método
+    if(!banco) return Swal.fire('Error', 'Debes ingresar al menos el Nombre del Banco o Método.', 'warning');
+
     const data = {
-        banco: document.getElementById('pay-banco').value,
+        banco: banco,
         titular: document.getElementById('pay-titular').value,
         cedula: document.getElementById('pay-cedula').value,
         telefono: document.getElementById('pay-telefono').value,
         tipo: document.getElementById('pay-tipo').value,
         activo: true
     };
-    
-    if(!data.banco || !data.titular) return Swal.fire('Error', 'Completa los datos', 'warning');
 
     if(id) {
         await supabaseClient.from('metodos_pago').update(data).eq('id', id);
