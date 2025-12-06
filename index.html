@@ -40,7 +40,7 @@
         }
         .qty-btn-selected span { color: rgba(255,255,255,0.8) !important; }
         
-        /* Animación suave para el acordeón de pagos */
+        /* Estilos del Acordeón de Pagos */
         .payment-details-enter { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s ease-in-out; }
         .payment-details-active { max-height: 300px; opacity: 1; margin-top: -10px; padding-top: 20px; }
     </style>
@@ -215,10 +215,10 @@
                 <button onclick="cerrarModalCompra()" class="absolute top-5 right-5 text-white/80 hover:text-white"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                        <iconify-icon id="header-icon" icon="solar:card-2-bold-duotone" width="24"></iconify-icon>
+                        <iconify-icon id="header-icon" icon="solar:ticket-bold-duotone" width="24"></iconify-icon>
                     </div>
                     <div>
-                        <h3 id="header-title" class="font-bold text-lg">Método de Pago</h3>
+                        <h3 id="header-title" class="font-bold text-lg">Cantidad de Boletos</h3>
                         <p id="header-step" class="text-xs text-white/80">Paso 1 de 4</p>
                     </div>
                 </div>
@@ -230,15 +230,6 @@
                 <div id="timer-container" class="text-center mb-6 hidden"><div class="text-3xl font-black text-red-500 animate-pulse font-mono" id="countdown">15:00</div></div>
 
                 <div id="step-1" class="step-content">
-                    <h2 class="text-lg font-bold text-center text-gray-800 mb-2">Selecciona tu método de pago</h2>
-                    <p class="text-center text-xs text-gray-500 mb-6">Toca una opción para ver los datos de pago.</p>
-                    
-                    <div id="payment-methods-list" class="space-y-3">
-                         <p class="text-center text-xs text-gray-400">Cargando métodos...</p>
-                    </div>
-                </div>
-                
-                <div id="step-2" class="step-content hidden">
                     <div class="grid grid-cols-3 gap-2 mb-6">
                         <button onclick="selectQty(1, this)" class="qty-btn qty-btn-selected border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">1<br><span class="text-[10px] text-gray-400 font-normal">Boleto</span></button>
                         <button onclick="selectQty(2, this)" class="qty-btn border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">2<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
@@ -253,11 +244,11 @@
                         <button onclick="changeQty(1)" class="w-12 h-12 rounded-xl bg-red-500 text-white font-bold text-xl">+</button>
                     </div>
                     <div class="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
-                        <p class="text-xs text-gray-500">Total a pagar</p><h3 class="text-2xl font-black text-gray-900" id="step2-total">--</h3>
+                        <p class="text-xs text-gray-500">Total a pagar</p><h3 class="text-2xl font-black text-gray-900" id="step1-total">--</h3>
                     </div>
                 </div>
 
-                <div id="step-3" class="step-content hidden">
+                <div id="step-2" class="step-content hidden">
                     <form class="space-y-4">
                         <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre y Apellido <span class="text-red-500">*</span></label><input type="text" id="input-name" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                         <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Cédula <span class="text-red-500">*</span></label><input type="number" id="input-cedula" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
@@ -280,13 +271,20 @@
                     </form>
                 </div>
 
-                <div id="step-5" class="step-content hidden">
-                    <form class="space-y-4">
-                        <div class="bg-red-50 border border-red-100 rounded-xl p-4 text-center mb-4">
-                             <p class="text-xs text-red-400 uppercase font-bold mb-1">Total a Reportar</p>
-                             <h3 class="text-2xl font-black text-red-600" id="step5-total-display">--</h3>
-                         </div>
+                <div id="step-3" class="step-content hidden">
+                    <div class="text-center mb-4">
+                        <p class="text-xs text-gray-500">Monto a pagar</p>
+                        <h3 class="text-2xl font-black text-gray-900" id="step3-total">--</h3>
+                    </div>
+                    <h2 class="text-sm font-bold text-gray-700 mb-3 ml-1">Elige dónde pagar:</h2>
+                    
+                    <div id="payment-methods-list" class="space-y-3">
+                         <p class="text-center text-xs text-gray-400">Cargando métodos...</p>
+                    </div>
+                </div>
 
+                <div id="step-4" class="step-content hidden">
+                    <form class="space-y-4">
                         <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Referencia (Últimos 6 dígitos) <span class="text-red-500">*</span></label><input type="number" id="input-referencia" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                         <div class="space-y-1">
                              <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Comprobante <span class="text-red-500">*</span></label>
