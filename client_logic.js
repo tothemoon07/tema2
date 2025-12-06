@@ -1,4 +1,4 @@
-// client_logic.js - ORDEN LÓGICO RESTAURADO + ACORDEÓN DE PAGOS + LÍMITES MIN/MAX
+// client_logic.js - VERSIÓN CORREGIDA (VALIDACIÓN FINAL DE MÁXIMO AGREGADA)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -56,7 +56,7 @@ window.onload = async function() {
         disablePurchaseButtons();
     }
 
-    // 2. Cargar Métodos de Pago (Ahora irán al Paso 3)
+    // 2. Cargar Métodos de Pago
     loadPaymentMethodsForModal();
 };
 
@@ -82,7 +82,7 @@ window.addEventListener('beforeunload', function (e) {
     }
 });
 
-// 🔥 ACORDEÓN DE PAGOS (Se inyecta en Step 3)
+// 🔥 ACORDEÓN DE PAGOS
 async function loadPaymentMethodsForModal() {
     const container = document.getElementById('payment-methods-list');
     if(!container) return;
@@ -338,7 +338,7 @@ window.prevStep = function() {
 }
 
 // ==========================================
-// 5. VALIDACIÓN DE STOCK REAL
+// 5. VALIDACIÓN DE STOCK REAL (¡CORREGIDO AQUI!)
 // ==========================================
 
 async function validarStockReal() {
@@ -346,9 +346,21 @@ async function validarStockReal() {
     const raffleId = raffleIdInput ? raffleIdInput.value : null;
     const cantidad = parseInt(document.getElementById('custom-qty').value);
     
-    // NUEVA VALIDACIÓN MINIMO
-    const min = parseInt(document.getElementById('raffle-min').value);
-    if (cantidad < min) { Swal.fire('Error', `Debes comprar al menos ${min} boletos.`, 'error'); return false; }
+    // VALIDACIÓN MINIMO Y MÁXIMO
+    const min = parseInt(document.getElementById('raffle-min').value) || 1;
+    const max = parseInt(document.getElementById('raffle-max').value) || 100;
+
+    if (cantidad < min) { 
+        Swal.fire('Error', `Debes comprar al menos ${min} boletos.`, 'error'); 
+        return false; 
+    }
+    
+    // --- ESTO ES LO QUE FALTABA ---
+    if (cantidad > max) { 
+        Swal.fire('Error', `La compra máxima es de ${max} boletos por persona.`, 'error'); 
+        return false; 
+    }
+    // ------------------------------
 
     if (!raffleId || cantidad <= 0) return false;
 
