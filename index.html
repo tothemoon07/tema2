@@ -31,7 +31,6 @@
         
         #side-menu { transition: transform 0.3s ease-in-out; }
         .menu-open { transform: translateX(0) !important; }
-        .sold-out-filter { filter: grayscale(100%); opacity: 0.8; pointer-events: none; }
 
         .qty-btn-selected {
             background-color: #ef4444 !important;
@@ -40,17 +39,23 @@
         }
         .qty-btn-selected span { color: rgba(255,255,255,0.8) !important; }
         
-        /* Estilos del Acordeón de Pagos */
-        .payment-details-enter { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s ease-in-out; }
-        .payment-details-active { max-height: 300px; opacity: 1; margin-top: -10px; padding-top: 20px; }
+        /* Estilos Método de Pago Selección */
+        .method-card:hover { border-color: #ef4444; background-color: #fef2f2; }
+        .method-selected { border-color: #ef4444 !important; background-color: #fef2f2 !important; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1); }
+        .method-selected .check-icon { opacity: 1 !important; transform: scale(1) !important; }
     </style>
 </head>
 <body class="text-gray-900 pb-32">
 
     <input type="hidden" id="raffle-id">
-    <input type="hidden" id="raffle-price" value="0">
-    <input type="hidden" id="raffle-min" value="1">
-    <input type="hidden" id="raffle-max" value="100">
+    
+    <input type="hidden" id="price-bs" value="0">
+    <input type="hidden" id="min-bs" value="1">
+    <input type="hidden" id="max-bs" value="100">
+    
+    <input type="hidden" id="price-usd" value="0">
+    <input type="hidden" id="min-usd" value="1">
+    <input type="hidden" id="max-usd" value="100">
 
     <header class="fixed top-0 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-200">
         <nav class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
@@ -137,12 +142,6 @@
                         </div>
                         <p class="text-center text-[10px] text-gray-400 font-bold">Boletos volando 🚀</p>
                     </div>
-
-                    <div class="flex justify-center gap-6 mt-8 opacity-80 grayscale hover:grayscale-0 transition-all">
-                        <img src="https://cdn.inteliticket.com/lotteries/logos/65f46b627993a_conalot.png" class="h-8 object-contain">
-                        <img src="https://cdn.inteliticket.com/lotteries/logos/66e07b34d748f_super-gana.png" class="h-8 object-contain">
-                        <img src="https://cdn.inteliticket.com/lotteries/logos/6604240751322_tachira.png" class="h-8 object-contain">
-                    </div>
                 </div>
             </div>
 
@@ -152,21 +151,6 @@
                 <button onclick="abrirModalVerificar()" class="w-full md:w-auto px-12 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-100 transition flex items-center justify-center gap-2 mx-auto">
                     <iconify-icon icon="solar:magnifer-bold" width="20"></iconify-icon> Buscar
                 </button>
-            </div>
-
-            <div id="contact-section-home" class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
-                <h3 class="font-bold text-gray-800 text-lg mb-1">¿Necesitas Ayuda?</h3>
-                <p class="text-xs text-gray-500 mb-6">Contacta con nuestro equipo de soporte</p>
-                <div class="flex justify-center gap-4">
-                    <a href="https://wa.me/584243011181" target="_blank" class="flex flex-col items-center gap-2 group">
-                        <div class="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition">
-                            <iconify-icon icon="logos:whatsapp-icon" width="24"></iconify-icon>
-                        </div>
-                        <div class="text-center">
-                            <span class="block text-[10px] font-bold text-gray-800">WhatsApp</span>
-                        </div>
-                    </a>
-                </div>
             </div>
 
             <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 text-center">
@@ -189,7 +173,7 @@
                 </div>
                  <div>
                     <h4 class="font-bold text-gray-900 mb-2">2. Pagos</h4>
-                    <p class="text-xs">Los pagos deben ser reportados inmediatamente para garantizar la reserva de los boletos.</p>
+                    <p class="text-xs">Los pagos deben ser reportados inmediatamente.</p>
                 </div>
             </div>
         </div>
@@ -217,21 +201,28 @@
                 <button onclick="cerrarModalCompra()" class="absolute top-5 right-5 text-white/80 hover:text-white"><iconify-icon icon="mingcute:close-line" width="24"></iconify-icon></button>
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                        <iconify-icon id="header-icon" icon="solar:ticket-bold-duotone" width="24"></iconify-icon>
+                        <iconify-icon id="header-icon" icon="solar:card-2-bold-duotone" width="24"></iconify-icon>
                     </div>
                     <div>
-                        <h3 id="header-title" class="font-bold text-lg">Cantidad de Boletos</h3>
-                        <p id="header-step" class="text-xs text-white/80">Paso 1 de 4</p>
+                        <h3 id="header-title" class="font-bold text-lg">Método de Pago</h3>
+                        <p id="header-step" class="text-xs text-white/80">Paso 1 de 5</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-gray-100 h-1 w-full flex-shrink-0"><div id="progress-bar" class="bg-red-600 h-full transition-all duration-300" style="width: 25%"></div></div>
+            <div class="bg-gray-100 h-1 w-full flex-shrink-0"><div id="progress-bar" class="bg-red-600 h-full transition-all duration-300" style="width: 20%"></div></div>
             
             <div class="flex-1 overflow-y-auto p-5 custom-scroll bg-white relative">
                 
                 <div id="timer-container" class="text-center mb-6 hidden"><div class="text-3xl font-black text-red-500 animate-pulse font-mono" id="countdown">15:00</div></div>
 
                 <div id="step-1" class="step-content">
+                    <h2 class="text-sm font-bold text-gray-700 mb-3 ml-1">¿Cómo deseas pagar?</h2>
+                    <div id="method-selection-list" class="space-y-3">
+                        <p class="text-center text-xs text-gray-400">Cargando métodos...</p>
+                    </div>
+                </div>
+
+                <div id="step-2" class="step-content hidden">
                     <div class="grid grid-cols-3 gap-2 mb-6">
                         <button onclick="selectQty(1, this)" class="qty-btn qty-btn-selected border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">1<br><span class="text-[10px] text-gray-400 font-normal">Boleto</span></button>
                         <button onclick="selectQty(2, this)" class="qty-btn border rounded-xl p-2 py-3 hover:border-red-500 font-bold text-sm transition-colors">2<br><span class="text-[10px] text-gray-400 font-normal">Boletos</span></button>
@@ -246,11 +237,12 @@
                         <button onclick="changeQty(1)" class="w-12 h-12 rounded-xl bg-red-500 text-white font-bold text-xl">+</button>
                     </div>
                     <div class="bg-gray-50 rounded-2xl p-4 text-center border border-gray-100">
-                        <p class="text-xs text-gray-500">Total a pagar</p><h3 class="text-2xl font-black text-gray-900" id="step1-total">--</h3>
+                        <p class="text-xs text-gray-500">Total a pagar</p><h3 class="text-2xl font-black text-gray-900" id="step2-total">--</h3>
+                        <p class="text-[10px] font-bold text-gray-400 mt-1" id="currency-label">--</p>
                     </div>
                 </div>
 
-                <div id="step-2" class="step-content hidden">
+                <div id="step-3" class="step-content hidden">
                     <form class="space-y-4">
                         <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre y Apellido <span class="text-red-500">*</span></label><input type="text" id="input-name" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                         <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Cédula <span class="text-red-500">*</span></label><input type="number" id="input-cedula" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
@@ -273,19 +265,17 @@
                     </form>
                 </div>
 
-                <div id="step-3" class="step-content hidden">
+                <div id="step-4" class="step-content hidden">
                     <div class="text-center mb-4">
-                        <p class="text-xs text-gray-500">Monto a pagar</p>
-                        <h3 class="text-2xl font-black text-gray-900" id="step3-total">--</h3>
+                        <p class="text-xs text-gray-500">Monto Final</p>
+                        <h3 class="text-3xl font-black text-gray-900" id="step4-total">--</h3>
+                        <p class="text-xs text-red-500 font-bold animate-pulse mt-1">¡Tienes 15 minutos para pagar!</p>
                     </div>
-                    <h2 class="text-sm font-bold text-gray-700 mb-3 ml-1">Elige dónde pagar:</h2>
-                    
-                    <div id="payment-methods-list" class="space-y-3">
-                         <p class="text-center text-xs text-gray-400">Cargando métodos...</p>
-                    </div>
+                    <div id="payment-details-view" class="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                        </div>
                 </div>
 
-                <div id="step-4" class="step-content hidden">
+                <div id="step-5" class="step-content hidden">
                     <form class="space-y-4">
                         <div class="space-y-1"><label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Referencia (Últimos 6 dígitos) <span class="text-red-500">*</span></label><input type="number" id="input-referencia" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm outline-none"></div>
                         <div class="space-y-1">
@@ -333,10 +323,8 @@
     </div>
 
     <div id="modal-stock-sutil" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xs p-6 text-center transform transition-all scale-100">
-            <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-500 animate-pulse">
-                <iconify-icon icon="solar:info-circle-bold" width="28"></iconify-icon>
-            </div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xs p-6 text-center">
+            <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-500 animate-pulse"><iconify-icon icon="solar:info-circle-bold" width="28"></iconify-icon></div>
             <h3 class="font-bold text-gray-800 text-base mb-1">Stock Limitado</h3>
             <p class="text-xs text-gray-500 mb-4">La cantidad supera los boletos disponibles.</p>
             <div class="bg-gray-50 rounded-xl p-3 border border-gray-100 mb-4 text-xs">
