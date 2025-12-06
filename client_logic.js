@@ -1,4 +1,4 @@
-// client_logic.js - ORDEN LÓGICO RESTAURADO + ACORDEÓN DE PAGOS
+// client_logic.js - ORDEN LÓGICO RESTAURADO + ACORDEÓN DE PAGOS + LÍMITES MIN/MAX
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -32,6 +32,13 @@ window.onload = async function() {
         
         if(idInput) idInput.value = sorteo.id;
         if(priceInput) priceInput.value = sorteo.precio_boleto;
+
+        // CARGAR LIMITES
+        if(document.getElementById('raffle-min')) document.getElementById('raffle-min').value = sorteo.min_compra || 1;
+        if(document.getElementById('raffle-max')) document.getElementById('raffle-max').value = sorteo.max_compra || 100;
+
+        // Establecer cantidad inicial en el mínimo
+        if(document.getElementById('custom-qty')) document.getElementById('custom-qty').value = sorteo.min_compra || 1;
         
         setText('landing-title', sorteo.titulo);
         setText('landing-price-display', `Bs. ${sorteo.precio_boleto.toFixed(2)}`);
@@ -202,6 +209,12 @@ window.navigateTo = function(view) { window.menuAction(view); }
 // ==========================================
 
 window.selectQty = function(n, btn) {
+    const min = parseInt(document.getElementById('raffle-min').value) || 1;
+    const max = parseInt(document.getElementById('raffle-max').value) || 100;
+
+    if(n < min) { Swal.fire('Atención', `La compra mínima es de ${min} boletos.`, 'info'); n = min; }
+    if(n > max) { Swal.fire('Atención', `La compra máxima es de ${max} boletos.`, 'info'); n = max; }
+
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
     btn.classList.add('qty-btn-selected');
     document.getElementById('custom-qty').value = n; 
@@ -210,7 +223,14 @@ window.selectQty = function(n, btn) {
 
 window.changeQty = function(n) { 
     let val = parseInt(document.getElementById('custom-qty').value) || 0; 
-    val += n; if(val < 1) val = 1; 
+    let min = parseInt(document.getElementById('raffle-min').value) || 1;
+    let max = parseInt(document.getElementById('raffle-max').value) || 100;
+
+    val += n; 
+    
+    if(val < min) { val = min; }
+    if(val > max) { val = max; Swal.fire('Máximo alcanzado', `No puedes comprar más de ${max} boletos.`, 'warning'); }
+    
     document.getElementById('custom-qty').value = val; 
     window.updateTotal();
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
@@ -326,6 +346,10 @@ async function validarStockReal() {
     const raffleId = raffleIdInput ? raffleIdInput.value : null;
     const cantidad = parseInt(document.getElementById('custom-qty').value);
     
+    // NUEVA VALIDACIÓN MINIMO
+    const min = parseInt(document.getElementById('raffle-min').value);
+    if (cantidad < min) { Swal.fire('Error', `Debes comprar al menos ${min} boletos.`, 'error'); return false; }
+
     if (!raffleId || cantidad <= 0) return false;
 
     const { count, error } = await supabaseClient
