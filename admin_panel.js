@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN MONITOR EN VIVO (TU CÓDIGO ORIGINAL + AUTO-REFRESH INTELIGENTE)
+// admin_panel.js - VERSIÓN CON LÍMITES DE COMPRA (MIN/MAX)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -9,7 +9,6 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentTab = 'pendiente_validacion';
 let refreshInterval;
 let currentUnitPrice = 0;
-// NUEVO: Variable para recordar cuántas órdenes había antes
 let lastPendingCount = -1; 
 
 // ==========================================
@@ -29,38 +28,28 @@ window.toggleSidebar = function() {
 }
 
 window.switchView = function(view) {
-    // Ocultar todas las vistas
     ['dashboard', 'active-raffle', 'new-raffle', 'payments'].forEach(v => {
         document.getElementById(`view-${v}`).classList.add('hidden');
         const nav = document.getElementById(`nav-${v}`);
         if(nav) nav.classList.remove('active');
     });
 
-    // Mostrar seleccionada
     document.getElementById(`view-${view}`).classList.remove('hidden');
     const activeNav = document.getElementById(`nav-${view}`);
     if(activeNav) activeNav.classList.add('active');
 
-    // Cerrar sidebar en móvil
     if(window.innerWidth < 768) {
         document.getElementById('sidebar').classList.add('-translate-x-full');
     }
 
-    // Cargar datos según vista
     if(view === 'dashboard') loadDashboardData();
     if(view === 'active-raffle') loadActiveRaffle();
     if(view === 'payments') loadPaymentMethods();
 }
 
-// 🔥 SELECCIONADOR DE RANGO (BOTONES) 🔥
 window.selectRange = function(value, btnElement) {
-    // Actualizar input oculto
     document.getElementById('new-rango-value').value = value;
-    
-    // Quitar clase 'selected' a todos
     document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('selected'));
-    
-    // Agregar clase 'selected' al clickeado
     btnElement.classList.add('selected');
 }
 
@@ -73,7 +62,6 @@ async function checkAuth() {
     if (!session) window.location.href = 'admin_login.html';
     else {
         loadDashboardData();
-        // Listener Edit Quantity
         const qtyInput = document.getElementById('edit-cantidad');
         if(qtyInput) {
             qtyInput.addEventListener('input', function() {
@@ -91,25 +79,21 @@ async function loadDashboardData() {
         if (sorteo) {
             document.getElementById('raffle-title').innerText = sorteo.titulo;
             document.getElementById('raffle-id-display').innerText = sorteo.id;
-            // Guardamos ID en dataset para uso global
             document.getElementById('raffle-title').dataset.id = sorteo.id;
             
             loadTicketStats(sorteo.id);
             loadOrders(currentTab);
             
-            // 🔥 ACTUALIZACIÓN EN VIVO (CADA 5 SEGUNDOS) 🔥
             if (refreshInterval) clearInterval(refreshInterval);
             refreshInterval = setInterval(() => loadTicketStats(sorteo.id), 5000); 
 
         } else {
              document.getElementById('raffle-title').innerText = "Sin sorteo activo";
              document.getElementById('raffle-id-display').innerText = "-";
-             document.getElementById('raffle-title').dataset.id = ""; // Limpiar ID
+             document.getElementById('raffle-title').dataset.id = ""; 
              
-             // Limpiar tabla si no hay sorteo
              document.getElementById('orders-table-body').innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay sorteo activo. Las órdenes anteriores están archivadas.</td></tr>`;
              
-             // Limpiar stats
              safeSetText('stat-available', '-'); 
              safeSetText('stat-sold', '-'); 
              safeSetText('stat-blocked', '-'); 
@@ -123,45 +107,35 @@ function safeSetText(id, text) { const el = document.getElementById(id); if (el)
 async function loadTicketStats(sorteoId) {
     if(!sorteoId) return;
 
-    // Obtener datos
     const { count: disp } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'disponible');
     const { count: vend } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'vendido');
     const { count: bloq } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'bloqueado');
     const { count: pend } = await supabaseClient.from('ordenes').select('*', { count: 'exact', head: true }).eq('estado', 'pendiente_validacion').eq('id_sorteo', sorteoId);
     
-    // Actualizar Textos
     safeSetText('stat-available', disp || 0); 
     safeSetText('stat-sold', vend || 0); 
     safeSetText('stat-pending', pend || 0);
     
-    // Actualizar "En Proceso" con Efecto de Latido ❤️
     const blockedEl = document.getElementById('stat-blocked');
     if(blockedEl) {
         blockedEl.innerText = bloq || 0;
-        // Agregar clase para animación rápida
         blockedEl.classList.add('scale-125', 'transition-transform', 'duration-200', 'text-rose-600');
         setTimeout(() => {
             blockedEl.classList.remove('scale-125', 'text-rose-600');
         }, 200);
     }
 
-    // 🔥 DETECTOR INTELIGENTE DE NUEVAS ÓRDENES 🔥
-    // Si lastPendingCount no es -1 (significa que ya cargó al menos una vez) Y hay más pendientes que antes...
     if (lastPendingCount !== -1 && pend > lastPendingCount) {
-        // 1. Mostrar Notificación
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true });
         Toast.fire({ icon: 'success', title: '¡Nueva Orden Recibida!' });
         
-        // 2. Si estamos en la pestaña de pendientes, actualizar la tabla automáticamente
         if (currentTab === 'pendiente_validacion') {
-            loadOrders('pendiente_validacion', true); // Pasamos true para indicar que es refresco automático
+            loadOrders('pendiente_validacion', true); 
         }
     }
-    // Actualizamos el contador para la próxima vez
     lastPendingCount = pend;
 }
 
-// 🛑 LIMPIEZA MANUAL DE BLOQUEOS
 window.liberarBloqueosManual = async function() {
     const sorteoId = document.getElementById('raffle-title').dataset.id;
     if(!sorteoId) return Swal.fire('Error', 'No hay sorteo activo.', 'error');
@@ -175,7 +149,6 @@ window.liberarBloqueosManual = async function() {
         confirmButtonText: 'Sí, liberar'
     }).then(async (result) => {
         if (result.isConfirmed) {
-            // Buscamos tickets bloqueados de este sorteo
             const { data: ticketsBloqueados } = await supabaseClient
                 .from('tickets')
                 .select('id')
@@ -207,7 +180,6 @@ window.switchTab = function(tab) {
     loadOrders(tab);
 }
 
-// Modificamos esta función para aceptar un parámetro de "es refresco automático"
 async function loadOrders(estado, isAutoRefresh = false) {
     const tbody = document.getElementById('orders-table-body');
     const raffleId = document.getElementById('raffle-title').dataset.id;
@@ -217,7 +189,6 @@ async function loadOrders(estado, isAutoRefresh = false) {
         return;
     }
 
-    // Solo mostramos el spinner de carga si NO es un refresco automático (para que no parpadee feo)
     if (!isAutoRefresh) {
         if(tbody.innerHTML.includes('No hay registros') || tbody.innerHTML === '') {
             tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-2xl"></i></td></tr>`;
@@ -257,7 +228,6 @@ async function loadOrders(estado, isAutoRefresh = false) {
              btns = `<button onclick="approveOrder('${orden.id}')" class="bg-indigo-100 text-indigo-700 p-2 rounded-lg hover:bg-indigo-200 transition" title="Reactivar"><i class="fa-solid fa-rotate-left"></i></button>`;
         }
 
-        // Agregamos una pequeña animación fade-in a las filas
         html += `
             <tr class="bg-white hover:bg-slate-50 border-b border-slate-50 transition animate-[fadeIn_0.5s_ease-out]">
                 <td class="px-6 py-4">
@@ -283,7 +253,6 @@ async function loadOrders(estado, isAutoRefresh = false) {
     tbody.innerHTML = html;
 }
 
-// LOGICA DE ORDENES (APROBAR/RECHAZAR/EDITAR)
 window.approveOrder = async function(id) {
     if(!confirm("¿Aprobar orden?")) return;
     const { data: orden } = await supabaseClient.from('ordenes').select('cantidad_boletos').eq('id', id).single();
@@ -305,13 +274,8 @@ window.approveOrder = async function(id) {
 
 window.rejectOrder = async function(id) {
     if(!confirm("¿Rechazar orden y liberar sus tickets?")) return;
-    
-    // 1. Marcar orden como rechazada
     await supabaseClient.from('ordenes').update({ estado: 'rechazado' }).eq('id', id);
-    
-    // 2. Liberar los tickets asociados a esa orden
     await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).eq('id_orden', id);
-    
     loadDashboardData();
     loadTicketStats(document.getElementById('raffle-title').dataset.id); 
 }
@@ -391,7 +355,7 @@ window.closeModal = function(id) { document.getElementById(id).classList.add('hi
 window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'admin_login.html'; }
 
 // ==========================================
-// 3. SORTEO ACTIVO (EDITAR)
+// 3. SORTEO ACTIVO (EDITAR) - MODIFICADO CON LIMITES
 // ==========================================
 
 async function loadActiveRaffle() {
@@ -403,6 +367,11 @@ async function loadActiveRaffle() {
         document.getElementById('conf-precio').value = sorteo.precio_boleto;
         document.getElementById('conf-fecha').value = sorteo.fecha_sorteo;
         document.getElementById('conf-estado').value = sorteo.estado;
+        
+        // Cargar nuevos campos Min/Max
+        if(document.getElementById('conf-min')) document.getElementById('conf-min').value = sorteo.min_compra || 1;
+        if(document.getElementById('conf-max')) document.getElementById('conf-max').value = sorteo.max_compra || 100;
+        
         document.getElementById('conf-img-preview').src = sorteo.url_flyer || 'https://placehold.co/150x100?text=Sin+Imagen';
     }
 }
@@ -416,7 +385,10 @@ window.saveActiveRaffle = async function() {
         loteria: document.getElementById('conf-loteria').value,
         precio_boleto: parseFloat(document.getElementById('conf-precio').value),
         fecha_sorteo: document.getElementById('conf-fecha').value,
-        estado: document.getElementById('conf-estado').value
+        estado: document.getElementById('conf-estado').value,
+        // Guardar nuevos campos
+        min_compra: parseInt(document.getElementById('conf-min').value) || 1,
+        max_compra: parseInt(document.getElementById('conf-max').value) || 100
     };
 
     const fileInput = document.getElementById('conf-file');
@@ -440,14 +412,16 @@ window.saveActiveRaffle = async function() {
 }
 
 // ==========================================
-// 4. NUEVO SORTEO (ZONA PELIGROSA)
+// 4. NUEVO SORTEO (ZONA PELIGROSA) - MODIFICADO CON LIMITES
 // ==========================================
 
 window.processNewRaffle = async function() {
     const titulo = document.getElementById('new-titulo').value;
     const precio = document.getElementById('new-precio').value;
     const fecha = document.getElementById('new-fecha').value;
-    const rango = document.getElementById('new-rango-value').value; // USAMOS EL VALOR OCULTO
+    const rango = document.getElementById('new-rango-value').value; 
+    const min = document.getElementById('new-min').value || 1;
+    const max = document.getElementById('new-max').value || 100;
     const fileInput = document.getElementById('new-file');
 
     if(!titulo || !precio || !fecha) return Swal.fire('Faltan Datos', 'Completa título, precio y fecha', 'warning');
@@ -465,29 +439,27 @@ window.processNewRaffle = async function() {
             try {
                 Swal.fire({ title: 'Subiendo y Generando...', html: 'Por favor espera, esto puede tardar unos segundos.', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
-                // 1. Subir Imagen
                 const file = fileInput.files[0];
                 const fileName = `flyer_new_${Date.now()}.${file.name.split('.').pop()}`;
                 const { error: upErr } = await supabaseClient.storage.from('images').upload(fileName, file);
                 if(upErr) throw upErr;
                 const { data: publicUrl } = supabaseClient.storage.from('images').getPublicUrl(fileName);
 
-                // 2. Archivar anterior
                 await supabaseClient.from('sorteos').update({ estado: 'finalizado' }).eq('estado', 'activo');
 
-                // 3. Crear nuevo
                 const { data: newSorteo, error } = await supabaseClient.from('sorteos').insert([{
                     titulo,
                     precio_boleto: parseFloat(precio),
                     fecha_sorteo: fecha,
                     loteria: document.getElementById('new-loteria').value,
                     url_flyer: publicUrl.publicUrl,
-                    estado: 'activo'
+                    estado: 'activo',
+                    min_compra: parseInt(min),
+                    max_compra: parseInt(max)
                 }]).select().single();
 
                 if(error) throw error;
 
-                // 4. Generar tickets (Batch insert)
                 const limit = parseInt(rango);
                 const digits = limit === 100 ? 2 : (limit === 1000 ? 3 : 4);
                 let tickets = [];
@@ -520,7 +492,7 @@ window.processNewRaffle = async function() {
 }
 
 // ==========================================
-// 5. MÉTODOS DE PAGO (FLEXIBLES)
+// 5. MÉTODOS DE PAGO
 // ==========================================
 
 async function loadPaymentMethods() {
@@ -539,7 +511,6 @@ async function loadPaymentMethods() {
         const isChecked = m.activo ? 'checked' : '';
         const statusColor = m.activo ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200 opacity-70';
         
-        // Renderizado dinámico de campos (Solo muestra lo que existe)
         let detailsHtml = '';
         if(m.titular) detailsHtml += `<p><span class="font-semibold text-slate-400 text-xs uppercase w-16 inline-block">Titular:</span> ${m.titular}</p>`;
         if(m.cedula) detailsHtml += `<p><span class="font-semibold text-slate-400 text-xs uppercase w-16 inline-block">ID:</span> ${m.cedula}</p>`;
@@ -612,8 +583,6 @@ window.editPaymentMethod = async function(id) {
 window.savePaymentMethod = async function() {
     const id = document.getElementById('pay-id').value;
     const banco = document.getElementById('pay-banco').value;
-    
-    // Validación relajada: Solo exigimos el nombre del banco/método
     if(!banco) return Swal.fire('Error', 'Debes ingresar al menos el Nombre del Banco o Método.', 'warning');
 
     const data = {
