@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN BLINDADA + FLUJO OPTIMIZADO (Acordeón Pagos)
+// client_logic.js - ORDEN LÓGICO RESTAURADO + ACORDEÓN DE PAGOS
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -19,20 +19,14 @@ let activeRaffle = null;
 window.onload = async function() {
     console.log("Iniciando sistema...");
 
-    // 🧹 EL CONSERJE: Limpiar tickets "zombies" (bloqueados hace mucho tiempo)
     limpiarBloqueosHuerfanos();
 
     // 1. Cargar Info del Sorteo Activo
-    const { data: sorteo } = await supabaseClient
-        .from('sorteos')
-        .select('*')
-        .eq('estado', 'activo')
-        .single();
+    const { data: sorteo } = await supabaseClient.from('sorteos').select('*').eq('estado', 'activo').single();
 
     if (sorteo) {
         activeRaffle = sorteo;
         
-        // Inyectar datos en HTML
         const idInput = document.getElementById('raffle-id');
         const priceInput = document.getElementById('raffle-price');
         
@@ -44,19 +38,18 @@ window.onload = async function() {
         setText('landing-date', sorteo.fecha_sorteo);
         setText('landing-lottery', sorteo.loteria);
 
-        // Actualizar Flyer
         if(sorteo.url_flyer) {
             const imgEl = document.getElementById('landing-image');
             if(imgEl) imgEl.src = sorteo.url_flyer;
         }
 
-        updateTotal(); // Actualizar cálculos iniciales
+        updateTotal(); 
     } else {
         setText('landing-title', "No hay sorteo activo");
         disablePurchaseButtons();
     }
 
-    // 2. Cargar Métodos de Pago en el PASO 1
+    // 2. Cargar Métodos de Pago (Ahora irán al Paso 3)
     loadPaymentMethodsForModal();
 };
 
@@ -66,31 +59,23 @@ function setText(id, text) { const el = document.getElementById(id); if(el) el.i
 async function limpiarBloqueosHuerfanos() {
     const hace20min = new Date(Date.now() - 20 * 60 * 1000).toISOString();
     try {
-        const { data: zombies } = await supabaseClient
-            .from('tickets')
-            .select('id')
-            .eq('estado', 'bloqueado')
-            .lt('created_at', hace20min);
-
+        const { data: zombies } = await supabaseClient.from('tickets').select('id').eq('estado', 'bloqueado').lt('created_at', hace20min);
         if(zombies && zombies.length > 0) {
-            console.log(`🧹 Encontrados ${zombies.length} tickets zombies. Liberando...`);
             const ids = zombies.map(t => t.id);
             await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).in('id', ids);
         }
     } catch (e) { console.warn("Auto-limpieza:", e); }
 }
 
-// 🛡️ PROTECCIÓN AL CERRAR PESTAÑA
 window.addEventListener('beforeunload', function (e) {
     if (ticketsReservados.length > 0) {
         const ids = ticketsReservados.map(t => t.id);
         supabaseClient.from('tickets').update({ estado: 'disponible' }).in('id', ids).then(() => {});
-        e.preventDefault(); 
-        e.returnValue = '';
+        e.preventDefault(); e.returnValue = '';
     }
 });
 
-// 🔥 NUEVA LÓGICA: CARGAR MÉTODOS EN PASO 1 (ACORDEÓN)
+// 🔥 ACORDEÓN DE PAGOS (Se inyecta en Step 3)
 async function loadPaymentMethodsForModal() {
     const container = document.getElementById('payment-methods-list');
     if(!container) return;
@@ -104,21 +89,19 @@ async function loadPaymentMethodsForModal() {
         return;
     }
 
-    // Mapa de Iconos Bonitos
     const icons = {
         'pago_movil': { icon: 'solar:smartphone-2-bold-duotone', color: 'text-blue-500', bg: 'bg-blue-50', label: 'Pago Móvil' },
         'transferencia': { icon: 'solar:bank-bold-duotone', color: 'text-green-500', bg: 'bg-green-50', label: 'Transferencia' },
         'binance': { icon: 'simple-icons:binance', color: 'text-yellow-500', bg: 'bg-yellow-50', label: 'Binance' },
         'zelle': { icon: 'simple-icons:zelle', color: 'text-purple-600', bg: 'bg-purple-50', label: 'Zelle' },
         'zinli': { icon: 'simple-icons:zinli', color: 'text-indigo-500', bg: 'bg-indigo-50', label: 'Zinli' },
-        'paypal': { icon: 'logos:paypal', color: 'text-blue-600', bg: 'bg-blue-50', label: 'PayPal' },
         'default': { icon: 'solar:card-bold', color: 'text-gray-500', bg: 'bg-gray-100', label: 'Otro' }
     };
 
     let html = '';
     methods.forEach((m, index) => {
         const style = icons[m.tipo] || icons['default'];
-        const isFirst = index === 0 ? 'checked' : ''; // Pre-seleccionar el primero opcionalmente
+        const isFirst = index === 0 ? 'checked' : ''; 
         
         let detailsHtml = '';
         if(m.titular) detailsHtml += `<div class="mb-2"><p class="text-[10px] text-gray-400 uppercase font-bold">Titular</p><p class="text-sm font-medium text-gray-800">${m.titular}</p></div>`;
@@ -163,7 +146,7 @@ async function loadPaymentMethodsForModal() {
                         ${detailsHtml}
                         <div class="mt-3 p-2 bg-blue-50 rounded-lg flex items-start gap-2">
                             <iconify-icon icon="solar:info-circle-bold" class="text-blue-500 mt-0.5"></iconify-icon>
-                            <p class="text-[10px] text-blue-700 leading-tight">Copia estos datos para realizar tu pago. Los necesitarás en el último paso.</p>
+                            <p class="text-[10px] text-blue-700 leading-tight">Copia estos datos para pagar. Los necesitarás en el siguiente paso.</p>
                         </div>
                     </div>
                 </div>
@@ -174,31 +157,19 @@ async function loadPaymentMethodsForModal() {
     container.innerHTML = html;
 }
 
-// Función auxiliar para animar el acordeón manualmente si cambia
 window.togglePaymentDetails = function(radio) {
-    // Cerrar todos los detalles
     document.querySelectorAll('.payment-details-enter').forEach(el => {
-        el.style.maxHeight = '0';
-        el.style.opacity = '0';
-        el.style.marginTop = '0';
-        el.style.paddingTop = '0';
+        el.style.maxHeight = '0'; el.style.opacity = '0'; el.style.marginTop = '0'; el.style.paddingTop = '0';
     });
-
-    // Abrir el seleccionado
     const details = radio.parentNode.querySelector('.payment-details-enter');
     if(details) {
-        details.style.maxHeight = '300px';
-        details.style.opacity = '1';
-        details.style.marginTop = '-10px';
-        details.style.paddingTop = '20px';
+        details.style.maxHeight = '300px'; details.style.opacity = '1'; details.style.marginTop = '-10px'; details.style.paddingTop = '20px';
     }
 }
 
 function disablePurchaseButtons() {
     document.querySelectorAll('button[onclick="abrirModalCompra()"]').forEach(b => { 
-        b.disabled = true; 
-        b.innerHTML = 'NO DISPONIBLE'; 
-        b.classList.replace('bg-red-500','bg-gray-400');
+        b.disabled = true; b.innerHTML = 'NO DISPONIBLE'; b.classList.replace('bg-red-500','bg-gray-400');
     });
 }
 
@@ -220,14 +191,9 @@ window.menuAction = function(action) {
     document.getElementById('view-terms').classList.add('hidden');
     window.scrollTo(0,0);
 
-    if (action === 'home') {
-        document.getElementById('view-home').classList.remove('hidden');
-    } else if (action === 'terms') {
-        document.getElementById('view-terms').classList.remove('hidden');
-    } else if (action === 'verify') {
-        document.getElementById('view-home').classList.remove('hidden');
-        window.abrirModalVerificar();
-    }
+    if (action === 'home') document.getElementById('view-home').classList.remove('hidden');
+    if (action === 'terms') document.getElementById('view-terms').classList.remove('hidden');
+    if (action === 'verify') { document.getElementById('view-home').classList.remove('hidden'); window.abrirModalVerificar(); }
 }
 window.navigateTo = function(view) { window.menuAction(view); }
 
@@ -244,8 +210,7 @@ window.selectQty = function(n, btn) {
 
 window.changeQty = function(n) { 
     let val = parseInt(document.getElementById('custom-qty').value) || 0; 
-    val += n; 
-    if(val < 1) val = 1; 
+    val += n; if(val < 1) val = 1; 
     document.getElementById('custom-qty').value = val; 
     window.updateTotal();
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
@@ -255,11 +220,11 @@ window.updateTotal = function() {
     let val = parseInt(document.getElementById('custom-qty').value) || 1;
     let priceInput = document.getElementById('raffle-price');
     let price = priceInput ? parseFloat(priceInput.value) : 0; 
-    
     let total = val * price;
     let text = "Bs. " + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
     
-    ['step2-total', 'step5-total-display', 'success-total'].forEach(id => {
+    // Actualizar en Paso 1, Paso 3 y Éxito
+    ['step1-total', 'step3-total', 'success-total'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.innerText = text;
     });
@@ -286,7 +251,6 @@ window.previewImage = function(input) {
 window.abrirModalCompra = function() {
     const btn = document.querySelector('button[onclick="abrirModalCompra()"]');
     if(btn && btn.disabled) return;
-    
     document.getElementById('checkoutModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     currentStep = 1;
@@ -294,16 +258,10 @@ window.abrirModalCompra = function() {
 }
 
 window.cerrarModalCompra = async function() {
-    const successStep = document.getElementById('step-success');
-    if (successStep && !successStep.classList.contains('hidden')) {
-        location.reload();
-        return;
+    if (document.getElementById('step-success') && !document.getElementById('step-success').classList.contains('hidden')) {
+        location.reload(); return;
     }
-    
-    if(ticketsReservados.length > 0) {
-        await liberarTickets();
-    }
-    
+    if(ticketsReservados.length > 0) await liberarTickets();
     document.getElementById('checkoutModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
 }
@@ -318,23 +276,22 @@ window.mostrarPaso = function(paso) {
     window.updateModalHeader();
 }
 
-// ⚠️ ACTUALIZADO: Manejo de pasos (Saltando el 4)
 window.updateModalHeader = function() {
-    const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "X", "Confirmar Pago"];
-    const icons = ["solar:card-2-bold-duotone", "solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:wallet-money-bold-duotone", "solar:upload-track-bold-duotone"];
+    // Orden Lógico: Cantidad -> Datos -> Pago -> Comprobante
+    const titles = ["Cantidad de Boletos", "Datos Personales", "Método de Pago", "Confirmar Pago"];
+    const icons = ["solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:card-2-bold-duotone", "solar:upload-track-bold-duotone"];
     
-    // Ajuste visual para simular 4 pasos
     let visualStep = currentStep;
-    if(currentStep === 5) visualStep = 4; 
+    if(currentStep === 5) visualStep = 4; // Ajuste para el paso final
     
     const titleEl = document.getElementById('header-title');
-    if(titleEl) titleEl.innerText = titles[currentStep - 1];
+    if(titleEl) titleEl.innerText = titles[currentStep - 1] || "Finalizar";
     
     const stepEl = document.getElementById('header-step');
     if(stepEl) stepEl.innerText = `Paso ${visualStep} de 4`;
     
     const iconEl = document.getElementById('header-icon');
-    if(iconEl) iconEl.setAttribute('icon', icons[currentStep - 1]);
+    if(iconEl) iconEl.setAttribute('icon', icons[currentStep - 1] || "solar:check-circle-bold");
     
     const prog = document.getElementById('progress-bar');
     if(prog) prog.style.width = `${visualStep * 25}%`;
@@ -347,7 +304,7 @@ window.updateModalHeader = function() {
 
     const btnNext = document.getElementById('btn-next');
     if(btnNext) {
-        btnNext.innerHTML = (currentStep === 5) 
+        btnNext.innerHTML = (currentStep === 4) 
             ? `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>` 
             : `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`;
     }
@@ -355,16 +312,10 @@ window.updateModalHeader = function() {
 
 window.prevStep = function() {
     if (currentStep > 1) {
-        if(currentStep === 5) {
-            // Si estamos en 5, volver a 3 (saltar el 4 que eliminamos)
-            currentStep = 3;
-        } else {
-            currentStep--;
-        }
+        currentStep--;
         window.mostrarPaso(currentStep);
     }
 }
-
 
 // ==========================================
 // 5. VALIDACIÓN DE STOCK REAL
@@ -424,14 +375,8 @@ window.cerrarAlertaStock = function() { document.getElementById('modal-stock-sut
 // ==========================================
 
 window.nextStep = async function() {
-    // Paso 1: Método de pago
+    // Paso 1: Cantidad (Validar Stock)
     if(currentStep === 1) {
-        const method = document.querySelector('input[name="payment_method"]:checked');
-        if(!method) { Swal.fire({ icon: 'warning', text: 'Selecciona un método para ver los datos.' }); return; }
-    }
-
-    // Paso 2: Cantidad (Validar Stock)
-    if(currentStep === 2) {
         const btn = document.getElementById('btn-next');
         const originalText = btn.innerHTML;
         btn.innerHTML = 'Verificando...';
@@ -445,25 +390,30 @@ window.nextStep = async function() {
         iniciarTimer();
     }
 
-    // Paso 3: Datos
-    if(currentStep === 3) {
+    // Paso 2: Datos
+    else if(currentStep === 2) {
         const name = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
         const phone = document.getElementById('input-phone').value;
         if(!name || !cedula || !phone) { Swal.fire({ icon: 'warning', text: 'Completa nombre, cédula y teléfono.' }); return; }
-        
-        // 🚀 SALTO MÁGICO: Del paso 3 al 5 (Saltamos instrucciones redundantes)
-        currentStep = 5;
-        window.mostrarPaso(5);
+    }
+
+    // Paso 3: Selección de Pago (Nuevo diseño)
+    else if(currentStep === 3) {
+        const method = document.querySelector('input[name="payment_method"]:checked');
+        if(!method) { Swal.fire({ icon: 'warning', text: 'Selecciona un método para ver los datos de pago.' }); return; }
+    }
+
+    // Paso 4: Subir Comprobante (Procesar Final)
+    else if (currentStep === 4) {
+        procesarCompraFinal();
         return;
     }
 
-    // Avanzar normal (1 -> 2 -> 3)
-    if (currentStep < 5) {
+    // Avanzar
+    if (currentStep < 4) {
         currentStep++;
         window.mostrarPaso(currentStep);
-    } else {
-        procesarCompraFinal();
     }
 };
 
@@ -480,12 +430,7 @@ function iniciarTimer() {
         if (timeLeft <= 0) {
             clearInterval(intervaloTimer);
             liberarTickets();
-            Swal.fire({
-                title: 'Tiempo Agotado', 
-                text: 'Se liberaron tus boletos.', 
-                icon: 'error',
-                confirmButtonText: 'Entendido'
-            }).then(() => location.reload());
+            Swal.fire({ title: 'Tiempo Agotado', text: 'Se liberaron tus boletos.', icon: 'error', confirmButtonText: 'Entendido' }).then(() => location.reload());
         }
         timeLeft--;
     }, 1000);
@@ -519,7 +464,7 @@ async function procesarCompraFinal() {
         if (upErr) throw upErr;
         const { data: { publicUrl } } = supabaseClient.storage.from('comprobantes').getPublicUrl(fileName);
 
-        // 2. Datos
+        // 2. Recoger Datos
         const nombre = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
         const country = document.getElementById('input-country-code').value;
@@ -529,28 +474,22 @@ async function procesarCompraFinal() {
         const cantidad = parseInt(document.getElementById('custom-qty').value);
         const method = document.querySelector('input[name="payment_method"]:checked').value;
         
-        // Obtener Total del elemento display (ya calculado)
-        let montoStr = document.getElementById('step5-total-display').innerText.replace('Bs.', '').replace(/\./g,'').replace(',','.');
+        // Obtener monto del paso 3 (que ya se calculó)
+        let montoStr = document.getElementById('step3-total').innerText.replace('Bs.', '').replace(/\./g,'').replace(',','.');
         let monto = parseFloat(montoStr);
 
         // 3. Crear Orden
         const { data: orden, error } = await supabaseClient.from('ordenes').insert([{
-            id_sorteo: raffleId,
-            nombre, cedula, telefono: country + phone, email,
-            metodo_pago: method,
-            referencia_pago: ref,
-            url_comprobante: publicUrl,
-            monto_total: monto,
-            cantidad_boletos: cantidad,
-            estado: 'pendiente_validacion'
+            id_sorteo: raffleId, nombre, cedula, telefono: country + phone, email,
+            metodo_pago: method, referencia_pago: ref, url_comprobante: publicUrl,
+            monto_total: monto, cantidad_boletos: cantidad, estado: 'pendiente_validacion'
         }]).select().single();
 
         if (error) throw error;
 
-        // 4. Asignar Tickets a la Orden
+        // 4. Asignar Tickets
         const ids = ticketsReservados.map(t => t.id);
         const numeros = ticketsReservados.map(t => t.numero);
-        
         await supabaseClient.from('tickets').update({ estado: 'pendiente', id_orden: orden.id }).in('id', ids);
 
         // 5. Finalizar
@@ -558,12 +497,11 @@ async function procesarCompraFinal() {
         clearInterval(intervaloTimer);
         Swal.close();
 
-        // UI Éxito
         const container = document.getElementById('assigned-tickets');
         if(container) container.innerHTML = numeros.map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('');
         
         document.getElementById('modal-footer').classList.add('hidden');
-        document.getElementById('step-5').classList.add('hidden');
+        document.getElementById('step-4').classList.add('hidden');
         document.getElementById('step-success').classList.remove('hidden');
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 
@@ -583,7 +521,6 @@ window.cerrarModalVerificar = function() { document.getElementById('checkTickets
 window.consultarTicketsReales = async function() {
     const cedulaInput = document.getElementById('cedula-consult');
     const cedula = cedulaInput ? cedulaInput.value : '';
-    
     if(!cedula) return Swal.fire('Error', 'Ingresa tu cédula', 'warning');
     
     const div = document.getElementById('ticket-results');
@@ -593,15 +530,13 @@ window.consultarTicketsReales = async function() {
     const { data: ordenes } = await supabaseClient.from('ordenes').select('*').eq('cedula', cedula).order('creado_en', {ascending:false});
     
     if(!ordenes || ordenes.length === 0) {
-        div.innerHTML = '<p class="text-center text-gray-400 p-4">No se encontraron compras con esa cédula.</p>';
-        return;
+        div.innerHTML = '<p class="text-center text-gray-400 p-4">No se encontraron compras con esa cédula.</p>'; return;
     }
 
     let html = '';
     for (let orden of ordenes) {
         const { data: tickets } = await supabaseClient.from('tickets').select('numero').eq('id_orden', orden.id);
         const nums = tickets ? tickets.map(t => `<span class="bg-gray-100 px-1 rounded border">${t.numero}</span>`).join(' ') : 'Pendientes';
-        
         let color = orden.estado === 'aprobado' ? 'green' : (orden.estado === 'rechazado' ? 'red' : 'yellow');
         let estado = orden.estado === 'aprobado' ? 'APROBADO' : (orden.estado === 'rechazado' ? 'RECHAZADO' : 'VERIFICANDO');
 
@@ -616,8 +551,7 @@ window.consultarTicketsReales = async function() {
                     <p class="text-[10px] text-gray-400 mb-2">${new Date(orden.creado_en).toLocaleDateString()}</p>
                     <div class="flex flex-wrap gap-1 text-xs font-mono font-bold text-gray-700">${nums}</div>
                 </div>
-            </div>
-        `;
+            </div>`;
     }
     div.innerHTML = html;
 }
