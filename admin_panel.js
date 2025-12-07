@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN CON LÍMITES DE COMPRA (MIN/MAX)
+// admin_panel.js - VERSIÓN MULTI-MONEDA (Bs y USD)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -62,10 +62,12 @@ async function checkAuth() {
     if (!session) window.location.href = 'admin_login.html';
     else {
         loadDashboardData();
+        // Lógica para actualizar total al editar cantidad
         const qtyInput = document.getElementById('edit-cantidad');
         if(qtyInput) {
             qtyInput.addEventListener('input', function() {
                 const newQty = parseInt(this.value) || 0;
+                // Nota: Al editar, usamos el precio unitario calculado de la orden original
                 const newTotal = newQty * currentUnitPrice;
                 document.getElementById('edit-monto').value = newTotal.toFixed(2);
             });
@@ -116,13 +118,15 @@ async function loadTicketStats(sorteoId) {
     safeSetText('stat-sold', vend || 0); 
     safeSetText('stat-pending', pend || 0);
     
+    // Animación visual si hay bloqueados
     const blockedEl = document.getElementById('stat-blocked');
     if(blockedEl) {
         blockedEl.innerText = bloq || 0;
-        blockedEl.classList.add('scale-125', 'transition-transform', 'duration-200', 'text-rose-600');
-        setTimeout(() => {
-            blockedEl.classList.remove('scale-125', 'text-rose-600');
-        }, 200);
+        if(bloq > 0) {
+            blockedEl.classList.add('text-rose-600');
+        } else {
+            blockedEl.classList.remove('text-rose-600');
+        }
     }
 
     if (lastPendingCount !== -1 && pend > lastPendingCount) {
@@ -136,17 +140,18 @@ async function loadTicketStats(sorteoId) {
     lastPendingCount = pend;
 }
 
+// === FUNCIÓN PARA LIMPIAR STOCK MANUALMENTE ===
 window.liberarBloqueosManual = async function() {
     const sorteoId = document.getElementById('raffle-title').dataset.id;
     if(!sorteoId) return Swal.fire('Error', 'No hay sorteo activo.', 'error');
 
     Swal.fire({
-        title: '¿Liberar bloqueos?',
-        text: "Esto pondrá como 'disponible' todos los tickets que se quedaron trabados en el carrito de compra (estado 'bloqueado'). Úsalo si notas que el stock no se libera.",
+        title: '¿Limpiar carritos abandonados?',
+        text: "Esto liberará todos los tickets que estén en estado 'En Proceso' (bloqueados). Úsalo si ves que el contador se quedó pegado.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#f97316',
-        confirmButtonText: 'Sí, liberar'
+        confirmButtonColor: '#f43f5e',
+        confirmButtonText: 'Sí, liberar todo'
     }).then(async (result) => {
         if (result.isConfirmed) {
             const { data: ticketsBloqueados } = await supabaseClient
@@ -203,13 +208,17 @@ async function loadOrders(estado, isAutoRefresh = false) {
         .order('creado_en', { ascending: false });
 
     if (!ordenes || ordenes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay registros en esta sección para el sorteo actual.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay registros en esta sección.</td></tr>`;
         return;
     }
 
     let html = '';
     ordenes.forEach(orden => {
         const fecha = new Date(orden.creado_en).toLocaleDateString('es-VE');
+        // Detectar moneda aproximada basado en el método (solo visual)
+        const esPagoMovil = orden.metodo_pago === 'pago_movil' || orden.metodo_pago === 'transferencia';
+        const simbolo = esPagoMovil ? 'Bs.' : '$';
+        
         let btns = '';
 
         if(estado === 'pendiente_validacion') {
@@ -239,7 +248,7 @@ async function loadOrders(estado, isAutoRefresh = false) {
                     <div>${orden.telefono}</div>
                 </td>
                 <td class="px-6 py-4 text-center font-bold text-indigo-600 bg-indigo-50/50">${orden.cantidad_boletos}</td>
-                <td class="px-6 py-4 font-bold text-slate-800">Bs. ${orden.monto_total}</td>
+                <td class="px-6 py-4 font-bold text-slate-800">${simbolo} ${orden.monto_total}</td>
                 <td class="px-6 py-4 font-mono text-xs">${orden.referencia_pago || '-'}</td>
                 <td class="px-6 py-4 text-center">
                     ${orden.url_comprobante ? `<button onclick="viewProof('${orden.url_comprobante}')" class="text-indigo-500 hover:text-indigo-700"><i class="fa-solid fa-image text-xl"></i></button>` : '-'}
@@ -258,10 +267,11 @@ window.approveOrder = async function(id) {
     const { data: orden } = await supabaseClient.from('ordenes').select('cantidad_boletos').eq('id', id).single();
     const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_orden', id);
     
+    // Si la orden no tiene tickets asignados (caso raro), intenta asignarlos
     if (count < orden.cantidad_boletos) {
          const raffleId = document.getElementById('raffle-title').dataset.id;
          const { data: newTickets } = await supabaseClient.from('tickets').select('id').eq('id_sorteo', raffleId).eq('estado', 'disponible').limit(orden.cantidad_boletos);
-         if (newTickets.length < orden.cantidad_boletos) return Swal.fire('Error', 'Stock insuficiente', 'error');
+         if (newTickets.length < orden.cantidad_boletos) return Swal.fire('Error', 'Stock insuficiente para aprobar esta orden.', 'error');
          const ids = newTickets.map(t => t.id);
          await supabaseClient.from('tickets').update({ estado: 'vendido', id_orden: id }).in('id', ids);
     } else {
@@ -269,7 +279,7 @@ window.approveOrder = async function(id) {
     }
     await supabaseClient.from('ordenes').update({ estado: 'aprobado' }).eq('id', id);
     loadDashboardData();
-    Swal.fire('Aprobado', 'Orden procesada', 'success');
+    Swal.fire('Aprobado', 'Orden procesada correctamente.', 'success');
 }
 
 window.rejectOrder = async function(id) {
@@ -285,6 +295,10 @@ window.openEditModal = async function(id) {
     if (!orden) return;
     currentUnitPrice = orden.monto_total / orden.cantidad_boletos; if(isNaN(currentUnitPrice)) currentUnitPrice = 0;
     
+    // Detectar símbolo para mostrar
+    const esPagoMovil = orden.metodo_pago === 'pago_movil' || orden.metodo_pago === 'transferencia';
+    const simbolo = esPagoMovil ? 'Bs.' : '$';
+
     document.getElementById('edit-id').value = orden.id;
     document.getElementById('edit-nombre').value = orden.nombre;
     document.getElementById('edit-cedula').value = orden.cedula;
@@ -296,7 +310,7 @@ window.openEditModal = async function(id) {
     document.getElementById('edit-referencia').value = orden.referencia_pago;
     document.getElementById('edit-order-id').innerText = '#' + orden.id.slice(0,6);
     document.getElementById('edit-file').value = '';
-    document.getElementById('display-unit-price').innerText = `Bs. ${currentUnitPrice.toFixed(2)}`;
+    document.getElementById('display-unit-price').innerText = `${simbolo} ${currentUnitPrice.toFixed(2)}`;
     document.getElementById('modal-edit').classList.remove('hidden');
 }
 
@@ -328,10 +342,11 @@ window.saveEditOrder = async function() {
         }
 
         if (nuevaCant !== originalCant) {
+            // Liberar todo y reasignar (más seguro)
             await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).eq('id_orden', id);
             const raffleId = document.getElementById('raffle-title').dataset.id;
             const { data: newTickets } = await supabaseClient.from('tickets').select('id').eq('id_sorteo', raffleId).eq('estado', 'disponible').limit(nuevaCant);
-            if (!newTickets || newTickets.length < nuevaCant) throw new Error("Stock insuficiente.");
+            if (!newTickets || newTickets.length < nuevaCant) throw new Error("Stock insuficiente para aumentar la cantidad.");
             
             const { data: currentOrder } = await supabaseClient.from('ordenes').select('estado').eq('id', id).single();
             const nuevoEstadoTicket = currentOrder.estado === 'aprobado' ? 'vendido' : 'bloqueado';
@@ -355,7 +370,7 @@ window.closeModal = function(id) { document.getElementById(id).classList.add('hi
 window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'admin_login.html'; }
 
 // ==========================================
-// 3. SORTEO ACTIVO (EDITAR) - MODIFICADO CON LIMITES
+// 3. SORTEO ACTIVO (EDITAR) - MULTI-MONEDA
 // ==========================================
 
 async function loadActiveRaffle() {
@@ -364,13 +379,18 @@ async function loadActiveRaffle() {
         document.getElementById('conf-id').value = sorteo.id;
         document.getElementById('conf-titulo').value = sorteo.titulo;
         document.getElementById('conf-loteria').value = sorteo.loteria;
-        document.getElementById('conf-precio').value = sorteo.precio_boleto;
         document.getElementById('conf-fecha').value = sorteo.fecha_sorteo;
         document.getElementById('conf-estado').value = sorteo.estado;
         
-        // Cargar nuevos campos Min/Max
-        if(document.getElementById('conf-min')) document.getElementById('conf-min').value = sorteo.min_compra || 1;
-        if(document.getElementById('conf-max')) document.getElementById('conf-max').value = sorteo.max_compra || 100;
+        // Mapeo Bolívares
+        document.getElementById('conf-precio-bs').value = sorteo.precio_boleto; // Usamos precio_boleto como base Bs
+        document.getElementById('conf-min-bs').value = sorteo.min_compra_bs || 1;
+        document.getElementById('conf-max-bs').value = sorteo.max_compra_bs || 500;
+
+        // Mapeo Dólares
+        document.getElementById('conf-precio-usd').value = sorteo.precio_usd || 0;
+        document.getElementById('conf-min-usd').value = sorteo.min_compra_usd || 1;
+        document.getElementById('conf-max-usd').value = sorteo.max_compra_usd || 100;
         
         document.getElementById('conf-img-preview').src = sorteo.url_flyer || 'https://placehold.co/150x100?text=Sin+Imagen';
     }
@@ -383,12 +403,18 @@ window.saveActiveRaffle = async function() {
     const updates = {
         titulo: document.getElementById('conf-titulo').value,
         loteria: document.getElementById('conf-loteria').value,
-        precio_boleto: parseFloat(document.getElementById('conf-precio').value),
         fecha_sorteo: document.getElementById('conf-fecha').value,
         estado: document.getElementById('conf-estado').value,
-        // Guardar nuevos campos
-        min_compra: parseInt(document.getElementById('conf-min').value) || 1,
-        max_compra: parseInt(document.getElementById('conf-max').value) || 100
+        
+        // Guardar Datos Multi-Moneda
+        precio_boleto: parseFloat(document.getElementById('conf-precio-bs').value), // Bs
+        precio_usd: parseFloat(document.getElementById('conf-precio-usd').value),   // USD
+        
+        min_compra_bs: parseInt(document.getElementById('conf-min-bs').value),
+        max_compra_bs: parseInt(document.getElementById('conf-max-bs').value),
+        
+        min_compra_usd: parseInt(document.getElementById('conf-min-usd').value),
+        max_compra_usd: parseInt(document.getElementById('conf-max-usd').value)
     };
 
     const fileInput = document.getElementById('conf-file');
@@ -412,19 +438,26 @@ window.saveActiveRaffle = async function() {
 }
 
 // ==========================================
-// 4. NUEVO SORTEO (ZONA PELIGROSA) - MODIFICADO CON LIMITES
+// 4. NUEVO SORTEO - MULTI-MONEDA
 // ==========================================
 
 window.processNewRaffle = async function() {
     const titulo = document.getElementById('new-titulo').value;
-    const precio = document.getElementById('new-precio').value;
     const fecha = document.getElementById('new-fecha').value;
-    const rango = document.getElementById('new-rango-value').value; 
-    const min = document.getElementById('new-min').value || 1;
-    const max = document.getElementById('new-max').value || 100;
+    const rango = document.getElementById('new-rango-value').value;
+    
+    // Capturar nuevos campos
+    const precioBs = document.getElementById('new-precio-bs').value;
+    const minBs = document.getElementById('new-min-bs').value || 1;
+    const maxBs = document.getElementById('new-max-bs').value || 500;
+    
+    const precioUsd = document.getElementById('new-precio-usd').value;
+    const minUsd = document.getElementById('new-min-usd').value || 1;
+    const maxUsd = document.getElementById('new-max-usd').value || 100;
+
     const fileInput = document.getElementById('new-file');
 
-    if(!titulo || !precio || !fecha) return Swal.fire('Faltan Datos', 'Completa título, precio y fecha', 'warning');
+    if(!titulo || !precioBs || !fecha) return Swal.fire('Faltan Datos', 'Completa título, precios y fecha', 'warning');
     if(fileInput.files.length === 0) return Swal.fire('Falta Flyer', 'Debes subir una imagen para el sorteo', 'warning');
 
     Swal.fire({
@@ -449,17 +482,25 @@ window.processNewRaffle = async function() {
 
                 const { data: newSorteo, error } = await supabaseClient.from('sorteos').insert([{
                     titulo,
-                    precio_boleto: parseFloat(precio),
                     fecha_sorteo: fecha,
                     loteria: document.getElementById('new-loteria').value,
                     url_flyer: publicUrl.publicUrl,
                     estado: 'activo',
-                    min_compra: parseInt(min),
-                    max_compra: parseInt(max)
+                    
+                    // Insertar valores multi-moneda
+                    precio_boleto: parseFloat(precioBs),
+                    precio_usd: parseFloat(precioUsd),
+                    
+                    min_compra_bs: parseInt(minBs),
+                    max_compra_bs: parseInt(maxBs),
+                    
+                    min_compra_usd: parseInt(minUsd),
+                    max_compra_usd: parseInt(maxUsd)
                 }]).select().single();
 
                 if(error) throw error;
 
+                // Generar tickets
                 const limit = parseInt(rango);
                 const digits = limit === 100 ? 2 : (limit === 1000 ? 3 : 4);
                 let tickets = [];
