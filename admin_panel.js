@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN MULTI-MONEDA (Bs y USD)
+// admin_panel.js - VERSIÓN MULTI-MONEDA + COLUMNA MÉTODO DE PAGO
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -94,7 +94,7 @@ async function loadDashboardData() {
              document.getElementById('raffle-id-display').innerText = "-";
              document.getElementById('raffle-title').dataset.id = ""; 
              
-             document.getElementById('orders-table-body').innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay sorteo activo. Las órdenes anteriores están archivadas.</td></tr>`;
+             document.getElementById('orders-table-body').innerHTML = `<tr><td colspan="8" class="text-center py-12 text-slate-400">No hay sorteo activo. Las órdenes anteriores están archivadas.</td></tr>`;
              
              safeSetText('stat-available', '-'); 
              safeSetText('stat-sold', '-'); 
@@ -185,18 +185,22 @@ window.switchTab = function(tab) {
     loadOrders(tab);
 }
 
+// ==========================================
+// 🔥 MODIFICACIÓN AQUÍ: Columna Método de Pago Agregada
+// ==========================================
+
 async function loadOrders(estado, isAutoRefresh = false) {
     const tbody = document.getElementById('orders-table-body');
     const raffleId = document.getElementById('raffle-title').dataset.id;
 
     if(!raffleId) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay sorteo activo. Crea uno nuevo para ver órdenes.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-12 text-slate-400">No hay sorteo activo. Crea uno nuevo para ver órdenes.</td></tr>`;
         return;
     }
 
     if (!isAutoRefresh) {
         if(tbody.innerHTML.includes('No hay registros') || tbody.innerHTML === '') {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-2xl"></i></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-2xl"></i></td></tr>`;
         }
     }
     
@@ -208,16 +212,22 @@ async function loadOrders(estado, isAutoRefresh = false) {
         .order('creado_en', { ascending: false });
 
     if (!ordenes || ordenes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400">No hay registros en esta sección.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-12 text-slate-400">No hay registros en esta sección.</td></tr>`;
         return;
     }
 
     let html = '';
     ordenes.forEach(orden => {
         const fecha = new Date(orden.creado_en).toLocaleDateString('es-VE');
-        // Detectar moneda aproximada basado en el método (solo visual)
+        
+        // 1. Detectar moneda y método
         const esPagoMovil = orden.metodo_pago === 'pago_movil' || orden.metodo_pago === 'transferencia';
         const simbolo = esPagoMovil ? 'Bs.' : '$';
+        
+        // 2. Crear etiqueta bonita para el método
+        const metodoNombre = orden.metodo_pago.replace(/_/g, ' ').toUpperCase();
+        // Color Azul para Bs, Verde para $ (Estilo visual)
+        const badgeColor = esPagoMovil ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100';
         
         let btns = '';
 
@@ -248,7 +258,14 @@ async function loadOrders(estado, isAutoRefresh = false) {
                     <div>${orden.telefono}</div>
                 </td>
                 <td class="px-6 py-4 text-center font-bold text-indigo-600 bg-indigo-50/50">${orden.cantidad_boletos}</td>
-                <td class="px-6 py-4 font-bold text-slate-800">${simbolo} ${orden.monto_total}</td>
+                
+                <td class="px-6 py-4 text-center">
+                     <span class="px-2 py-1 rounded border text-[10px] font-bold ${badgeColor}">
+                        ${metodoNombre}
+                    </span>
+                </td>
+
+                <td class="px-6 py-4 font-bold text-slate-800">${simbolo} ${orden.monto_total.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
                 <td class="px-6 py-4 font-mono text-xs">${orden.referencia_pago || '-'}</td>
                 <td class="px-6 py-4 text-center">
                     ${orden.url_comprobante ? `<button onclick="viewProof('${orden.url_comprobante}')" class="text-indigo-500 hover:text-indigo-700"><i class="fa-solid fa-image text-xl"></i></button>` : '-'}
