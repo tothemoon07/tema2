@@ -86,8 +86,13 @@
                         <h2 class="text-2xl font-bold text-slate-800" id="raffle-title">Cargando...</h2>
                         <p class="text-sm text-slate-500">Gestión de ventas en tiempo real</p>
                     </div>
-                    <div class="flex gap-2 text-xs font-mono bg-white px-3 py-1 rounded border border-slate-200">
-                        <span class="text-slate-400">ID Sorteo:</span> <span id="raffle-id-display">...</span>
+                    <div class="flex items-center gap-4">
+                         <button onclick="liberarBloqueosManual()" class="bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm flex items-center gap-2" title="Forzar limpieza de carritos abandonados">
+                            <i class="fa-solid fa-broom"></i> Limpiar Bloqueos
+                        </button>
+                        <div class="flex gap-2 text-xs font-mono bg-white px-3 py-1 rounded border border-slate-200">
+                            <span class="text-slate-400">ID Sorteo:</span> <span id="raffle-id-display">...</span>
+                        </div>
                     </div>
                 </div>
 
@@ -135,65 +140,88 @@
                 </div>
             </div>
 
-            <div id="view-active-raffle" class="hidden fade-in max-w-4xl mx-auto">
+            <div id="view-active-raffle" class="hidden fade-in max-w-5xl mx-auto">
                 <h2 class="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-200 pb-4">Editar Sorteo Activo</h2>
                 
                 <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-6">
-                    <form id="form-config-sorteo" class="space-y-5">
+                    <form id="form-config-sorteo" class="space-y-6">
                         <input type="hidden" id="conf-id">
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-1">Título del Sorteo</label>
                                 <input type="text" id="conf-titulo" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
                             </div>
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1">Lotería / Juego</label>
-                                <input type="text" id="conf-loteria" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1">Precio Boleto (Bs)</label>
-                                <input type="number" step="0.01" id="conf-precio" class="w-full border border-slate-300 rounded-lg p-2.5 font-bold">
-                            </div>
-                            <div>
+                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-1">Fecha Sorteo</label>
                                 <input type="date" id="conf-fecha" class="w-full border border-slate-300 rounded-lg p-2.5">
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1">Estado</label>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Lotería</label>
+                                <input type="text" id="conf-loteria" class="w-full border border-slate-300 rounded-lg p-2.5">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                                <h3 class="font-bold text-blue-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-money-bill-wave"></i> Configuración Bolívares (Bs)</h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio por Boleto (Bs)</label>
+                                        <input type="number" step="0.01" id="conf-precio-bs" class="w-full border border-blue-200 rounded-lg p-2 font-bold text-blue-900">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Min. Compra</label>
+                                            <input type="number" id="conf-min-bs" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Max. Compra</label>
+                                            <input type="number" id="conf-max-bs" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                                <h3 class="font-bold text-emerald-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-dollar-sign"></i> Configuración Dólares ($)</h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Precio por Boleto ($)</label>
+                                        <input type="number" step="0.01" id="conf-precio-usd" class="w-full border border-emerald-200 rounded-lg p-2 font-bold text-emerald-900">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Min. Compra</label>
+                                            <input type="number" id="conf-min-usd" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Max. Compra</label>
+                                            <input type="number" id="conf-max-usd" class="w-full border border-slate-200 rounded-lg p-2 text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Estado del Sorteo</label>
                                 <select id="conf-estado" class="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50">
                                     <option value="activo">Activo</option>
                                     <option value="finalizado">Finalizado</option>
                                 </select>
                             </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mínimo Compra</label>
-                                <input type="number" id="conf-min" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Máximo Compra</label>
-                                <input type="number" id="conf-max" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Flyer Promocional</label>
-                            <div class="flex items-start gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                <img id="conf-img-preview" src="" class="h-32 w-auto object-contain rounded-lg shadow-sm bg-white">
-                                <div class="flex-1">
-                                    <input type="file" id="conf-file" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 mb-2">
-                                    <p class="text-xs text-slate-400">Sube una nueva imagen para reemplazar la actual.</p>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Flyer Promocional</label>
+                                <div class="flex items-center gap-4">
+                                    <img id="conf-img-preview" src="" class="h-16 w-16 object-cover rounded-lg border border-slate-200">
+                                    <input type="file" id="conf-file" accept="image/*" class="text-sm text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex justify-end pt-4">
+                        <div class="flex justify-end pt-4 border-t border-slate-100">
                             <button type="button" onclick="saveActiveRaffle()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-lg hover:bg-indigo-700 transition flex items-center gap-2">
                                 <i class="fa-solid fa-save"></i> Guardar Cambios
                             </button>
@@ -215,77 +243,81 @@
                 </div>
             </div>
 
-            <div id="view-new-raffle" class="hidden fade-in max-w-2xl mx-auto mt-10">
+            <div id="view-new-raffle" class="hidden fade-in max-w-3xl mx-auto mt-6">
                 <div class="bg-white rounded-2xl shadow-xl border border-red-100 overflow-hidden">
                     <div class="bg-red-50 p-6 border-b border-red-100 flex items-center gap-4">
                         <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
                         <div>
                             <h2 class="text-xl font-bold text-red-700">Crear Nuevo Sorteo</h2>
-                            <p class="text-sm text-red-500">Esta acción archivará el sorteo actual y generará una nueva base de tickets.</p>
+                            <p class="text-sm text-red-500">Esta acción archivará el sorteo actual.</p>
                         </div>
                     </div>
                     
                     <form id="form-new-raffle" class="p-8 space-y-6">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Nombre del Nuevo Sorteo</label>
-                            <input type="text" id="new-titulo" placeholder="Ej: Gran Rifa Navideña" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-red-500 outline-none">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1">Precio (Bs)</label>
-                                <input type="number" id="new-precio" step="0.01" class="w-full border border-slate-300 rounded-lg p-3">
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Nombre</label>
+                                <input type="text" id="new-titulo" placeholder="Ej: Gran Rifa" class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-red-500 outline-none">
                             </div>
-                            <div>
-                                <label class="block text-sm font-bold text-slate-700 mb-1">Fecha Sorteo</label>
-                                <input type="date" id="new-fecha" class="w-full border border-slate-300 rounded-lg p-3">
+                             <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Fecha</label>
+                                <input type="date" id="new-fecha" class="w-full border border-slate-300 rounded-lg p-2.5">
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mínimo Tickets</label>
-                                <input type="number" id="new-min" value="1" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none">
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <h4 class="font-bold text-slate-600 mb-2 border-b border-slate-200 pb-1">En Bolívares (Bs)</h4>
+                                <div class="space-y-2">
+                                    <input type="number" id="new-precio-bs" placeholder="Precio Bs" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                    <div class="flex gap-2">
+                                        <input type="number" id="new-min-bs" placeholder="Min" value="1" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                        <input type="number" id="new-max-bs" placeholder="Max" value="500" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Máximo Tickets</label>
-                                <input type="number" id="new-max" value="100" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-indigo-500 outline-none">
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <h4 class="font-bold text-slate-600 mb-2 border-b border-slate-200 pb-1">En Dólares ($)</h4>
+                                <div class="space-y-2">
+                                    <input type="number" id="new-precio-usd" placeholder="Precio USD" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                    <div class="flex gap-2">
+                                        <input type="number" id="new-min-usd" placeholder="Min" value="1" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                        <input type="number" id="new-max-usd" placeholder="Max" value="100" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Cantidad de Tickets</label>
-                            
-                            <input type="hidden" id="new-rango-value" value="1000"> <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <button type="button" onclick="selectRange(100, this)" class="range-btn p-4 rounded-xl flex flex-col items-center justify-center gap-1 group">
-                                    <span class="text-lg font-black block">100</span>
-                                    <span class="text-[10px] uppercase font-bold opacity-60">00 - 99</span>
+                            <input type="hidden" id="new-rango-value" value="1000"> 
+                            <div class="grid grid-cols-3 gap-3">
+                                <button type="button" onclick="selectRange(100, this)" class="range-btn p-3 rounded-lg flex flex-col items-center justify-center gap-1">
+                                    <span class="font-bold">100</span>
                                 </button>
-                                <button type="button" onclick="selectRange(1000, this)" class="range-btn selected p-4 rounded-xl flex flex-col items-center justify-center gap-1 group">
-                                    <span class="text-lg font-black block">1.000</span>
-                                    <span class="text-[10px] uppercase font-bold opacity-60">000 - 999</span>
+                                <button type="button" onclick="selectRange(1000, this)" class="range-btn selected p-3 rounded-lg flex flex-col items-center justify-center gap-1">
+                                    <span class="font-bold">1.000</span>
                                 </button>
-                                <button type="button" onclick="selectRange(10000, this)" class="range-btn p-4 rounded-xl flex flex-col items-center justify-center gap-1 group">
-                                    <span class="text-lg font-black block">10.000</span>
-                                    <span class="text-[10px] uppercase font-bold opacity-60">0000 - 9999</span>
+                                <button type="button" onclick="selectRange(10000, this)" class="range-btn p-3 rounded-lg flex flex-col items-center justify-center gap-1">
+                                    <span class="font-bold">10.000</span>
                                 </button>
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Lotería / Juego</label>
-                            <input type="text" id="new-loteria" placeholder="Ej: Zulia 7:00 PM" class="w-full border border-slate-300 rounded-lg p-3">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Lotería</label>
+                                <input type="text" id="new-loteria" class="w-full border border-slate-300 rounded-lg p-2.5">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Flyer</label>
+                                <input type="file" id="new-file" accept="image/*" class="w-full text-sm text-slate-500">
+                            </div>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1">Flyer / Imagen Promocional</label>
-                            <input type="file" id="new-file" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 border border-slate-200 rounded-xl">
-                            <p class="text-xs text-slate-400 mt-1 ml-1">Recomendado: 1080x1080px (Cuadrado)</p>
-                        </div>
-
-                        <div class="pt-4">
-                            <button type="button" onclick="processNewRaffle()" class="w-full bg-red-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg shadow-red-200 flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-rocket"></i> Crear Sorteo y Generar Tickets
+                        <div class="pt-2">
+                            <button type="button" onclick="processNewRaffle()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg shadow-red-200">
+                                Crear Sorteo
                             </button>
                         </div>
                     </form>
