@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN MULTI-MONEDA + FLUJO 5 PASOS + LIMPIEZA AUTOMÁTICA
+// client_logic.js - VERSIÓN CORREGIDA (ID FIXED)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -67,15 +67,26 @@ function setText(id, text) { const el = document.getElementById(id); if(el) el.i
 
 // 🔥 FUNCIÓN DE LIMPIEZA AUTOMÁTICA
 async function limpiarBloqueosHuerfanos() {
-    const hace20min = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    // Esta función intenta limpiar, pero si falla (ej. falta columna), no detiene el resto de la app
     try {
-        const { data: zombies } = await supabaseClient.from('tickets').select('id').eq('estado', 'bloqueado').lt('created_at', hace20min);
+        const hace20min = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+        const { data: zombies, error } = await supabaseClient
+            .from('tickets')
+            .select('id')
+            .eq('estado', 'bloqueado')
+            .lt('created_at', hace20min);
+
+        if (error) {
+            console.warn("No se pudo limpiar zombies (posiblemente falte columna created_at):", error.message);
+            return;
+        }
+
         if(zombies && zombies.length > 0) {
             const ids = zombies.map(t => t.id);
             await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).in('id', ids);
             console.log(`🧹 ${zombies.length} tickets antiguos liberados.`);
         }
-    } catch (e) { console.warn("Auto-limpieza:", e); }
+    } catch (e) { console.warn("Auto-limpieza error silencioso:", e); }
 }
 
 window.addEventListener('beforeunload', function (e) {
@@ -83,7 +94,6 @@ window.addEventListener('beforeunload', function (e) {
         const ids = ticketsReservados.map(t => t.id);
         // Intentar liberar tickets antes de cerrar la pestaña
         navigator.sendBeacon(`${SUPABASE_URL}/rest/v1/tickets?id=in.(${ids.join(',')})`, JSON.stringify({ estado: 'disponible' }));
-        // Fallback para navegadores antiguos
         supabaseClient.from('tickets').update({ estado: 'disponible' }).in('id', ids).then(() => {});
     }
 });
@@ -93,8 +103,13 @@ window.addEventListener('beforeunload', function (e) {
 // ==========================================
 
 async function loadPaymentMethodsForWizard() {
-    const container = document.getElementById('method-selection-list');
-    if(!container) return;
+    // CORRECCIÓN AQUÍ: Usamos el ID correcto del HTML "payment-methods-list"
+    const container = document.getElementById('payment-methods-list');
+    
+    if(!container) {
+        console.error("No se encontró el contenedor 'payment-methods-list' en el HTML.");
+        return;
+    }
     
     container.innerHTML = '<p class="text-center text-xs text-gray-400 animate-pulse">Cargando...</p>';
     
@@ -121,16 +136,12 @@ async function loadPaymentMethodsForWizard() {
         let logoHtml = `<iconify-icon icon="${style.icon}"></iconify-icon>`;
         let currencyLabel = (m.tipo === 'pago_movil' || m.tipo === 'transferencia') ? 'BS' : 'USD';
 
-        // Manejo especial para Pago Móvil si quieres usar imagen
-        if (m.tipo === 'pago_movil') {
-            // Descomenta si tienes la imagen en Supabase, sino usa el icono
-            // logoHtml = `<img src="${SUPABASE_URL}/storage/v1/object/public/images/pago_movil_logo.png" style="width: 40px; height: 40px; object-fit: contain;" onerror="this.outerHTML='<iconify-icon icon=\'${style.icon}\'></iconify-icon>'">`;
-        }
-
-        const methodString = encodeURIComponent(JSON.stringify(m));
+        // Convertimos el objeto m a string seguro para pasarlo en el onclick
+        // Usamos encodeURIComponent para evitar problemas con comillas simples/dobles
+        const methodStr = encodeURIComponent(JSON.stringify(m));
 
         html += `
-            <div onclick="selectMethod('${methodString}', this)" class="method-card cursor-pointer border-2 border-gray-100 rounded-2xl p-4 flex items-center gap-4 transition-all bg-white relative">
+            <div onclick="selectMethod('${methodStr}', this)" class="method-card cursor-pointer border-2 border-gray-100 rounded-2xl p-4 flex items-center gap-4 transition-all bg-white relative mb-2 hover:border-red-200">
                 <div class="w-12 h-12 ${style.bg} ${style.color} rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
                     ${logoHtml}
                 </div>
@@ -138,7 +149,7 @@ async function loadPaymentMethodsForWizard() {
                     <h4 class="font-bold text-gray-800 text-sm">${m.banco || style.label}</h4>
                     <p class="text-[10px] text-gray-400 font-bold uppercase">${currencyLabel}</p>
                 </div>
-                <div class="check-icon w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-0 transform scale-50 transition-all">
+                <div class="check-icon w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-0 transform scale-50 transition-all absolute right-4">
                     <iconify-icon icon="mingcute:check-line"></iconify-icon>
                 </div>
             </div>
@@ -148,13 +159,29 @@ async function loadPaymentMethodsForWizard() {
 }
 
 window.selectMethod = function(methodStr, card) {
-    document.querySelectorAll('.method-card').forEach(c => c.classList.remove('method-selected'));
-    card.classList.add('method-selected');
+    // Efecto visual de selección
+    document.querySelectorAll('.method-card').forEach(c => {
+        c.classList.remove('border-red-500', 'bg-red-50', 'method-selected');
+        const check = c.querySelector('.check-icon');
+        if(check) { check.classList.remove('opacity-100', 'scale-100'); check.classList.add('opacity-0', 'scale-50'); }
+    });
+
+    card.classList.add('border-red-500', 'bg-red-50', 'method-selected');
+    const check = card.querySelector('.check-icon');
+    if(check) { check.classList.remove('opacity-0', 'scale-50'); check.classList.add('opacity-100', 'scale-100'); }
+
+    // Lógica de datos
     const method = JSON.parse(decodeURIComponent(methodStr));
     selectedMethodData = method;
-    selectedCurrency = (method.tipo === 'pago_movil' || method.tipo === 'transferencia') ? 'Bs' : 'USD';
     
-    // Resetear cantidad a 1 al cambiar de método
+    // Determinar moneda
+    if (method.tipo === 'pago_movil' || method.tipo === 'transferencia') {
+        activeCurrency = 'Bs';
+    } else {
+        activeCurrency = 'USD';
+    }
+    
+    // Resetear cantidad a el mínimo permitido
     document.getElementById('custom-qty').value = getMin();
     updateTotal();
 }
@@ -213,7 +240,7 @@ window.updateTotal = function() {
         if(el) el.innerText = text;
     });
     
-    const hint = document.getElementById('currency-label');
+    const hint = document.getElementById('currency-limits-hint');
     if(hint) hint.innerText = `Límites (${activeCurrency}): ${getMin()} - ${getMax()}`;
 }
 
@@ -343,9 +370,12 @@ window.nextStep = async function() {
     }
     else if(currentStep === 2) {
         const btn = document.getElementById('btn-next');
+        const oldText = btn.innerHTML;
         btn.innerHTML = 'Verificando...'; btn.disabled = true;
+        
         const check = await validarStockReal();
-        btn.innerHTML = 'Continuar...'; btn.disabled = false;
+        
+        btn.innerHTML = oldText; btn.disabled = false;
         if (!check) return; 
     }
     else if(currentStep === 3) {
@@ -439,9 +469,10 @@ async function procesarCompraFinal() {
         const precioUnitario = getPrice();
         const cantidad = parseInt(document.getElementById('custom-qty').value);
         const montoFinal = precioUnitario * cantidad;
+        const raffleId = document.getElementById('raffle-id').value;
 
         const { data: orden, error } = await supabaseClient.from('ordenes').insert([{
-            id_sorteo: activeRaffle.id,
+            id_sorteo: raffleId,
             nombre: document.getElementById('input-name').value,
             cedula: document.getElementById('input-cedula').value,
             telefono: document.getElementById('input-country-code').value + document.getElementById('input-phone').value,
