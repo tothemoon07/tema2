@@ -2,7 +2,6 @@
 // CONFIGURACIÓN INICIAL Y SUPABASE
 // ==========================================
 
-// Credenciales tomadas de tu admin_panel.js para asegurar conexión
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
 
@@ -12,6 +11,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let ticketsReservados = [];
 let intervaloTimer;
 let currentStep = 1;
+let activeCurrency = 'Bs'; // Por defecto Bs
 
 // ==========================================
 // 1. CARGA DE DATOS (INIT)
@@ -26,33 +26,37 @@ document.addEventListener("DOMContentLoaded", async () => {
         .single();
 
     if (sorteo) {
-        // Llenar inputs ocultos para cálculos
+        // Llenar inputs ocultos generales
         if(document.getElementById('raffle-id')) document.getElementById('raffle-id').value = sorteo.id;
-        if(document.getElementById('raffle-price')) document.getElementById('raffle-price').value = sorteo.precio_boleto;
-        if(document.getElementById('raffle-min')) document.getElementById('raffle-min').value = sorteo.min_compra || 1;
-        if(document.getElementById('raffle-max')) document.getElementById('raffle-max').value = sorteo.max_compra || 100;
+        
+        // Llenar inputs ocultos de Bolívares
+        if(document.getElementById('price-bs')) document.getElementById('price-bs').value = sorteo.precio_boleto;
+        if(document.getElementById('min-bs')) document.getElementById('min-bs').value = sorteo.min_compra_bs || 1;
+        if(document.getElementById('max-bs')) document.getElementById('max-bs').value = sorteo.max_compra_bs || 500;
+
+        // Llenar inputs ocultos de Dólares
+        if(document.getElementById('price-usd')) document.getElementById('price-usd').value = sorteo.precio_usd || 0;
+        if(document.getElementById('min-usd')) document.getElementById('min-usd').value = sorteo.min_compra_usd || 1;
+        if(document.getElementById('max-usd')) document.getElementById('max-usd').value = sorteo.max_compra_usd || 100;
 
         // Actualizar UI del Landing
         setText('landing-title', sorteo.titulo);
         setText('landing-date', new Date(sorteo.fecha_sorteo).toLocaleDateString());
-        setText('landing-price-display', "Bs. " + sorteo.precio_boleto);
+        setText('landing-price-display', `Bs. ${sorteo.precio_boleto} / $${sorteo.precio_usd || 0}`);
         setText('landing-lottery', sorteo.loteria);
 
-        // Tu lógica original para el Flyer
         if(sorteo.url_flyer) {
             const imgEl = document.getElementById('landing-image');
             if(imgEl) imgEl.src = sorteo.url_flyer;
         }
 
-        // Actualizar total inicial
-        updateTotal(); 
     } else {
         setText('landing-title', "No hay sorteo activo");
         disablePurchaseButtons();
     }
 
     // 2. Cargar Métodos de Pago
-    loadPaymentMethodsForModal();
+    loadPaymentMethodsForWizard();
     
     // 3. Limpieza preventiva
     limpiarBloqueosHuerfanos();
@@ -80,8 +84,11 @@ window.addEventListener('beforeunload', function (e) {
     }
 });
 
-// 🔥 ACORDEÓN DE PAGOS
-async function loadPaymentMethodsForModal() {
+// ==========================================
+// 2. WIZARD: MÉTODOS DE PAGO (PASO 1)
+// ==========================================
+
+async function loadPaymentMethodsForWizard() {
     const container = document.getElementById('payment-methods-list');
     if(!container) return;
     
@@ -104,38 +111,28 @@ async function loadPaymentMethodsForModal() {
     };
 
     let html = '';
-    methods.forEach((m, index) => {
+    methods.forEach((m) => {
         const style = icons[m.tipo] || icons['default'];
-        const isFirst = index === 0 ? 'checked' : ''; 
         
-        let detailsHtml = '';
-        if(m.titular) detailsHtml += `<div class="mb-2"><p class="text-[10px] text-gray-400 uppercase font-bold">Titular</p><p class="text-sm font-medium text-gray-800">${m.titular}</p></div>`;
-        
-        if(m.cedula) detailsHtml += `
-            <div class="mb-2">
-                <p class="text-[10px] text-gray-400 uppercase font-bold">Documento / ID</p>
-                <div class="flex items-center gap-2">
-                    <p class="text-sm font-medium text-gray-800">${m.cedula}</p>
-                    <button type="button" onclick="copiarTexto('${m.cedula}')" class="text-blue-500 hover:text-blue-700"><iconify-icon icon="solar:copy-bold"></iconify-icon></button>
-                </div>
-            </div>`;
-            
-        if(m.telefono) detailsHtml += `
-            <div class="mb-2">
-                <p class="text-[10px] text-gray-400 uppercase font-bold">Cuenta / Teléfono</p>
-                <div class="flex items-center gap-2">
-                    <p class="text-sm font-medium text-gray-800">${m.telefono}</p>
-                    <button type="button" onclick="copiarTexto('${m.telefono}')" class="text-blue-500 hover:text-blue-700"><iconify-icon icon="solar:copy-bold"></iconify-icon></button>
-                </div>
-            </div>`;
+        // Determinar Logo: Si es Pago Móvil, usamos la imagen subida, sino el icono por defecto.
+        let logoHtml = '';
+        if (m.tipo === 'pago_movil') {
+            // URL temporal a la imagen que subiste (esto debería ser una URL pública real en producción)
+            // He puesto el nombre del archivo que me pasaste.
+            logoHtml = `<img src="https://tpzuvrvjtxuvmyusjmpq.supabase.co/storage/v1/object/public/images/pago_movil_logo.png" class="pm-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`; 
+            // Si la imagen falla, muestra el icono de respaldo
+            logoHtml += `<iconify-icon icon="${style.icon}" class="hidden"></iconify-icon>`; 
+        } else {
+             logoHtml = `<iconify-icon icon="${style.icon}"></iconify-icon>`;
+        }
 
         html += `
             <label class="block relative cursor-pointer group">
-                <input type="radio" name="payment_method" value="${m.tipo}" class="peer hidden" ${isFirst} onchange="togglePaymentDetails(this)">
+                <input type="radio" name="payment_method" value="${m.tipo}" data-id="${m.id}" class="peer hidden" onchange="selectPaymentMethod('${m.tipo}')">
                 
-                <div class="border-2 border-gray-100 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:shadow-md rounded-2xl p-4 flex items-center gap-4 transition-all bg-white relative z-10 hover:border-red-200">
-                    <div class="w-10 h-10 ${style.bg} ${style.color} rounded-xl flex items-center justify-center text-xl flex-shrink-0">
-                        <iconify-icon icon="${style.icon}"></iconify-icon>
+                <div class="border-2 border-gray-100 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:shadow-md rounded-2xl p-4 flex items-center gap-4 transition-all bg-white hover:border-red-200">
+                    <div class="w-12 h-12 ${style.bg} ${style.color} rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+                        ${logoHtml}
                     </div>
                     <div class="flex-1">
                         <h4 class="font-bold text-gray-800 text-sm">${m.banco || style.label}</h4>
@@ -145,16 +142,6 @@ async function loadPaymentMethodsForModal() {
                         <iconify-icon icon="mingcute:check-line"></iconify-icon>
                     </div>
                 </div>
-
-                <div class="payment-details-enter bg-white border-x-2 border-b-2 border-red-100 rounded-b-2xl mx-2 relative z-0 shadow-sm" style="${isFirst ? 'max-height: 300px; opacity: 1; margin-top: -10px; padding-top: 20px;' : ''}">
-                    <div class="p-4 pt-2">
-                        ${detailsHtml}
-                        <div class="mt-3 p-2 bg-blue-50 rounded-lg flex items-start gap-2">
-                            <iconify-icon icon="solar:info-circle-bold" class="text-blue-500 mt-0.5"></iconify-icon>
-                            <p class="text-[10px] text-blue-700 leading-tight">Copia estos datos para pagar. Los necesitarás en el siguiente paso.</p>
-                        </div>
-                    </div>
-                </div>
             </label>
         `;
     });
@@ -162,14 +149,16 @@ async function loadPaymentMethodsForModal() {
     container.innerHTML = html;
 }
 
-window.togglePaymentDetails = function(radio) {
-    document.querySelectorAll('.payment-details-enter').forEach(el => {
-        el.style.maxHeight = '0'; el.style.opacity = '0'; el.style.marginTop = '0'; el.style.paddingTop = '0';
-    });
-    const details = radio.parentNode.querySelector('.payment-details-enter');
-    if(details) {
-        details.style.maxHeight = '300px'; details.style.opacity = '1'; details.style.marginTop = '-10px'; details.style.paddingTop = '20px';
+window.selectPaymentMethod = function(tipo) {
+    // Definir moneda según el tipo seleccionado
+    if (tipo === 'pago_movil' || tipo === 'transferencia') {
+        activeCurrency = 'Bs';
+    } else {
+        activeCurrency = 'USD';
     }
+    // Resetear cantidad a 1 al cambiar de método para evitar inconsistencias
+    document.getElementById('custom-qty').value = 1;
+    document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
 }
 
 function disablePurchaseButtons() {
@@ -179,39 +168,15 @@ function disablePurchaseButtons() {
 }
 
 // ==========================================
-// 2. NAVEGACIÓN Y UI
-// ==========================================
-
-window.toggleMenu = function() {
-    const menu = document.getElementById('side-menu');
-    const overlay = document.getElementById('menu-overlay');
-    menu.classList.toggle('menu-open');
-    overlay.classList.toggle('hidden');
-    document.body.style.overflow = menu.classList.contains('menu-open') ? 'hidden' : 'auto';
-}
-
-window.menuAction = function(action) {
-    window.toggleMenu(); 
-    document.getElementById('view-home').classList.add('hidden');
-    document.getElementById('view-terms').classList.add('hidden');
-    window.scrollTo(0,0);
-
-    if (action === 'home') document.getElementById('view-home').classList.remove('hidden');
-    if (action === 'terms') document.getElementById('view-terms').classList.remove('hidden');
-    if (action === 'verify') { document.getElementById('view-home').classList.remove('hidden'); window.abrirModalVerificar(); }
-}
-window.navigateTo = function(view) { window.menuAction(view); }
-
-// ==========================================
-// 3. LÓGICA DE COMPRA (CANTIDAD Y PRECIO)
+// 3. LÓGICA DE COMPRA (CANTIDAD Y PRECIO) - PASO 2
 // ==========================================
 
 window.selectQty = function(n, btn) {
-    const min = parseInt(document.getElementById('raffle-min').value) || 1;
-    const max = parseInt(document.getElementById('raffle-max').value) || 100;
+    const min = getMin();
+    const max = getMax();
 
-    if(n < min) { Swal.fire('Atención', `La compra mínima es de ${min} boletos.`, 'info'); n = min; }
-    if(n > max) { Swal.fire('Atención', `La compra máxima es de ${max} boletos.`, 'info'); n = max; }
+    if(n < min) { Swal.fire('Atención', `La compra mínima con este método es de ${min} boletos.`, 'info'); n = min; }
+    if(n > max) { Swal.fire('Atención', `La compra máxima con este método es de ${max} boletos.`, 'info'); n = max; }
 
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
     btn.classList.add('qty-btn-selected');
@@ -221,8 +186,8 @@ window.selectQty = function(n, btn) {
 
 window.changeQty = function(n) { 
     let val = parseInt(document.getElementById('custom-qty').value) || 0; 
-    let min = parseInt(document.getElementById('raffle-min').value) || 1;
-    let max = parseInt(document.getElementById('raffle-max').value) || 100;
+    let min = getMin();
+    let max = getMax();
 
     val += n; 
     
@@ -234,32 +199,28 @@ window.changeQty = function(n) {
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
 }
 
+// Funciones auxiliares para obtener límites según moneda activa
+function getPrice() { return activeCurrency === 'Bs' ? parseFloat(document.getElementById('price-bs').value) : parseFloat(document.getElementById('price-usd').value); }
+function getMin() { return activeCurrency === 'Bs' ? parseInt(document.getElementById('min-bs').value) : parseInt(document.getElementById('min-usd').value); }
+function getMax() { return activeCurrency === 'Bs' ? parseInt(document.getElementById('max-bs').value) : parseInt(document.getElementById('max-usd').value); }
+
 window.updateTotal = function() {
     let val = parseInt(document.getElementById('custom-qty').value) || 1;
-    let priceInput = document.getElementById('raffle-price');
-    let price = priceInput ? parseFloat(priceInput.value) : 0; 
+    let price = getPrice();
     let total = val * price;
-    let text = "Bs. " + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
     
-    // Actualizar en Paso 1, Paso 3 y Éxito
-    ['step1-total', 'step3-total', 'success-total'].forEach(id => {
+    let symbol = activeCurrency === 'Bs' ? 'Bs. ' : '$ ';
+    let text = symbol + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
+    
+    // Actualizar Textos
+    ['step2-total', 'step4-total', 'success-total'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.innerText = text;
     });
-}
 
-window.copiarTexto = function(texto) {
-    navigator.clipboard.writeText(texto).then(() => {
-        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
-        Toast.fire({ icon: 'success', title: 'Copiado' });
-    });
-}
-
-window.previewImage = function(input) {
-    if (input.files && input.files[0]) {
-        document.getElementById('upload-placeholder').classList.add('hidden');
-        document.getElementById('file-preview').classList.remove('hidden');
-    }
+    // Actualizar Hint de Límites
+    const hint = document.getElementById('currency-limits-hint');
+    if(hint) hint.innerText = `Límites para ${activeCurrency}: Mín ${getMin()} - Máx ${getMax()}`;
 }
 
 // ==========================================
@@ -291,28 +252,34 @@ window.mostrarPaso = function(paso) {
     }
     const stepEl = document.getElementById(`step-${paso}`);
     if(stepEl) stepEl.classList.remove('hidden');
+    
+    // Si entramos al Paso 2, actualizamos totales inmediatamente
+    if(paso === 2) window.updateTotal();
+    
+    // Si entramos al Paso 4, renderizamos los datos del pago
+    if(paso === 4) renderPaymentDetails();
+
     window.updateModalHeader();
 }
 
 window.updateModalHeader = function() {
-    // Orden Lógico: Cantidad -> Datos -> Pago -> Comprobante
-    const titles = ["Cantidad de Boletos", "Datos Personales", "Método de Pago", "Confirmar Pago"];
-    const icons = ["solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:card-2-bold-duotone", "solar:upload-track-bold-duotone"];
+    const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "Realizar Pago", "Confirmar"];
+    const icons = ["solar:card-bold-duotone", "solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:bill-check-bold-duotone", "solar:upload-track-bold-duotone"];
     
     let visualStep = currentStep;
-    if(currentStep === 5) visualStep = 4; // Ajuste para el paso final
+    if(currentStep === 5) visualStep = 5; 
     
     const titleEl = document.getElementById('header-title');
     if(titleEl) titleEl.innerText = titles[currentStep - 1] || "Finalizar";
     
     const stepEl = document.getElementById('header-step');
-    if(stepEl) stepEl.innerText = `Paso ${visualStep} de 4`;
+    if(stepEl) stepEl.innerText = `Paso ${visualStep} de 5`;
     
     const iconEl = document.getElementById('header-icon');
     if(iconEl) iconEl.setAttribute('icon', icons[currentStep - 1] || "solar:check-circle-bold");
     
     const prog = document.getElementById('progress-bar');
-    if(prog) prog.style.width = `${visualStep * 25}%`;
+    if(prog) prog.style.width = `${visualStep * 20}%`;
 
     const btnBack = document.getElementById('btn-back');
     if(btnBack) {
@@ -322,7 +289,7 @@ window.updateModalHeader = function() {
 
     const btnNext = document.getElementById('btn-next');
     if(btnNext) {
-        btnNext.innerHTML = (currentStep === 4) 
+        btnNext.innerHTML = (currentStep === 5) 
             ? `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>` 
             : `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`;
     }
@@ -336,7 +303,7 @@ window.prevStep = function() {
 }
 
 // ==========================================
-// 5. VALIDACIÓN DE STOCK REAL
+// 5. VALIDACIÓN DE STOCK
 // ==========================================
 
 async function validarStockReal() {
@@ -344,20 +311,17 @@ async function validarStockReal() {
     const raffleId = raffleIdInput ? raffleIdInput.value : null;
     const cantidad = parseInt(document.getElementById('custom-qty').value);
     
-    // VALIDACIÓN MINIMO Y MÁXIMO
-    const min = parseInt(document.getElementById('raffle-min').value) || 1;
-    const max = parseInt(document.getElementById('raffle-max').value) || 100;
+    const min = getMin();
+    const max = getMax();
 
     if (cantidad < min) { 
         Swal.fire('Error', `Debes comprar al menos ${min} boletos.`, 'error'); 
         return false; 
     }
-    
     if (cantidad > max) { 
-        Swal.fire('Error', `La compra máxima es de ${max} boletos por persona.`, 'error'); 
+        Swal.fire('Error', `La compra máxima es de ${max} boletos.`, 'error'); 
         return false; 
     }
-
     if (!raffleId || cantidad <= 0) return false;
 
     const { count, error } = await supabaseClient
@@ -372,7 +336,6 @@ async function validarStockReal() {
         window.mostrarAlertaStock(cantidad, count);
         return false;
     }
-
     return await reservarTicketsEnDB(cantidad, raffleId);
 }
 
@@ -407,8 +370,14 @@ window.cerrarAlertaStock = function() { document.getElementById('modal-stock-sut
 // ==========================================
 
 window.nextStep = async function() {
-    // Paso 1: Cantidad (Validar Stock)
+    // Paso 1: Selección Método
     if(currentStep === 1) {
+        const method = document.querySelector('input[name="payment_method"]:checked');
+        if(!method) { Swal.fire({ icon: 'warning', text: 'Por favor elige un método de pago.' }); return; }
+    }
+
+    // Paso 2: Cantidad (Validar Stock - EL CRÍTICO)
+    else if(currentStep === 2) {
         const btn = document.getElementById('btn-next');
         const originalText = btn.innerHTML;
         btn.innerHTML = 'Verificando...';
@@ -422,28 +391,24 @@ window.nextStep = async function() {
         iniciarTimer();
     }
 
-    // Paso 2: Datos
-    else if(currentStep === 2) {
+    // Paso 3: Datos
+    else if(currentStep === 3) {
         const name = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
         const phone = document.getElementById('input-phone').value;
         if(!name || !cedula || !phone) { Swal.fire({ icon: 'warning', text: 'Completa nombre, cédula y teléfono.' }); return; }
     }
+    
+    // Paso 4: Solo visualiza info, no valida nada extra.
 
-    // Paso 3: Selección de Pago (Nuevo diseño)
-    else if(currentStep === 3) {
-        const method = document.querySelector('input[name="payment_method"]:checked');
-        if(!method) { Swal.fire({ icon: 'warning', text: 'Selecciona un método para ver los datos de pago.' }); return; }
-    }
-
-    // Paso 4: Subir Comprobante (Procesar Final)
-    else if (currentStep === 4) {
+    // Paso 5: Finalizar
+    else if (currentStep === 5) {
         procesarCompraFinal();
         return;
     }
 
     // Avanzar
-    if (currentStep < 4) {
+    if (currentStep < 5) {
         currentStep++;
         window.mostrarPaso(currentStep);
     }
@@ -451,7 +416,7 @@ window.nextStep = async function() {
 
 function iniciarTimer() {
     clearInterval(intervaloTimer);
-    let timeLeft = 900; 
+    let timeLeft = 1200; // 20 Minutos
     document.getElementById('timer-container').classList.remove('hidden');
     intervaloTimer = setInterval(() => {
         let min = Math.floor(timeLeft / 60);
@@ -476,7 +441,60 @@ async function liberarTickets() {
 }
 
 // ==========================================
-// 7. PROCESAR COMPRA FINAL
+// 7. RENDERIZADO DE INFO DE PAGO (PASO 4)
+// ==========================================
+
+async function renderPaymentDetails() {
+    const container = document.getElementById('payment-details-view');
+    const selectedRadio = document.querySelector('input[name="payment_method"]:checked');
+    if(!selectedRadio) return;
+    
+    const id = selectedRadio.dataset.id;
+    const { data: m } = await supabaseClient.from('metodos_pago').select('*').eq('id', id).single();
+    
+    if(!m) { container.innerHTML = 'Error cargando datos.'; return; }
+
+    let html = `
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center shadow-sm">
+            <h4 class="font-bold text-gray-800 text-lg mb-4 uppercase">${m.banco}</h4>
+            <div class="space-y-3 text-sm text-gray-600">
+    `;
+
+    if(m.titular) html += `<div class="flex justify-between border-b border-gray-100 pb-2"><span>Titular:</span> <span class="font-bold select-all">${m.titular}</span></div>`;
+    if(m.cedula) html += `<div class="flex justify-between border-b border-gray-100 pb-2"><span>ID / Cédula:</span> <span class="font-bold select-all">${m.cedula}</span></div>`;
+    if(m.telefono) html += `<div class="flex justify-between border-b border-gray-100 pb-2"><span>Teléfono / Cuenta:</span> <span class="font-bold select-all text-lg text-gray-800">${m.telefono}</span></div>`;
+    
+    html += `
+            </div>
+            <div class="mt-4 pt-2">
+                <button onclick="copiarTexto('${m.telefono}')" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg transition">Copiar Número</button>
+            </div>
+        </div>
+        <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100 flex gap-3 items-start">
+             <iconify-icon icon="solar:info-circle-bold" class="text-yellow-500 mt-0.5 text-lg"></iconify-icon>
+             <p class="text-xs text-yellow-700">Realiza el pago exacto y guarda una captura de pantalla. La necesitarás en el siguiente paso.</p>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+window.copiarTexto = function(texto) {
+    navigator.clipboard.writeText(texto).then(() => {
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+        Toast.fire({ icon: 'success', title: 'Copiado' });
+    });
+}
+
+window.previewImage = function(input) {
+    if (input.files && input.files[0]) {
+        document.getElementById('upload-placeholder').classList.add('hidden');
+        document.getElementById('file-preview').classList.remove('hidden');
+    }
+}
+
+// ==========================================
+// 8. PROCESAR COMPRA FINAL
 // ==========================================
 
 async function procesarCompraFinal() {
@@ -489,14 +507,12 @@ async function procesarCompraFinal() {
     Swal.fire({ title: 'Enviando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     try {
-        // 1. Subir Imagen
         const imgFile = file.files[0];
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${imgFile.name.split('.').pop()}`;
         const { error: upErr } = await supabaseClient.storage.from('comprobantes').upload(fileName, imgFile);
         if (upErr) throw upErr;
         const { data: { publicUrl } } = supabaseClient.storage.from('comprobantes').getPublicUrl(fileName);
 
-        // 2. Recoger Datos
         const nombre = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
         const country = document.getElementById('input-country-code').value;
@@ -506,11 +522,10 @@ async function procesarCompraFinal() {
         const cantidad = parseInt(document.getElementById('custom-qty').value);
         const method = document.querySelector('input[name="payment_method"]:checked').value;
         
-        // Obtener monto del paso 3 (que ya se calculó)
-        let montoStr = document.getElementById('step3-total').innerText.replace('Bs.', '').replace(/\./g,'').replace(',','.');
+        // Obtener monto limpio (quitando símbolos)
+        let montoStr = document.getElementById('step2-total').innerText.replace('Bs.', '').replace('$','').replace(/\./g,'').replace(',','.');
         let monto = parseFloat(montoStr);
 
-        // 3. Crear Orden
         const { data: orden, error } = await supabaseClient.from('ordenes').insert([{
             id_sorteo: raffleId, nombre, cedula, telefono: country + phone, email,
             metodo_pago: method, referencia_pago: ref, url_comprobante: publicUrl,
@@ -519,12 +534,10 @@ async function procesarCompraFinal() {
 
         if (error) throw error;
 
-        // 4. Asignar Tickets
         const ids = ticketsReservados.map(t => t.id);
         const numeros = ticketsReservados.map(t => t.numero);
         await supabaseClient.from('tickets').update({ estado: 'pendiente', id_orden: orden.id }).in('id', ids);
 
-        // 5. Finalizar
         ticketsReservados = [];
         clearInterval(intervaloTimer);
         Swal.close();
@@ -533,7 +546,7 @@ async function procesarCompraFinal() {
         if(container) container.innerHTML = numeros.map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('');
         
         document.getElementById('modal-footer').classList.add('hidden');
-        document.getElementById('step-4').classList.add('hidden');
+        document.getElementById('step-5').classList.add('hidden');
         document.getElementById('step-success').classList.remove('hidden');
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
 
@@ -544,8 +557,25 @@ async function procesarCompraFinal() {
 }
 
 // ==========================================
-// 8. CONSULTA (VERIFICAR)
+// 9. NAVEGACIÓN Y EXTRAS
 // ==========================================
+window.toggleMenu = function() {
+    const menu = document.getElementById('side-menu');
+    const overlay = document.getElementById('menu-overlay');
+    menu.classList.toggle('menu-open');
+    overlay.classList.toggle('hidden');
+    document.body.style.overflow = menu.classList.contains('menu-open') ? 'hidden' : 'auto';
+}
+window.menuAction = function(action) {
+    window.toggleMenu(); 
+    document.getElementById('view-home').classList.add('hidden');
+    document.getElementById('view-terms').classList.add('hidden');
+    window.scrollTo(0,0);
+    if (action === 'home') document.getElementById('view-home').classList.remove('hidden');
+    if (action === 'terms') document.getElementById('view-terms').classList.remove('hidden');
+    if (action === 'verify') { document.getElementById('view-home').classList.remove('hidden'); window.abrirModalVerificar(); }
+}
+window.navigateTo = function(view) { window.menuAction(view); }
 
 window.abrirModalVerificar = function() { document.getElementById('checkTicketsModal').classList.remove('hidden'); }
 window.cerrarModalVerificar = function() { document.getElementById('checkTicketsModal').classList.add('hidden'); }
