@@ -114,17 +114,24 @@ async function loadPaymentMethodsForWizard() {
     methods.forEach((m) => {
         const style = icons[m.tipo] || icons['default'];
         
-        // Determinar Logo: Si es Pago Móvil, usamos la imagen subida, sino el icono por defecto.
+        // =========================================================================
+        // 🔴 AQUÍ SE GESTIONA EL LOGO DE PAGO MÓVIL
+        // =========================================================================
         let logoHtml = '';
+        
         if (m.tipo === 'pago_movil') {
-            // URL temporal a la imagen que subiste (esto debería ser una URL pública real en producción)
-            // He puesto el nombre del archivo que me pasaste.
-            logoHtml = `<img src="https://tpzuvrvjtxuvmyusjmpq.supabase.co/storage/v1/object/public/images/pago_movil_logo.png" class="pm-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`; 
-            // Si la imagen falla, muestra el icono de respaldo
-            logoHtml += `<iconify-icon icon="${style.icon}" class="hidden"></iconify-icon>`; 
+            // URL Pública de un logo de Pago Móvil. Si quieres usar TU imagen:
+            // 1. Súbela a tu Supabase Storage (Bucket 'images').
+            // 2. Copia la "Get Public URL".
+            // 3. Pégala abajo reemplazando la que está.
+            const urlPagoMovil = "https://seeklogo.com/images/P/pago-movil-id-logo-9B00CA77B2-seeklogo.com.png"; 
+            
+            logoHtml = `<img src="${urlPagoMovil}" alt="Pago Movil" style="width: 40px; height: 40px; object-fit: contain;">`;
         } else {
+            // Para el resto (Binance, Zelle, Zinli) usamos los íconos vectoriales
              logoHtml = `<iconify-icon icon="${style.icon}"></iconify-icon>`;
         }
+        // =========================================================================
 
         html += `
             <label class="block relative cursor-pointer group">
