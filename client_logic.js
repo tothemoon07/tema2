@@ -114,8 +114,17 @@ async function loadPaymentMethodsForWizard() {
     methods.forEach((m) => {
         const style = icons[m.tipo] || icons['default'];
         
-        // Usamos Iconify para todos, incluyendo Pago Móvil (más limpio)
-        let logoHtml = `<iconify-icon icon="${style.icon}"></iconify-icon>`;
+        // Determinar Logo: Si es Pago Móvil, usamos la imagen subida, sino el icono por defecto.
+        let logoHtml = '';
+        if (m.tipo === 'pago_movil') {
+            // URL temporal a la imagen que subiste (esto debería ser una URL pública real en producción)
+            // He puesto el nombre del archivo que me pasaste.
+            logoHtml = `<img src="https://tpzuvrvjtxuvmyusjmpq.supabase.co/storage/v1/object/public/images/pago_movil_logo.png" class="pm-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`; 
+            // Si la imagen falla, muestra el icono de respaldo
+            logoHtml += `<iconify-icon icon="${style.icon}" class="hidden"></iconify-icon>`; 
+        } else {
+             logoHtml = `<iconify-icon icon="${style.icon}"></iconify-icon>`;
+        }
 
         html += `
             <label class="block relative cursor-pointer group">
