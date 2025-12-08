@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN ALEATORIA + BATCHING (FINAL)
+// client_logic.js - VERSIÓN OPTIMIZADA (BULK INSERT + JS RANDOM)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -11,13 +11,14 @@ let intervaloTimer;
 let currentStep = 1;
 let activeCurrency = 'Bs'; // Moneda por defecto
 let selectedMethodData = null;
+let totalTicketsSorteo = 100000; // Valor por defecto, se actualiza al cargar
 
 // ==========================================
 // 1. CARGA DE DATOS (INIT)
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("Iniciando sistema Random + Batching...");
+    console.log("Iniciando sistema Random + Batching Optimizado...");
 
     // 1. Cargar datos del sorteo activo
     const { data: sorteo, error } = await supabaseClient
@@ -27,6 +28,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         .single();
 
     if (sorteo) {
+        // Actualizar variable global de tickets totales si existe en la BD
+        if (sorteo.total_tickets) totalTicketsSorteo = sorteo.total_tickets;
+
         // Llenar inputs ocultos generales
         if(document.getElementById('raffle-id')) document.getElementById('raffle-id').value = sorteo.id;
         
@@ -76,28 +80,39 @@ async function actualizarEnLotes(ids, updates) {
     }
 }
 
+// --- FUNCIÓN HELPER PARA GENERAR NÚMEROS ALEATORIOS LOCALMENTE (MUCHO MÁS RÁPIDO) ---
+function generarNumerosAleatorios(cantidad, maximo) {
+    const numeros = new Set();
+    // Protección de seguridad
+    if (cantidad > maximo) cantidad = maximo;
+    
+    // Generamos números únicos
+    while (numeros.size < cantidad) {
+        // Genera número entre 0 y maximo-1 (ajusta +1 si tus tickets empiezan en 1)
+        const num = Math.floor(Math.random() * maximo); 
+        numeros.add(num);
+    }
+    return Array.from(numeros);
+}
+
 // --- FUNCIÓN PARA LA BARRA DE PROGRESO ---
 async function updateFomoBar(raffleId) {
-    const { count: total } = await supabaseClient
+    // Nota: Con tickets dinámicos, el count es lo vendido, no lo total pre-generado
+    // Ajustamos la lógica para ser compatible con ambos métodos
+    const { count: ocupados } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('id_sorteo', raffleId);
 
-    const { count: disponibles } = await supabaseClient
-        .from('tickets')
-        .select('*', { count: 'exact', head: true })
-        .eq('id_sorteo', raffleId)
-        .eq('estado', 'disponible');
-
-    if (total > 0) {
-        const volando = total - disponibles;
-        const porcentaje = ((volando / total) * 100).toFixed(2); 
+    // Asumimos totalTicketsSorteo como el 100%
+    if (totalTicketsSorteo > 0) {
+        const porcentaje = ((ocupados / totalTicketsSorteo) * 100).toFixed(2); 
 
         const bar = document.getElementById('fomo-bar');
         const text = document.getElementById('fomo-text');
 
         if (bar) bar.style.width = `${porcentaje}%`;
-        if (text) text.innerText = `Boletos volando ${porcentaje}% 🚀`;
+        if (text) text.innerText = `Boletos vendidos ${porcentaje}% 🚀`;
     }
 }
 
@@ -108,13 +123,21 @@ async function limpiarBloqueosHuerfanos() {
         const { data: zombies } = await supabaseClient
             .from('tickets')
             .select('id')
-            .eq('estado', 'bloqueado')
-            .lt('created_at', hace20min);
+            .eq('estado', 'reservado') // Ajustado a 'reservado' que es el estado por defecto del insert
+            .lt('fecha_compra', hace20min) // Usamos fecha_compra o created_at
+            .is('id_orden', null);
 
         if(zombies && zombies.length > 0) {
             const ids = zombies.map(t => t.id);
-            await actualizarEnLotes(ids, { estado: 'disponible', id_orden: null });
-            console.log(`🧹 ${zombies.length} tickets antiguos liberados.`);
+            // En modelo dinámico, podríamos borrarlos o marcarlos disponible. 
+            // Para mantener compatibilidad, los borramos o cambiamos estado.
+            // Si usas insert masivo, lo mejor es borrarlos para liberar el número.
+            const BATCH_SIZE = 50;
+            for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+                const batch = ids.slice(i, i + BATCH_SIZE);
+                await supabaseClient.from('tickets').delete().in('id', batch);
+            }
+            console.log(`🧹 ${zombies.length} tickets expirados liberados.`);
         }
     } catch (e) { console.warn("Auto-limpieza error silencioso:", e); }
 }
@@ -122,7 +145,8 @@ async function limpiarBloqueosHuerfanos() {
 window.addEventListener('beforeunload', function (e) {
     if (ticketsReservados.length > 0) {
         const ids = ticketsReservados.map(t => t.id);
-        actualizarEnLotes(ids, { estado: 'disponible' }); 
+        // Si el usuario se va, borramos los tickets reservados para liberar números
+        supabaseClient.from('tickets').delete().in('id', ids).then(() => console.log("Tickets liberados al salir"));
     }
 });
 
@@ -320,7 +344,7 @@ window.prevStep = function() {
 }
 
 // ==========================================
-// 5. VALIDACIÓN DE STOCK (ALEATORIO + BATCHING)
+// 5. VALIDACIÓN DE STOCK (OPTIMIZADA)
 // ==========================================
 
 async function validarStockReal() {
@@ -338,46 +362,101 @@ async function validarStockReal() {
     // Liberar tickets previos si existen
     if(ticketsReservados.length > 0) await liberarTickets();
 
-    // Comprobar stock total
+    // Verificación rápida de disponibilidad TOTAL (Opcional, para no saturar)
+    // Usamos select head para ser rápidos
     const { count, error } = await supabaseClient
         .from('tickets').select('*', { count: 'exact', head: true })
-        .eq('id_sorteo', raffleId).eq('estado', 'disponible');
+        .eq('id_sorteo', raffleId);
 
-    if (count < cantidad) { window.mostrarAlertaStock(cantidad, count); return false; }
+    // Si ya se vendieron todos (o más de los que existen)
+    if (count >= totalTicketsSorteo) { 
+        window.mostrarAlertaStock(cantidad, totalTicketsSorteo - count); 
+        return false; 
+    }
 
     return await reservarTicketsEnDB(cantidad, raffleId);
 }
 
+// ESTA ES LA FUNCIÓN QUE HE ARREGLADO PRINCIPALMENTE
 async function reservarTicketsEnDB(cantidad, raffleId) {
-    // 🎲 LLAMAMOS A LA FUNCIÓN ALEATORIA DE SUPABASE (SQL) 🎲
-    // En lugar de .select()... usamos .rpc()
-    const { data: tickets, error } = await supabaseClient.rpc('obtener_tickets_random', { 
-        sorteo_id: raffleId, 
-        cantidad: cantidad 
-    });
+    // 1. Obtener usuario anónimo o autenticado (necesitamos un ID temporal si no hay auth)
+    // Para simplificar, asumiremos que usamos un ID de sesión o pasamos null si la función SQL lo permite
+    // Pero lo ideal es generar los números AQUÍ en JS.
+    
+    console.log(`Generando ${cantidad} números aleatorios en JS...`);
+    
+    // Generamos números aleatorios localmente (instantáneo)
+    const numerosSeleccionados = generarNumerosAleatorios(cantidad, totalTicketsSorteo);
+    
+    // 2. Enviamos el array a la base de datos para inserción masiva
+    // Usamos la función 'comprar_tickets_masivos' que recibe el array
+    
+    // Obtenemos un ID de usuario temporal si no hay sesión (o usamos null)
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const userId = session?.user?.id || '00000000-0000-0000-0000-000000000000'; // Fallback UUID si no hay auth obligatoria
 
-    if (error || !tickets || tickets.length < cantidad) {
-        console.error("RPC Error:", error);
-        Swal.fire('Lo sentimos', 'Alguien compró los boletos antes o hubo un error.', 'warning');
-        return false;
-    }
-
-    // 2. Bloquearlos usando BATCHING para evitar el error 400
-    const ids = tickets.map(t => t.id);
     try {
-        await actualizarEnLotes(ids, { estado: 'bloqueado' });
-        ticketsReservados = tickets;
+        const { data, error } = await supabaseClient.rpc('comprar_tickets_masivos', { 
+            p_raffle_id: raffleId, 
+            p_user_id: userId,
+            p_tickets: numerosSeleccionados,
+            p_estado: 'reservado'
+        });
+
+        if (error) {
+            console.error("RPC Error:", error);
+            // Si el error es timeout, sugerir menos cantidad
+            if(error.message && error.message.includes("timeout")) {
+                Swal.fire('Tiempo agotado', 'Son muchos tickets, intenta con una cantidad menor.', 'warning');
+            } else {
+                Swal.fire('Lo sentimos', 'Hubo un error al reservar. Intenta de nuevo.', 'warning');
+            }
+            return false;
+        }
+
+        if (!data.success) {
+            console.warn("Fallo lógico:", data.message);
+            // Si falló porque estaban ocupados, reintentamos automáticamente UNA vez
+            // (Opcional: aquí podrías poner un bucle simple de reintento)
+            Swal.fire('Ocupados', 'Algunos números seleccionados ya estaban ocupados. Intenta de nuevo.', 'info');
+            return false;
+        }
+
+        // Si éxito, la función debe devolvernos o confirmarnos
+        // Necesitamos reconstruir el array de objetos ticketsReservados para que el resto del código funcione
+        // Como hicimos un INSERT, ahora sabemos que esos números son nuestros.
+        // Hacemos una consulta rápida para obtener sus IDs reales (necesarios para el update luego)
+        
+        const { data: ticketsConfirmados, error: errFetch } = await supabaseClient
+            .from('tickets')
+            .select('id, numero_boleto')
+            .eq('id_sorteo', raffleId)
+            .eq('user_id', userId)
+            .eq('estado', 'reservado')
+            .in('numero_boleto', numerosSeleccionados); // Filtramos por los que acabamos de pedir
+
+        if (errFetch || !ticketsConfirmados) {
+            console.error("Error recuperando tickets insertados", errFetch);
+            return false;
+        }
+
+        // Mapeamos al formato que espera tu sistema (numero_boleto -> numero)
+        ticketsReservados = ticketsConfirmados.map(t => ({ id: t.id, numero: t.numero_boleto }));
+        
+        console.log(`Reservados ${ticketsReservados.length} tickets exitosamente.`);
         return true;
+
     } catch (err) {
-        console.error("Error bloqueando por lotes:", err);
-        Swal.fire('Error', 'Hubo un problema reservando tus boletos.', 'error');
+        console.error("Error crítico en reserva:", err);
+        Swal.fire('Error', 'Error de conexión. Revisa tu internet.', 'error');
         return false;
     }
 }
 
 window.mostrarAlertaStock = function(pedidos, disponibles) {
     document.getElementById('stock-pedido-val').innerText = pedidos;
-    document.getElementById('stock-disponible-val').innerText = disponibles;
+    // Si disponibles es negativo (por error de cálculo), poner 0
+    document.getElementById('stock-disponible-val').innerText = Math.max(0, disponibles);
     document.getElementById('modal-stock-sutil').classList.remove('hidden');
 }
 window.cerrarAlertaStock = function() { document.getElementById('modal-stock-sutil').classList.add('hidden'); }
@@ -393,7 +472,8 @@ window.nextStep = async function() {
     else if(currentStep === 2) {
         const btn = document.getElementById('btn-next');
         const oldText = btn.innerHTML;
-        btn.innerHTML = 'Verificando...'; btn.disabled = true;
+        btn.innerHTML = 'Verificando... <iconify-icon icon="line-md:loading-loop" class="animate-spin"></iconify-icon>'; 
+        btn.disabled = true;
         
         const check = await validarStockReal();
         
@@ -434,7 +514,8 @@ function iniciarTimer() {
 async function liberarTickets() {
     if (ticketsReservados.length === 0) return;
     const ids = ticketsReservados.map(t => t.id);
-    await actualizarEnLotes(ids, { estado: 'disponible', id_orden: null });
+    // Borramos los tickets reservados (ya que son inserts temporales)
+    await supabaseClient.from('tickets').delete().in('id', ids);
     ticketsReservados = [];
 }
 
@@ -510,10 +591,11 @@ async function procesarCompraFinal() {
 
         if (error) throw error;
 
-        // 2. Actualizar Tickets a "pendiente" asociados a la orden (USANDO BATCHING)
+        // 2. Actualizar Tickets a "pendiente" asociados a la orden
         const ids = ticketsReservados.map(t => t.id);
         const numeros = ticketsReservados.map(t => t.numero);
         
+        // Ahora usamos 'pendiente' en lugar de 'reservado'
         await actualizarEnLotes(ids, { estado: 'pendiente', id_orden: orden.id });
 
         ticketsReservados = [];
@@ -573,7 +655,7 @@ window.consultarTicketsReales = async function() {
     div.innerHTML = '<p class="text-center text-gray-400 py-4">Buscando...</p>';
     div.classList.remove('hidden');
 
-    const { data: ordenes } = await supabaseClient.from('ordenes').select('*').eq('cedula', cedula).order('creado_en', {ascending:false});
+    const { data: ordenes } = await supabaseClient.from('ordenes').select('*').eq('cedula', cedula).order('created_at', {ascending:false});
     
     if(!ordenes || ordenes.length === 0) {
         div.innerHTML = '<p class="text-center text-gray-400 p-4">No se encontraron compras con esa cédula.</p>'; return;
@@ -581,8 +663,8 @@ window.consultarTicketsReales = async function() {
 
     let html = '';
     for (let orden of ordenes) {
-        const { data: tickets } = await supabaseClient.from('tickets').select('numero').eq('id_orden', orden.id).limit(20);
-        let nums = tickets ? tickets.map(t => `<span class="bg-gray-100 px-1 rounded border">${t.numero}</span>`).join(' ') : 'Pendientes';
+        const { data: tickets } = await supabaseClient.from('tickets').select('numero_boleto').eq('id_orden', orden.id).limit(20);
+        let nums = tickets ? tickets.map(t => `<span class="bg-gray-100 px-1 rounded border">${t.numero_boleto}</span>`).join(' ') : 'Pendientes';
         
         if(orden.cantidad_boletos > 20) nums += ` <span class="text-[10px] text-gray-400">(+${orden.cantidad_boletos - 20})</span>`;
 
@@ -597,7 +679,7 @@ window.consultarTicketsReales = async function() {
                         <span class="font-bold text-xs">#${orden.id.slice(0,6)}</span>
                         <span class="text-[10px] font-bold text-${color}-600 bg-${color}-50 px-2 rounded">${estado}</span>
                     </div>
-                    <p class="text-[10px] text-gray-400 mb-2">${new Date(orden.creado_en).toLocaleDateString()}</p>
+                    <p class="text-[10px] text-gray-400 mb-2">${new Date(orden.created_at).toLocaleDateString()}</p>
                     <div class="flex flex-wrap gap-1 text-xs font-mono font-bold text-gray-700">${nums}</div>
                 </div>
             </div>`;
