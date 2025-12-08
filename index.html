@@ -136,9 +136,9 @@
 
                     <div class="px-1 mb-2">
                         <div class="h-3 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner mb-2">
-                            <div class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[80%]"></div>
+                            <div id="fomo-bar" class="h-full bg-gradient-to-r from-green-400 to-green-600 w-[0%] transition-all duration-1000"></div>
                         </div>
-                        <p class="text-center text-[10px] text-gray-400 font-bold">Boletos volando 🚀</p>
+                        <p id="fomo-text" class="text-center text-[10px] text-gray-400 font-bold">Boletos volando 0.00% 🚀</p>
                     </div>
 
                     <div class="flex justify-center gap-6 mt-8 opacity-80 grayscale hover:grayscale-0 transition-all">
@@ -184,15 +184,84 @@
         <div id="view-terms" class="hidden space-y-6">
             <div class="text-center mb-6">
                 <h2 class="text-2xl font-black text-gray-800">Términos y Condiciones</h2>
+                <p class="text-xs text-gray-400 mt-2">Lee atentamente nuestras normas</p>
             </div>
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-8 text-sm text-gray-600 leading-relaxed space-y-6">
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-2">1. Participación</h4>
-                    <p class="text-xs">Al comprar un boleto, aceptas todas las reglas del sorteo activo.</p>
+            
+            <div class="space-y-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 text-xl"><iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon></div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Disponibilidad de números</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed">Los números disponibles para cada sorteo estarán siempre publicados en la página oficial de Súper Gana.</p>
+                    </div>
                 </div>
-                 <div>
-                    <h4 class="font-bold text-gray-900 mb-2">2. Pagos</h4>
-                    <p class="text-xs">Los pagos deben ser reportados inmediatamente para garantizar la reserva de los boletos.</p>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0 text-xl"><iconify-icon icon="solar:ticket-sale-bold-duotone"></iconify-icon></div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Entrega de tickets</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed">Una vez confirmado tu pago, recibirás tus tickets de manera aleatoria en un plazo máximo de 24 horas, ya que procesamos un alto volumen de operaciones diariamente.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 text-xl"><iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon></div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Quiénes pueden participar</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed">Solo podrán participar personas naturales mayores de 18 años.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0 text-xl"><iconify-icon icon="solar:videocamera-record-bold-duotone"></iconify-icon></div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Transparencia y difusión</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed">Para garantizar la transparencia, los ganadores aceptan aparecer en los contenidos audiovisuales relacionados con la entrega de premios, los cuales podrán ser publicados en nuestras redes sociales.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 text-xl"><iconify-icon icon="simple-icons:zelle"></iconify-icon></div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Compras con Zelle</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed">Si eliges pagar con Zelle, las compras suelen estar condicionadas por una cantidad mínima de boletos.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="w-10 h-10 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center flex-shrink-0 text-xl"><iconify-icon icon="simple-icons:binance"></iconify-icon></div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Compras con Binance</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed">Si eliges pagar con Binance, las compras suelen estar condicionadas por una cantidad mínima de boletos.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="w-10 h-10 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center flex-shrink-0 text-xl"><iconify-icon icon="solar:check-read-bold-duotone"></iconify-icon></div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Confirmación de compra</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed">Una vez validado tu pago, recibirás un mensaje de confirmación con tu(s) número(s) asignado(s). Nuestro canal principal es WhatsApp, y de forma secundaria enviamos confirmación por correo electrónico.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center flex-shrink-0 text-xl"><iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon></div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Procedimiento para la Entrega de Premios</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed mb-2">La entrega se efectuará tras la finalización del sorteo y validación del ganador:</p>
+                        <ul class="text-xs text-gray-500 list-disc ml-4 space-y-1">
+                            <li><strong>Transferencias en Bs:</strong> Máximo 24 horas hábiles.</li>
+                            <li><strong>Transferencias en Divisas:</strong> Sujeta a tiempos bancarios. No nos responsabilizamos por demoras de terceros.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center flex-shrink-0 text-xl"><iconify-icon icon="solar:code-square-bold-duotone"></iconify-icon></div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm mb-1">Sobre la plataforma</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed">La plataforma tecnológica es desarrollada y mantenida por <span class="font-bold text-indigo-600">Nova Code</span>. Esta plataforma funciona únicamente como una herramienta de gestión y soporte técnico, y no tiene responsabilidad directa sobre la organización ni ejecución de los sorteos.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -200,7 +269,7 @@
         <div class="text-center pb-8 pt-4">
             <p class="text-[10px] text-gray-400">Plataforma de rifas construida por</p>
             <div class="font-black text-gray-300 text-sm flex items-center justify-center gap-1 mt-1">
-                MOUSE <span class="text-red-300">77</span>
+                NOVA <span class="text-indigo-300">CODE</span>
             </div>
         </div>
 
