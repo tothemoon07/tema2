@@ -124,7 +124,7 @@ async function limpiarBloqueosHuerfanos() {
             .from('tickets')
             .select('id')
             .eq('estado', 'reservado') // Ajustado a 'reservado' que es el estado por defecto del insert
-            .lt('fecha_compra', hace20min) // Usamos fecha_compra o created_at
+            .lt('created_at', hace20min) // Usamos fecha_compra o created_at
             .is('id_orden', null);
 
         if(zombies && zombies.length > 0) {
