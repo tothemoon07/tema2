@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN MULTI-MONEDA + COLUMNA MÉTODO DE PAGO
+// admin_panel.js - VERSIÓN MULTI-MONEDA + MÉTODO DE PAGO + PORCENTAJE DE VENTA
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -100,6 +100,7 @@ async function loadDashboardData() {
              safeSetText('stat-sold', '-'); 
              safeSetText('stat-blocked', '-'); 
              safeSetText('stat-pending', '-');
+             safeSetText('stat-percentage', '0%');
         }
     } catch(e) { console.error(e); }
 }
@@ -109,6 +110,7 @@ function safeSetText(id, text) { const el = document.getElementById(id); if (el)
 async function loadTicketStats(sorteoId) {
     if(!sorteoId) return;
 
+    const { count: total } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId);
     const { count: disp } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'disponible');
     const { count: vend } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'vendido');
     const { count: bloq } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_sorteo', sorteoId).eq('estado', 'bloqueado');
@@ -118,6 +120,14 @@ async function loadTicketStats(sorteoId) {
     safeSetText('stat-sold', vend || 0); 
     safeSetText('stat-pending', pend || 0);
     
+    // --- CALCULAR PORCENTAJE ---
+    let porcentaje = 0;
+    if (total > 0) {
+        const ocupados = total - disp;
+        porcentaje = ((ocupados / total) * 100).toFixed(2);
+    }
+    safeSetText('stat-percentage', porcentaje + '%');
+
     // Animación visual si hay bloqueados
     const blockedEl = document.getElementById('stat-blocked');
     if(blockedEl) {
@@ -184,10 +194,6 @@ window.switchTab = function(tab) {
     });
     loadOrders(tab);
 }
-
-// ==========================================
-// 🔥 MODIFICACIÓN AQUÍ: Columna Método de Pago Agregada
-// ==========================================
 
 async function loadOrders(estado, isAutoRefresh = false) {
     const tbody = document.getElementById('orders-table-body');
