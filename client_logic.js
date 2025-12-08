@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN FINAL (FOMO + NOVA CODE)
+// client_logic.js - VERSIÓN ALEATORIA + BATCHING (FINAL)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -17,7 +17,7 @@ let selectedMethodData = null;
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("Iniciando Nova Code System...");
+    console.log("Iniciando sistema Random + Batching...");
 
     // 1. Cargar datos del sorteo activo
     const { data: sorteo, error } = await supabaseClient
@@ -51,7 +51,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if(imgEl) imgEl.src = sorteo.url_flyer;
         }
 
-        // === NUEVO: INICIAR BARRA FOMO ===
         updateFomoBar(sorteo.id);
 
     } else {
@@ -62,44 +61,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 2. Cargar Métodos de Pago
     loadPaymentMethodsForWizard();
     
-    // 3. Limpieza preventiva de bloqueos antiguos
+    // 3. Limpieza preventiva
     limpiarBloqueosHuerfanos();
 });
 
 function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
 
-// === LOGICA BARRA FOMO (BOLETOS VOLANDO) ===
+// --- FUNCIÓN HELPER PARA ACTUALIZAR EN LOTES (EVITA ERROR 400) ---
+async function actualizarEnLotes(ids, updates) {
+    const BATCH_SIZE = 50; // Procesamos de 50 en 50 para no saturar la URL
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+        const batch = ids.slice(i, i + BATCH_SIZE);
+        await supabaseClient.from('tickets').update(updates).in('id', batch);
+    }
+}
+
+// --- FUNCIÓN PARA LA BARRA DE PROGRESO ---
 async function updateFomoBar(raffleId) {
-    if(!raffleId) return;
-    try {
-        // Obtenemos total de tickets (count exact)
-        const { count: total, error: errTotal } = await supabaseClient
-            .from('tickets')
-            .select('*', { count: 'exact', head: true })
-            .eq('id_sorteo', raffleId);
+    const { count: total } = await supabaseClient
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('id_sorteo', raffleId);
 
-        // Obtenemos disponibles (count exact)
-        const { count: disponibles, error: errDisp } = await supabaseClient
-            .from('tickets')
-            .select('*', { count: 'exact', head: true })
-            .eq('id_sorteo', raffleId)
-            .eq('estado', 'disponible');
+    const { count: disponibles } = await supabaseClient
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('id_sorteo', raffleId)
+        .eq('estado', 'disponible');
 
-        if (total > 0 && disponibles !== null) {
-            const vendidos = total - disponibles;
-            let porcentaje = (vendidos / total) * 100;
-            
-            // Si el porcentaje es muy bajo pero hubo ventas, mostrar al menos algo visual
-            if(vendidos > 0 && porcentaje < 1) porcentaje = 1;
-            
-            const bar = document.getElementById('fomo-bar');
-            const text = document.getElementById('fomo-text');
-            
-            if(bar) bar.style.width = `${porcentaje}%`;
-            if(text) text.innerText = `Boletos volando ${porcentaje.toFixed(2)}% 🚀`;
-        }
-    } catch (e) {
-        console.error("Error cargando FOMO:", e);
+    if (total > 0) {
+        const volando = total - disponibles;
+        const porcentaje = ((volando / total) * 100).toFixed(2); 
+
+        const bar = document.getElementById('fomo-bar');
+        const text = document.getElementById('fomo-text');
+
+        if (bar) bar.style.width = `${porcentaje}%`;
+        if (text) text.innerText = `Boletos volando ${porcentaje}% 🚀`;
     }
 }
 
@@ -107,17 +105,15 @@ async function updateFomoBar(raffleId) {
 async function limpiarBloqueosHuerfanos() {
     try {
         const hace20min = new Date(Date.now() - 20 * 60 * 1000).toISOString();
-        const { data: zombies, error } = await supabaseClient
+        const { data: zombies } = await supabaseClient
             .from('tickets')
             .select('id')
             .eq('estado', 'bloqueado')
             .lt('created_at', hace20min);
 
-        if (error) return;
-
         if(zombies && zombies.length > 0) {
             const ids = zombies.map(t => t.id);
-            await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).in('id', ids);
+            await actualizarEnLotes(ids, { estado: 'disponible', id_orden: null });
             console.log(`🧹 ${zombies.length} tickets antiguos liberados.`);
         }
     } catch (e) { console.warn("Auto-limpieza error silencioso:", e); }
@@ -126,18 +122,16 @@ async function limpiarBloqueosHuerfanos() {
 window.addEventListener('beforeunload', function (e) {
     if (ticketsReservados.length > 0) {
         const ids = ticketsReservados.map(t => t.id);
-        navigator.sendBeacon(`${SUPABASE_URL}/rest/v1/tickets?id=in.(${ids.join(',')})`, JSON.stringify({ estado: 'disponible' }));
-        supabaseClient.from('tickets').update({ estado: 'disponible' }).in('id', ids).then(() => {});
+        actualizarEnLotes(ids, { estado: 'disponible' }); 
     }
 });
 
 // ==========================================
-// 2. WIZARD: MÉTODOS DE PAGO (PASO 1)
+// 2. WIZARD: MÉTODOS DE PAGO
 // ==========================================
 
 async function loadPaymentMethodsForWizard() {
     const container = document.getElementById('payment-methods-list');
-    
     if(!container) return;
     
     container.innerHTML = '<p class="text-center text-xs text-gray-400 animate-pulse">Cargando...</p>';
@@ -214,13 +208,12 @@ function disablePurchaseButtons() {
 }
 
 // ==========================================
-// 3. LÓGICA DE CANTIDAD (ADAPTADA) - PASO 2
+// 3. LÓGICA DE CANTIDAD
 // ==========================================
 
 window.selectQty = function(n, btn) {
     const min = getMin();
     const max = getMax();
-
     if(n < min) { Swal.fire('Atención', `La compra mínima es de ${min} boletos.`, 'info'); n = min; }
     if(n > max) { Swal.fire('Atención', `La compra máxima es de ${max} boletos.`, 'info'); n = max; }
 
@@ -234,17 +227,14 @@ window.changeQty = function(n) {
     let val = parseInt(document.getElementById('custom-qty').value) || 0; 
     let min = getMin();
     let max = getMax();
-
     val += n; 
     if(val < min) val = min;
     if(val > max) { val = max; Swal.fire('Máximo alcanzado', `Límite de ${max} boletos.`, 'warning'); }
-    
     document.getElementById('custom-qty').value = val; 
     window.updateTotal();
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
 }
 
-// Auxiliares
 function getPrice() { return activeCurrency === 'Bs' ? parseFloat(document.getElementById('price-bs').value) : parseFloat(document.getElementById('price-usd').value); }
 function getMin() { return activeCurrency === 'Bs' ? parseInt(document.getElementById('min-bs').value) : parseInt(document.getElementById('min-usd').value); }
 function getMax() { return activeCurrency === 'Bs' ? parseInt(document.getElementById('max-bs').value) : parseInt(document.getElementById('max-usd').value); }
@@ -260,13 +250,12 @@ window.updateTotal = function() {
         const el = document.getElementById(id);
         if(el) el.innerText = text;
     });
-    
     const hint = document.getElementById('currency-limits-hint');
     if(hint) hint.innerText = `Límites (${activeCurrency}): ${getMin()} - ${getMax()}`;
 }
 
 // ==========================================
-// 4. MODALES Y PASOS (WIZARD 5 PASOS)
+// 4. MODALES Y PASOS
 // ==========================================
 
 window.abrirModalCompra = function() {
@@ -331,13 +320,12 @@ window.prevStep = function() {
 }
 
 // ==========================================
-// 5. VALIDACIÓN DE STOCK
+// 5. VALIDACIÓN DE STOCK (ALEATORIO + BATCHING)
 // ==========================================
 
 async function validarStockReal() {
     const raffleId = document.getElementById('raffle-id').value;
     const cantidad = parseInt(document.getElementById('custom-qty').value);
-    
     const min = getMin();
     const max = getMax();
 
@@ -347,8 +335,10 @@ async function validarStockReal() {
     }
     if (!raffleId || cantidad <= 0) return false;
 
+    // Liberar tickets previos si existen
     if(ticketsReservados.length > 0) await liberarTickets();
 
+    // Comprobar stock total
     const { count, error } = await supabaseClient
         .from('tickets').select('*', { count: 'exact', head: true })
         .eq('id_sorteo', raffleId).eq('estado', 'disponible');
@@ -359,18 +349,30 @@ async function validarStockReal() {
 }
 
 async function reservarTicketsEnDB(cantidad, raffleId) {
-    const { data: tickets, error } = await supabaseClient
-        .from('tickets').select('id, numero').eq('id_sorteo', raffleId).eq('estado', 'disponible').limit(cantidad);
+    // 🎲 LLAMAMOS A LA FUNCIÓN ALEATORIA DE SUPABASE (SQL) 🎲
+    // En lugar de .select()... usamos .rpc()
+    const { data: tickets, error } = await supabaseClient.rpc('obtener_tickets_random', { 
+        sorteo_id: raffleId, 
+        cantidad: cantidad 
+    });
 
     if (error || !tickets || tickets.length < cantidad) {
-        Swal.fire('Lo sentimos', 'Alguien compró los boletos antes.', 'warning');
+        console.error("RPC Error:", error);
+        Swal.fire('Lo sentimos', 'Alguien compró los boletos antes o hubo un error.', 'warning');
         return false;
     }
 
+    // 2. Bloquearlos usando BATCHING para evitar el error 400
     const ids = tickets.map(t => t.id);
-    await supabaseClient.from('tickets').update({ estado: 'bloqueado' }).in('id', ids);
-    ticketsReservados = tickets;
-    return true;
+    try {
+        await actualizarEnLotes(ids, { estado: 'bloqueado' });
+        ticketsReservados = tickets;
+        return true;
+    } catch (err) {
+        console.error("Error bloqueando por lotes:", err);
+        Swal.fire('Error', 'Hubo un problema reservando tus boletos.', 'error');
+        return false;
+    }
 }
 
 window.mostrarAlertaStock = function(pedidos, disponibles) {
@@ -432,7 +434,7 @@ function iniciarTimer() {
 async function liberarTickets() {
     if (ticketsReservados.length === 0) return;
     const ids = ticketsReservados.map(t => t.id);
-    await supabaseClient.from('tickets').update({ estado: 'disponible', id_orden: null }).in('id', ids);
+    await actualizarEnLotes(ids, { estado: 'disponible', id_orden: null });
     ticketsReservados = [];
 }
 
@@ -468,7 +470,7 @@ window.previewImage = function(input) {
 }
 
 // ==========================================
-// 8. PROCESAR COMPRA FINAL
+// 8. PROCESAR COMPRA FINAL (BATCHING)
 // ==========================================
 
 async function procesarCompraFinal() {
@@ -491,6 +493,7 @@ async function procesarCompraFinal() {
         const montoFinal = precioUnitario * cantidad;
         const raffleId = document.getElementById('raffle-id').value;
 
+        // 1. Crear la Orden
         const { data: orden, error } = await supabaseClient.from('ordenes').insert([{
             id_sorteo: raffleId,
             nombre: document.getElementById('input-name').value,
@@ -507,15 +510,25 @@ async function procesarCompraFinal() {
 
         if (error) throw error;
 
+        // 2. Actualizar Tickets a "pendiente" asociados a la orden (USANDO BATCHING)
         const ids = ticketsReservados.map(t => t.id);
         const numeros = ticketsReservados.map(t => t.numero);
-        await supabaseClient.from('tickets').update({ estado: 'pendiente', id_orden: orden.id }).in('id', ids);
+        
+        await actualizarEnLotes(ids, { estado: 'pendiente', id_orden: orden.id });
 
         ticketsReservados = [];
         clearInterval(intervaloTimer);
         Swal.close();
 
-        document.getElementById('assigned-tickets').innerHTML = numeros.map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('');
+        // UI Final
+        let numerosHtml = '';
+        if(numeros.length > 20) {
+            numerosHtml = numeros.slice(0, 20).map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('') + `<span class="text-xs text-gray-500 font-bold ml-2">... y ${numeros.length - 20} más.</span>`;
+        } else {
+             numerosHtml = numeros.map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('');
+        }
+
+        document.getElementById('assigned-tickets').innerHTML = numerosHtml;
         document.getElementById('modal-footer').classList.add('hidden');
         document.getElementById('step-5').classList.add('hidden');
         document.getElementById('step-success').classList.remove('hidden');
@@ -568,8 +581,11 @@ window.consultarTicketsReales = async function() {
 
     let html = '';
     for (let orden of ordenes) {
-        const { data: tickets } = await supabaseClient.from('tickets').select('numero').eq('id_orden', orden.id);
-        const nums = tickets ? tickets.map(t => `<span class="bg-gray-100 px-1 rounded border">${t.numero}</span>`).join(' ') : 'Pendientes';
+        const { data: tickets } = await supabaseClient.from('tickets').select('numero').eq('id_orden', orden.id).limit(20);
+        let nums = tickets ? tickets.map(t => `<span class="bg-gray-100 px-1 rounded border">${t.numero}</span>`).join(' ') : 'Pendientes';
+        
+        if(orden.cantidad_boletos > 20) nums += ` <span class="text-[10px] text-gray-400">(+${orden.cantidad_boletos - 20})</span>`;
+
         let color = orden.estado === 'aprobado' ? 'green' : (orden.estado === 'rechazado' ? 'red' : 'yellow');
         let estado = orden.estado === 'aprobado' ? 'APROBADO' : (orden.estado === 'rechazado' ? 'RECHAZADO' : 'VERIFICANDO');
 
