@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN CORREGIDA (ID FIXED)
+// client_logic.js - VERSIÓN FINAL (FOMO + NOVA CODE)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -17,7 +17,7 @@ let selectedMethodData = null;
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("Iniciando sistema...");
+    console.log("Iniciando Nova Code System...");
 
     // 1. Cargar datos del sorteo activo
     const { data: sorteo, error } = await supabaseClient
@@ -51,6 +51,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             if(imgEl) imgEl.src = sorteo.url_flyer;
         }
 
+        // === NUEVO: INICIAR BARRA FOMO ===
+        updateFomoBar(sorteo.id);
+
     } else {
         setText('landing-title', "No hay sorteo activo");
         disablePurchaseButtons();
@@ -65,9 +68,43 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
 
+// === LOGICA BARRA FOMO (BOLETOS VOLANDO) ===
+async function updateFomoBar(raffleId) {
+    if(!raffleId) return;
+    try {
+        // Obtenemos total de tickets (count exact)
+        const { count: total, error: errTotal } = await supabaseClient
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('id_sorteo', raffleId);
+
+        // Obtenemos disponibles (count exact)
+        const { count: disponibles, error: errDisp } = await supabaseClient
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('id_sorteo', raffleId)
+            .eq('estado', 'disponible');
+
+        if (total > 0 && disponibles !== null) {
+            const vendidos = total - disponibles;
+            let porcentaje = (vendidos / total) * 100;
+            
+            // Si el porcentaje es muy bajo pero hubo ventas, mostrar al menos algo visual
+            if(vendidos > 0 && porcentaje < 1) porcentaje = 1;
+            
+            const bar = document.getElementById('fomo-bar');
+            const text = document.getElementById('fomo-text');
+            
+            if(bar) bar.style.width = `${porcentaje}%`;
+            if(text) text.innerText = `Boletos volando ${porcentaje.toFixed(2)}% 🚀`;
+        }
+    } catch (e) {
+        console.error("Error cargando FOMO:", e);
+    }
+}
+
 // 🔥 FUNCIÓN DE LIMPIEZA AUTOMÁTICA
 async function limpiarBloqueosHuerfanos() {
-    // Esta función intenta limpiar, pero si falla (ej. falta columna), no detiene el resto de la app
     try {
         const hace20min = new Date(Date.now() - 20 * 60 * 1000).toISOString();
         const { data: zombies, error } = await supabaseClient
@@ -76,10 +113,7 @@ async function limpiarBloqueosHuerfanos() {
             .eq('estado', 'bloqueado')
             .lt('created_at', hace20min);
 
-        if (error) {
-            console.warn("No se pudo limpiar zombies (posiblemente falte columna created_at):", error.message);
-            return;
-        }
+        if (error) return;
 
         if(zombies && zombies.length > 0) {
             const ids = zombies.map(t => t.id);
@@ -92,7 +126,6 @@ async function limpiarBloqueosHuerfanos() {
 window.addEventListener('beforeunload', function (e) {
     if (ticketsReservados.length > 0) {
         const ids = ticketsReservados.map(t => t.id);
-        // Intentar liberar tickets antes de cerrar la pestaña
         navigator.sendBeacon(`${SUPABASE_URL}/rest/v1/tickets?id=in.(${ids.join(',')})`, JSON.stringify({ estado: 'disponible' }));
         supabaseClient.from('tickets').update({ estado: 'disponible' }).in('id', ids).then(() => {});
     }
@@ -103,13 +136,9 @@ window.addEventListener('beforeunload', function (e) {
 // ==========================================
 
 async function loadPaymentMethodsForWizard() {
-    // CORRECCIÓN AQUÍ: Usamos el ID correcto del HTML "payment-methods-list"
     const container = document.getElementById('payment-methods-list');
     
-    if(!container) {
-        console.error("No se encontró el contenedor 'payment-methods-list' en el HTML.");
-        return;
-    }
+    if(!container) return;
     
     container.innerHTML = '<p class="text-center text-xs text-gray-400 animate-pulse">Cargando...</p>';
     
@@ -132,12 +161,8 @@ async function loadPaymentMethodsForWizard() {
     let html = '';
     methods.forEach((m) => {
         const style = icons[m.tipo] || icons['default'];
-        
         let logoHtml = `<iconify-icon icon="${style.icon}"></iconify-icon>`;
         let currencyLabel = (m.tipo === 'pago_movil' || m.tipo === 'transferencia') ? 'BS' : 'USD';
-
-        // Convertimos el objeto m a string seguro para pasarlo en el onclick
-        // Usamos encodeURIComponent para evitar problemas con comillas simples/dobles
         const methodStr = encodeURIComponent(JSON.stringify(m));
 
         html += `
@@ -159,7 +184,6 @@ async function loadPaymentMethodsForWizard() {
 }
 
 window.selectMethod = function(methodStr, card) {
-    // Efecto visual de selección
     document.querySelectorAll('.method-card').forEach(c => {
         c.classList.remove('border-red-500', 'bg-red-50', 'method-selected');
         const check = c.querySelector('.check-icon');
@@ -170,18 +194,15 @@ window.selectMethod = function(methodStr, card) {
     const check = card.querySelector('.check-icon');
     if(check) { check.classList.remove('opacity-0', 'scale-50'); check.classList.add('opacity-100', 'scale-100'); }
 
-    // Lógica de datos
     const method = JSON.parse(decodeURIComponent(methodStr));
     selectedMethodData = method;
     
-    // Determinar moneda
     if (method.tipo === 'pago_movil' || method.tipo === 'transferencia') {
         activeCurrency = 'Bs';
     } else {
         activeCurrency = 'USD';
     }
     
-    // Resetear cantidad a el mínimo permitido
     document.getElementById('custom-qty').value = getMin();
     updateTotal();
 }
@@ -326,7 +347,6 @@ async function validarStockReal() {
     }
     if (!raffleId || cantidad <= 0) return false;
 
-    // Liberar tickets previos si existen (Evita acumulación)
     if(ticketsReservados.length > 0) await liberarTickets();
 
     const { count, error } = await supabaseClient
