@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN FINAL: SOPORTE PARA LOTES MASIVOS (4000+ TICKETS)
+// admin_panel.js - VERSIÓN FINAL BLINDADA: LOTES PEQUEÑOS PARA EVITAR ERROR "BAD REQUEST"
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -418,7 +418,7 @@ async function loadOrders(estado, isAutoRefresh = false) {
 }
 
 // ==========================================
-// AQUÍ ESTÁ EL CAMBIO IMPORTANTE: LOGICA DE LOTES
+// APROBACIÓN POR LOTES (CORREGIDO PARA EVITAR ERROR 400)
 // ==========================================
 window.approveOrder = async function(id) {
     if(!confirm("¿Aprobar orden?")) return;
@@ -426,14 +426,13 @@ window.approveOrder = async function(id) {
     // Obtenemos la orden
     const { data: orden } = await supabaseClient.from('ordenes').select('cantidad_boletos').eq('id', id).single();
     
-    // Verificamos si ya tiene tickets asignados (por si fue una aprobación directa sin pasar por rechazo)
+    // Verificamos si ya tiene tickets asignados
     const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_orden', id);
     
-    // Si NO tiene tickets asignados (caso: reactivar orden rechazada), hay que buscarlos
+    // Si NO tiene tickets asignados (caso: reactivar orden rechazada)
     if (count < orden.cantidad_boletos) {
          const raffleId = document.getElementById('raffle-title').dataset.id;
          
-         // 1. Verificamos disponibilidad TOTAL primero para no fallar a la mitad
          const { count: totalDisponible } = await supabaseClient
             .from('tickets')
             .select('*', { count: 'exact', head: true })
@@ -444,23 +443,22 @@ window.approveOrder = async function(id) {
             return Swal.fire('Error', 'No hay suficientes tickets disponibles en el sistema para reactivar esta orden.', 'error');
          }
 
-         // 2. PROCESAMIENTO POR LOTES (BATCHING)
-         // Esto evita el error con órdenes grandes (ej: 4950 tickets)
          Swal.fire({ 
             title: 'Procesando...', 
-            html: 'Asignando tickets masivos, por favor espera un momento.', 
+            html: 'Asignando tickets, por favor espera un momento.', 
             didOpen: () => Swal.showLoading(), 
             allowOutsideClick: false 
          });
          
          let remaining = orden.cantidad_boletos;
-         const batchSize = 1000; // Supabase suele limitar a 1000 filas por defecto
+         let processed = 0;
+         const batchSize = 50; // REDUCIDO DE 1000 A 50 PARA EVITAR ERROR DE URL LARGA
 
          try {
              while(remaining > 0) {
                 const take = Math.min(remaining, batchSize);
                 
-                // Pedimos un lote de IDs disponibles
+                // Pedimos un lote pequeño de IDs disponibles
                 const { data: batchTickets, error: fetchError } = await supabaseClient
                     .from('tickets')
                     .select('id')
@@ -474,7 +472,7 @@ window.approveOrder = async function(id) {
 
                 const ids = batchTickets.map(t => t.id);
                 
-                // Actualizamos este lote
+                // Actualizamos este lote pequeño
                 const { error: updateError } = await supabaseClient
                     .from('tickets')
                     .update({ estado: 'vendido', id_orden: id })
@@ -482,7 +480,13 @@ window.approveOrder = async function(id) {
 
                 if(updateError) throw updateError;
 
-                remaining -= ids.length; // Restamos lo procesado
+                processed += ids.length;
+                remaining -= ids.length;
+
+                // Actualizar mensaje de progreso en pantalla
+                if(Swal.getHtmlContainer()) {
+                    Swal.getHtmlContainer().textContent = `Asignando tickets: ${processed} de ${orden.cantidad_boletos}...`;
+                }
              }
          } catch (e) {
              console.error(e);
@@ -490,11 +494,9 @@ window.approveOrder = async function(id) {
          }
 
     } else {
-        // Lógica normal: Ya tiene tickets reservados (estado 'bloqueado' o similar), solo cambiamos estado
         await supabaseClient.from('tickets').update({ estado: 'vendido' }).eq('id_orden', id);
     }
 
-    // Finalmente actualizamos la orden
     await supabaseClient.from('ordenes').update({ estado: 'aprobado' }).eq('id', id);
     
     loadDashboardData();
