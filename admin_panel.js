@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN FINAL CON PESTAÑA "EN PROCESO" Y TIMER REAL
+// admin_panel.js - VERSIÓN FINAL CON BUSCADOR DE GANADORES + TARJETA DORADA
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -10,7 +10,7 @@ let currentTab = 'pendiente_validacion';
 let refreshInterval;
 let currentUnitPrice = 0;
 let lastPendingCount = -1; 
-let timers = []; // Para guardar los intervalos de cuenta regresiva
+let timers = []; 
 
 // ==========================================
 // 1. NAVEGACIÓN Y UI
@@ -29,7 +29,8 @@ window.toggleSidebar = function() {
 }
 
 window.switchView = function(view) {
-    ['dashboard', 'active-raffle', 'new-raffle', 'payments'].forEach(v => {
+    // Agregamos 'winner' a la lista de vistas
+    ['dashboard', 'active-raffle', 'new-raffle', 'payments', 'winner'].forEach(v => {
         document.getElementById(`view-${v}`).classList.add('hidden');
         const nav = document.getElementById(`nav-${v}`);
         if(nav) nav.classList.remove('active');
@@ -63,7 +64,6 @@ async function checkAuth() {
     if (!session) window.location.href = 'admin_login.html';
     else {
         loadDashboardData();
-        // Lógica para actualizar total al editar cantidad
         const qtyInput = document.getElementById('edit-cantidad');
         if(qtyInput) {
             qtyInput.addEventListener('input', function() {
@@ -82,11 +82,10 @@ async function loadDashboardData() {
             document.getElementById('raffle-title').innerText = sorteo.titulo;
             document.getElementById('raffle-id-display').innerText = sorteo.id;
             document.getElementById('raffle-title').dataset.id = sorteo.id;
-            document.getElementById('raffle-title').dataset.precio = sorteo.precio_boleto; // Guardamos precio para cálculos
+            document.getElementById('raffle-title').dataset.precio = sorteo.precio_boleto; 
             
             loadTicketStats(sorteo.id);
             
-            // Si estamos en bloqueados, cargamos la lógica especial
             if(currentTab === 'bloqueado') {
                 loadBlockedGroups(sorteo.id);
             } else {
@@ -94,10 +93,8 @@ async function loadDashboardData() {
             }
             
             if (refreshInterval) clearInterval(refreshInterval);
-            // Refrescar stats cada 5 seg
             refreshInterval = setInterval(() => {
                 loadTicketStats(sorteo.id);
-                // Si estamos viendo bloqueados, refrescar esa tabla también para ver nuevos
                 if(currentTab === 'bloqueado') loadBlockedGroups(sorteo.id, true);
             }, 5000); 
 
@@ -124,7 +121,6 @@ async function loadTicketStats(sorteoId) {
     safeSetText('stat-sold', vend || 0); 
     safeSetText('stat-pending', pend || 0);
     
-    // Calcular Porcentaje (Vendidos + Pendientes + Bloqueados / Total)
     let porcentaje = 0;
     if (total > 0) {
         const ocupados = total - disp;
@@ -132,7 +128,6 @@ async function loadTicketStats(sorteoId) {
     }
     safeSetText('stat-percentage', porcentaje + '%');
     
-    // Actualizar barra visual
     const bar = document.getElementById('stat-percent-bar');
     if(bar) bar.style.width = `${porcentaje}%`;
     safeSetText('stat-percent', porcentaje + '%');
@@ -177,20 +172,18 @@ window.switchTab = function(tab) {
 }
 
 // ==========================================
-// LOGICA ESPECIAL: TICKETS BLOQUEADOS (En Proceso)
+// LOGICA ESPECIAL: TICKETS BLOQUEADOS
 // ==========================================
 
 async function loadBlockedGroups(raffleId, isRefresh = false) {
     const tbody = document.getElementById('orders-table-body');
     if (!raffleId) return;
 
-    // Limpiar timers anteriores
     timers.forEach(t => clearInterval(t));
     timers = [];
 
     if (!isRefresh) tbody.innerHTML = `<tr><td colspan="8" class="text-center py-12"><i class="fa-solid fa-circle-notch fa-spin text-rose-500 text-2xl"></i><p class="text-xs text-slate-400 mt-2">Buscando carritos activos...</p></td></tr>`;
 
-    // 1. Obtener todos los tickets bloqueados
     const { data: tickets } = await supabaseClient
         .from('tickets')
         .select('id, created_at, numero, user_id')
@@ -203,12 +196,9 @@ async function loadBlockedGroups(raffleId, isRefresh = false) {
         return;
     }
 
-    // 2. Agrupar tickets por "Lote" (usando timestamp aproximado)
-    // Como el usuario puede comprar 500 tickets, todos tendrán el mismo created_at (o diferencia de ms)
     const grupos = {};
     
     tickets.forEach(t => {
-        // Clave de agrupación: Hora exacta hasta el segundo (para agrupar el lote)
         const timeKey = new Date(t.created_at).toISOString().slice(0, 19); 
         const key = `${t.user_id}_${timeKey}`;
         
@@ -224,7 +214,6 @@ async function loadBlockedGroups(raffleId, isRefresh = false) {
         grupos[key].count++;
     });
 
-    // 3. Renderizar Grupos
     let html = '';
     const precioUnitario = parseFloat(document.getElementById('raffle-title').dataset.precio || 0);
 
@@ -232,10 +221,9 @@ async function loadBlockedGroups(raffleId, isRefresh = false) {
         const totalEstimado = grupo.count * precioUnitario;
         const uniqueId = `timer-${index}`;
         
-        // Calcular tiempo restante inicial
         const createdAt = new Date(grupo.created_at).getTime();
         const now = Date.now();
-        const expiresAt = createdAt + (20 * 60 * 1000); // 20 minutos
+        const expiresAt = createdAt + (20 * 60 * 1000); 
         let diff = expiresAt - now;
 
         html += `
@@ -266,7 +254,6 @@ async function loadBlockedGroups(raffleId, isRefresh = false) {
             </tr>
         `;
 
-        // Crear Timer para esta fila
         const timerId = setInterval(() => {
             const now = Date.now();
             const remaining = expiresAt - now;
@@ -277,7 +264,6 @@ async function loadBlockedGroups(raffleId, isRefresh = false) {
                     el.innerText = "Expirado";
                     el.classList.add('bg-red-600', 'text-white');
                     clearInterval(timerId);
-                    // Opcional: Auto-liberar en vista (DB se limpia sola con script del cliente, pero forzamos aquí)
                     releaseBlockedGroup(grupo.user_id, grupo.created_at, true); 
                 } else {
                     const m = Math.floor(remaining / 60000);
@@ -292,27 +278,22 @@ async function loadBlockedGroups(raffleId, isRefresh = false) {
     tbody.innerHTML = html;
 }
 
-// Liberar tickets bloqueados manualmente
 window.releaseBlockedGroup = async function(userId, createdAt, isAuto = false) {
     if(!isAuto && !confirm("¿Estás seguro de liberar estos tickets? El usuario perderá su reserva.")) return;
 
     const raffleId = document.getElementById('raffle-title').dataset.id;
     
-    // Buscamos tickets con ese user y fecha aproximada (para ser precisos con el lote)
-    // Nota: supabase eq timestamp debe ser exacto, usamos rango pequeño por seguridad o solo user_id si es unico
-    // Simplificación: Liberar por user_id y estado bloqueado en este sorteo (Borra todo el carrito de ese user)
-    
     const { error } = await supabaseClient
         .from('tickets')
-        .update({ estado: 'disponible', user_id: null }) // Liberar
+        .update({ estado: 'disponible', user_id: null }) 
         .eq('id_sorteo', raffleId)
         .eq('user_id', userId)
         .eq('estado', 'bloqueado');
 
     if(!error) {
         if(!isAuto) Swal.fire('Liberado', 'Los tickets han vuelto al stock.', 'success');
-        loadBlockedGroups(raffleId); // Recargar tabla
-        loadTicketStats(raffleId); // Recargar stats
+        loadBlockedGroups(raffleId); 
+        loadTicketStats(raffleId); 
     } else {
         console.error(error);
         if(!isAuto) Swal.fire('Error', 'No se pudieron liberar.', 'error');
@@ -407,8 +388,6 @@ async function loadOrders(estado, isAutoRefresh = false) {
     });
     tbody.innerHTML = html;
 }
-
-// ... (Resto de funciones: approveOrder, rejectOrder, openEditModal, saveEditOrder, etc. siguen igual)
 
 window.approveOrder = async function(id) {
     if(!confirm("¿Aprobar orden?")) return;
@@ -514,7 +493,6 @@ window.viewProof = function(url) {
 window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); }
 window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'admin_login.html'; }
 
-// ... (Resto de funciones: activeRaffle, paymentMethods, etc. iguales que antes)
 async function loadActiveRaffle() {
     const { data: sorteo } = await supabaseClient.from('sorteos').select('*').eq('estado', 'activo').single();
     if(sorteo) {
@@ -778,6 +756,71 @@ window.deletePaymentMethod = async function(id) {
         await supabaseClient.from('metodos_pago').delete().eq('id', id);
         loadPaymentMethods();
     }
+}
+
+// ==========================================
+// 4. NUEVAS FUNCIONES: BUSCAR GANADOR
+// ==========================================
+
+window.searchWinner = async function() {
+    const input = document.getElementById('winner-search-input');
+    const num = input.value.trim();
+    const raffleId = document.getElementById('raffle-title').dataset.id;
+    const raffleName = document.getElementById('raffle-title').innerText;
+
+    if(!num) return Swal.fire('Error', 'Ingresa un número de ticket.', 'warning');
+
+    Swal.fire({ title: 'Buscando...', didOpen: () => Swal.showLoading() });
+
+    // 1. Buscar el Ticket
+    const { data: ticket, error } = await supabaseClient
+        .from('tickets')
+        .select('*')
+        .eq('numero', num)
+        .eq('id_sorteo', raffleId)
+        .single();
+
+    if(error || !ticket) {
+        return Swal.fire('No encontrado', `El ticket ${num} no existe en este sorteo.`, 'error');
+    }
+
+    if(ticket.estado !== 'vendido') {
+        return Swal.fire('No vendido', `El ticket ${num} está ${ticket.estado.toUpperCase()}, no tiene dueño asignado.`, 'info');
+    }
+
+    // 2. Buscar datos de la Orden (Dueño)
+    const { data: orden } = await supabaseClient
+        .from('ordenes')
+        .select('nombre, telefono') // Solo necesitamos nombre y telefono (opcional para ubicación)
+        .eq('id', ticket.id_orden)
+        .single();
+
+    if(!orden) {
+        return Swal.fire('Error de Datos', 'El ticket aparece vendido pero no encontramos la orden asociada.', 'error');
+    }
+
+    Swal.close();
+
+    // 3. Rellenar la Tarjeta
+    document.getElementById('card-number').innerText = num;
+    document.getElementById('card-raffle-name').innerText = raffleName;
+    document.getElementById('card-client-name').innerText = orden.nombre;
+    // Opcional: Podrías poner la ciudad si la tuvieras, por defecto puse Venezuela
+    // document.getElementById('card-client-location').innerText = ... 
+
+    // 4. Mostrar el contenedor
+    document.getElementById('winner-result-container').classList.remove('hidden');
+}
+
+window.downloadWinnerCard = function() {
+    const node = document.getElementById('winner-card-node');
+    
+    html2canvas(node, { scale: 2, backgroundColor: null }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `Ganador_Ticket_${document.getElementById('card-number').innerText}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
 }
 
 checkAuth();
