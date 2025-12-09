@@ -128,19 +128,22 @@
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="flex border-b border-slate-100">
-                        <button onclick="switchTab('pendiente_validacion')" id="tab-pendientes" class="flex-1 py-4 text-center text-sm font-semibold text-slate-500 hover:bg-slate-50 transition">Pendientes</button>
-                        <button onclick="switchTab('aprobado')" id="tab-aprobados" class="flex-1 py-4 text-center text-sm font-semibold text-slate-500 hover:bg-slate-50 transition">Aprobados</button>
-                        <button onclick="switchTab('rechazado')" id="tab-rechazados" class="flex-1 py-4 text-center text-sm font-semibold text-slate-500 hover:bg-slate-50 transition">Rechazados</button>
+                    <div class="flex border-b border-slate-100 overflow-x-auto">
+                        <button onclick="switchTab('pendiente_validacion')" id="tab-pendientes" class="flex-1 py-4 text-center text-sm font-semibold text-slate-500 hover:bg-slate-50 transition min-w-[100px]">Pendientes</button>
+                        <button onclick="switchTab('aprobado')" id="tab-aprobados" class="flex-1 py-4 text-center text-sm font-semibold text-slate-500 hover:bg-slate-50 transition min-w-[100px]">Aprobados</button>
+                        <button onclick="switchTab('rechazado')" id="tab-rechazados" class="flex-1 py-4 text-center text-sm font-semibold text-slate-500 hover:bg-slate-50 transition min-w-[100px]">Rechazados</button>
+                        <button onclick="switchTab('bloqueado')" id="tab-bloqueados" class="flex-1 py-4 text-center text-sm font-semibold text-rose-500 hover:bg-rose-50 transition min-w-[100px] border-l border-slate-100">
+                            <i class="fa-solid fa-clock md:mr-2"></i> En Proceso
+                        </button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
                             <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
                                 <tr>
-                                    <th class="px-6 py-3">Cliente</th>
+                                    <th class="px-6 py-3">Cliente / Info</th>
                                     <th class="px-6 py-3">Contacto</th>
                                     <th class="px-6 py-3 text-center">Cant.</th>
-                                    <th class="px-6 py-3 text-center">Método</th>
+                                    <th class="px-6 py-3 text-center">Método / Estado</th>
                                     <th class="px-6 py-3">Total</th>
                                     <th class="px-6 py-3">Ref</th>
                                     <th class="px-6 py-3 text-center">Comprobante</th>
