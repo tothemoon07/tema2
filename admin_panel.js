@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN FINAL CON BUSCADOR DE GANADORES (TARJETA COMPACTA + CONTACTO)
+// admin_panel.js - VERSIÓN FINAL CON ESTADÍSTICAS FINANCIERAS
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -84,7 +84,8 @@ async function loadDashboardData() {
             document.getElementById('raffle-title').dataset.precio = sorteo.precio_boleto; 
             
             loadTicketStats(sorteo.id);
-            
+            loadFinancialStats(sorteo.id); // Nueva función para cargar finanzas
+
             if(currentTab === 'bloqueado') {
                 loadBlockedGroups(sorteo.id);
             } else {
@@ -94,6 +95,7 @@ async function loadDashboardData() {
             if (refreshInterval) clearInterval(refreshInterval);
             refreshInterval = setInterval(() => {
                 loadTicketStats(sorteo.id);
+                loadFinancialStats(sorteo.id); // Refrescar finanzas periódicamente
                 if(currentTab === 'bloqueado') loadBlockedGroups(sorteo.id, true);
             }, 5000); 
 
@@ -143,6 +145,38 @@ async function loadTicketStats(sorteoId) {
         if (currentTab === 'pendiente_validacion') loadOrders('pendiente_validacion', true); 
     }
     lastPendingCount = pend;
+}
+
+// NUEVA FUNCIÓN: CALCULAR ESTADÍSTICAS FINANCIERAS
+async function loadFinancialStats(sorteoId) {
+    if(!sorteoId) return;
+
+    // Traer solo ordenes aprobadas (ventas reales)
+    const { data: ventas, error } = await supabaseClient
+        .from('ordenes')
+        .select('monto_total, metodo_pago')
+        .eq('id_sorteo', sorteoId)
+        .eq('estado', 'aprobado');
+
+    if (error) { console.error(error); return; }
+
+    let totalBs = 0;
+    let totalUsd = 0;
+
+    ventas.forEach(v => {
+        // Detectar si es Bs (Pago Móvil o Transferencia)
+        const esBolivares = v.metodo_pago === 'pago_movil' || v.metodo_pago === 'transferencia';
+        
+        if (esBolivares) {
+            totalBs += v.monto_total;
+        } else {
+            // Asumimos que el resto (Zelle, Binance, Zinli, etc.) son en dólares
+            totalUsd += v.monto_total; 
+        }
+    });
+
+    safeSetText('stat-total-bs', `Bs. ${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}`);
+    safeSetText('stat-total-usd', `$ ${totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2})}`);
 }
 
 window.switchTab = function(tab) {
@@ -492,6 +526,7 @@ window.viewProof = function(url) {
 window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); }
 window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'admin_login.html'; }
 
+// ... (El resto de funciones como loadActiveRaffle, processNewRaffle, searchWinner, etc. siguen aquí abajo iguales al archivo anterior. Te paso el archivo completo para evitar confusión).
 async function loadActiveRaffle() {
     const { data: sorteo } = await supabaseClient.from('sorteos').select('*').eq('estado', 'activo').single();
     if(sorteo) {
@@ -757,10 +792,6 @@ window.deletePaymentMethod = async function(id) {
     }
 }
 
-// ==========================================
-// 4. NUEVAS FUNCIONES: BUSCAR GANADOR (TARJETA COMPACTA)
-// ==========================================
-
 window.searchWinner = async function() {
     const input = document.getElementById('winner-search-input');
     const num = input.value.trim();
@@ -790,7 +821,7 @@ window.searchWinner = async function() {
     // 2. Buscar datos de la Orden (Dueño)
     const { data: orden } = await supabaseClient
         .from('ordenes')
-        .select('*') // Traemos todo para mostrar la info completa
+        .select('*')
         .eq('id', ticket.id_orden)
         .single();
 
