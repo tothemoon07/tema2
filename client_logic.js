@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN OPTIMIZADA (BULK INSERT + JS RANDOM)
+// client_logic.js - VERSIÓN "POOL OFICIAL" (SELECCIÓN BASE DE DATOS)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -9,16 +9,16 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let ticketsReservados = [];
 let intervaloTimer;
 let currentStep = 1;
-let activeCurrency = 'Bs'; // Moneda por defecto
+let activeCurrency = 'Bs';
 let selectedMethodData = null;
-let totalTicketsSorteo = 100000; // Valor por defecto, se actualiza al cargar
+let totalTicketsSorteo = 10000; // Se actualiza al cargar el sorteo
 
 // ==========================================
 // 1. CARGA DE DATOS (INIT)
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("Iniciando sistema Random + Batching Optimizado...");
+    console.log("Iniciando sistema Lottery Pool...");
 
     // 1. Cargar datos del sorteo activo
     const { data: sorteo, error } = await supabaseClient
@@ -28,23 +28,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         .single();
 
     if (sorteo) {
-        // Actualizar variable global de tickets totales si existe en la BD
+        // IMPORTANTE: Aquí definimos el universo de la lotería (ej. 1000, 10000, 100000)
         if (sorteo.total_tickets) totalTicketsSorteo = sorteo.total_tickets;
 
-        // Llenar inputs ocultos generales
         if(document.getElementById('raffle-id')) document.getElementById('raffle-id').value = sorteo.id;
         
-        // Llenar inputs ocultos de Bolívares
+        // Cargar Precios
         if(document.getElementById('price-bs')) document.getElementById('price-bs').value = sorteo.precio_boleto;
         if(document.getElementById('min-bs')) document.getElementById('min-bs').value = sorteo.min_compra_bs || 1;
         if(document.getElementById('max-bs')) document.getElementById('max-bs').value = sorteo.max_compra_bs || 500;
 
-        // Llenar inputs ocultos de Dólares
         if(document.getElementById('price-usd')) document.getElementById('price-usd').value = sorteo.precio_usd || 0;
         if(document.getElementById('min-usd')) document.getElementById('min-usd').value = sorteo.min_compra_usd || 1;
         if(document.getElementById('max-usd')) document.getElementById('max-usd').value = sorteo.max_compra_usd || 100;
 
-        // Actualizar UI del Landing
+        // UI
         setText('landing-title', sorteo.titulo);
         setText('landing-date', new Date(sorteo.fecha_sorteo).toLocaleDateString());
         setText('landing-price-display', `Bs. ${sorteo.precio_boleto} / $${sorteo.precio_usd || 0}`);
@@ -54,90 +52,63 @@ document.addEventListener("DOMContentLoaded", async () => {
             const imgEl = document.getElementById('landing-image');
             if(imgEl) imgEl.src = sorteo.url_flyer;
         }
-
         updateFomoBar(sorteo.id);
-
     } else {
         setText('landing-title', "No hay sorteo activo");
         disablePurchaseButtons();
     }
 
-    // 2. Cargar Métodos de Pago
     loadPaymentMethodsForWizard();
-    
-    // 3. Limpieza preventiva
     limpiarBloqueosHuerfanos();
 });
 
 function setText(id, text) { const el = document.getElementById(id); if(el) el.innerText = text; }
 
-// --- FUNCIÓN HELPER PARA ACTUALIZAR EN LOTES (EVITA ERROR 400) ---
+// --- FUNCIONES HELPER ---
+
 async function actualizarEnLotes(ids, updates) {
-    const BATCH_SIZE = 50; // Procesamos de 50 en 50 para no saturar la URL
+    const BATCH_SIZE = 50; 
     for (let i = 0; i < ids.length; i += BATCH_SIZE) {
         const batch = ids.slice(i, i + BATCH_SIZE);
         await supabaseClient.from('tickets').update(updates).in('id', batch);
     }
 }
 
-// --- FUNCIÓN HELPER PARA GENERAR NÚMEROS ALEATORIOS LOCALMENTE (MUCHO MÁS RÁPIDO) ---
-function generarNumerosAleatorios(cantidad, maximo) {
-    const numeros = new Set();
-    // Protección de seguridad
-    if (cantidad > maximo) cantidad = maximo;
-    
-    // Generamos números únicos
-    while (numeros.size < cantidad) {
-        // Genera número entre 0 y maximo-1 (ajusta +1 si tus tickets empiezan en 1)
-        const num = Math.floor(Math.random() * maximo); 
-        numeros.add(num);
-    }
-    return Array.from(numeros);
-}
-
-// --- FUNCIÓN PARA LA BARRA DE PROGRESO ---
 async function updateFomoBar(raffleId) {
-    // Nota: Con tickets dinámicos, el count es lo vendido, no lo total pre-generado
-    // Ajustamos la lógica para ser compatible con ambos métodos
+    // Calculamos porcentaje real basado en tickets vendidos vs universo total
     const { count: ocupados } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('id_sorteo', raffleId);
 
-    // Asumimos totalTicketsSorteo como el 100%
     if (totalTicketsSorteo > 0) {
         const porcentaje = ((ocupados / totalTicketsSorteo) * 100).toFixed(2); 
-
         const bar = document.getElementById('fomo-bar');
         const text = document.getElementById('fomo-text');
-
         if (bar) bar.style.width = `${porcentaje}%`;
         if (text) text.innerText = `Boletos vendidos ${porcentaje}% 🚀`;
     }
 }
 
-// 🔥 FUNCIÓN DE LIMPIEZA AUTOMÁTICA
 async function limpiarBloqueosHuerfanos() {
     try {
         const hace20min = new Date(Date.now() - 20 * 60 * 1000).toISOString();
         const { data: zombies } = await supabaseClient
             .from('tickets')
             .select('id')
-            .eq('estado', 'reservado') // Ajustado a 'reservado' que es el estado por defecto del insert
-            .lt('created_at', hace20min) // Usamos fecha_compra o created_at
+            .eq('estado', 'reservado') 
+            .lt('created_at', hace20min) 
             .is('id_orden', null);
 
         if(zombies && zombies.length > 0) {
             const ids = zombies.map(t => t.id);
-            // En modelo dinámico, podríamos borrarlos o marcarlos disponible. 
-            // Para mantener compatibilidad, los borramos o cambiamos estado.
-            // Si usas insert masivo, lo mejor es borrarlos para liberar el número.
             const BATCH_SIZE = 50;
             for (let i = 0; i < ids.length; i += BATCH_SIZE) {
                 const batch = ids.slice(i, i + BATCH_SIZE);
+                // ALERTA: Aquí borramos el registro para que el número vuelva al pool disponible
                 await supabaseClient.from('tickets').delete().in('id', batch);
             }
-            console.log(`🧹 ${zombies.length} tickets expirados liberados.`);
+            console.log(`🧹 ${zombies.length} tickets regresados al pool.`);
         }
     } catch (e) { console.warn("Auto-limpieza error silencioso:", e); }
 }
@@ -145,28 +116,23 @@ async function limpiarBloqueosHuerfanos() {
 window.addEventListener('beforeunload', function (e) {
     if (ticketsReservados.length > 0) {
         const ids = ticketsReservados.map(t => t.id);
-        // Si el usuario se va, borramos los tickets reservados para liberar números
         supabaseClient.from('tickets').delete().in('id', ids).then(() => console.log("Tickets liberados al salir"));
     }
 });
 
 // ==========================================
-// 2. WIZARD: MÉTODOS DE PAGO
+// 2. WIZARD Y UI
 // ==========================================
 
 async function loadPaymentMethodsForWizard() {
     const container = document.getElementById('payment-methods-list');
     if(!container) return;
-    
     container.innerHTML = '<p class="text-center text-xs text-gray-400 animate-pulse">Cargando...</p>';
-    
     const { data: methods } = await supabaseClient.from('metodos_pago').select('*').eq('activo', true);
-    
     if(!methods || methods.length === 0) {
         container.innerHTML = '<p class="text-center text-xs text-red-400">No hay métodos de pago.</p>';
         return;
     }
-
     const icons = {
         'pago_movil': { icon: 'solar:smartphone-2-bold-duotone', color: 'text-blue-600', bg: 'bg-blue-50', label: 'Pago Móvil' },
         'transferencia': { icon: 'solar:bank-bold-duotone', color: 'text-green-600', bg: 'bg-green-50', label: 'Transferencia' },
@@ -175,14 +141,12 @@ async function loadPaymentMethodsForWizard() {
         'zinli': { icon: 'simple-icons:zinli', color: 'text-indigo-500', bg: 'bg-indigo-50', label: 'Zinli' },
         'default': { icon: 'solar:card-bold', color: 'text-gray-500', bg: 'bg-gray-100', label: 'Otro' }
     };
-
     let html = '';
     methods.forEach((m) => {
         const style = icons[m.tipo] || icons['default'];
         let logoHtml = `<iconify-icon icon="${style.icon}"></iconify-icon>`;
         let currencyLabel = (m.tipo === 'pago_movil' || m.tipo === 'transferencia') ? 'BS' : 'USD';
         const methodStr = encodeURIComponent(JSON.stringify(m));
-
         html += `
             <div onclick="selectMethod('${methodStr}', this)" class="method-card cursor-pointer border-2 border-gray-100 rounded-2xl p-4 flex items-center gap-4 transition-all bg-white relative mb-2 hover:border-red-200">
                 <div class="w-12 h-12 ${style.bg} ${style.color} rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
@@ -195,8 +159,7 @@ async function loadPaymentMethodsForWizard() {
                 <div class="check-icon w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-0 transform scale-50 transition-all absolute right-4">
                     <iconify-icon icon="mingcute:check-line"></iconify-icon>
                 </div>
-            </div>
-        `;
+            </div>`;
     });
     container.innerHTML = html;
 }
@@ -207,20 +170,12 @@ window.selectMethod = function(methodStr, card) {
         const check = c.querySelector('.check-icon');
         if(check) { check.classList.remove('opacity-100', 'scale-100'); check.classList.add('opacity-0', 'scale-50'); }
     });
-
     card.classList.add('border-red-500', 'bg-red-50', 'method-selected');
     const check = card.querySelector('.check-icon');
     if(check) { check.classList.remove('opacity-0', 'scale-50'); check.classList.add('opacity-100', 'scale-100'); }
-
     const method = JSON.parse(decodeURIComponent(methodStr));
     selectedMethodData = method;
-    
-    if (method.tipo === 'pago_movil' || method.tipo === 'transferencia') {
-        activeCurrency = 'Bs';
-    } else {
-        activeCurrency = 'USD';
-    }
-    
+    if (method.tipo === 'pago_movil' || method.tipo === 'transferencia') activeCurrency = 'Bs'; else activeCurrency = 'USD';
     document.getElementById('custom-qty').value = getMin();
     updateTotal();
 }
@@ -231,16 +186,10 @@ function disablePurchaseButtons() {
     });
 }
 
-// ==========================================
-// 3. LÓGICA DE CANTIDAD
-// ==========================================
-
 window.selectQty = function(n, btn) {
-    const min = getMin();
-    const max = getMax();
-    if(n < min) { Swal.fire('Atención', `La compra mínima es de ${min} boletos.`, 'info'); n = min; }
-    if(n > max) { Swal.fire('Atención', `La compra máxima es de ${max} boletos.`, 'info'); n = max; }
-
+    const min = getMin(); const max = getMax();
+    if(n < min) { Swal.fire('Atención', `Mínimo: ${min}.`, 'info'); n = min; }
+    if(n > max) { Swal.fire('Atención', `Máximo: ${max}.`, 'info'); n = max; }
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
     btn.classList.add('qty-btn-selected');
     document.getElementById('custom-qty').value = n; 
@@ -249,11 +198,10 @@ window.selectQty = function(n, btn) {
 
 window.changeQty = function(n) { 
     let val = parseInt(document.getElementById('custom-qty').value) || 0; 
-    let min = getMin();
-    let max = getMax();
+    let min = getMin(); let max = getMax();
     val += n; 
     if(val < min) val = min;
-    if(val > max) { val = max; Swal.fire('Máximo alcanzado', `Límite de ${max} boletos.`, 'warning'); }
+    if(val > max) { val = max; Swal.fire('Tope', `Límite: ${max}.`, 'warning'); }
     document.getElementById('custom-qty').value = val; 
     window.updateTotal();
     document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('qty-btn-selected'));
@@ -269,18 +217,10 @@ window.updateTotal = function() {
     let total = val * price;
     let symbol = activeCurrency === 'Bs' ? 'Bs. ' : '$ ';
     let text = symbol + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
-    
-    ['step2-total', 'step4-total', 'success-total'].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.innerText = text;
-    });
+    ['step2-total', 'step4-total', 'success-total'].forEach(id => { const el = document.getElementById(id); if(el) el.innerText = text; });
     const hint = document.getElementById('currency-limits-hint');
-    if(hint) hint.innerText = `Límites (${activeCurrency}): ${getMin()} - ${getMax()}`;
+    if(hint) hint.innerText = `Límites: ${getMin()} - ${getMax()}`;
 }
-
-// ==========================================
-// 4. MODALES Y PASOS
-// ==========================================
 
 window.abrirModalCompra = function() {
     if(document.querySelector('button[onclick="abrirModalCompra()"]').disabled) return;
@@ -291,178 +231,121 @@ window.abrirModalCompra = function() {
 }
 
 window.cerrarModalCompra = async function() {
-    if (document.getElementById('step-success') && !document.getElementById('step-success').classList.contains('hidden')) {
-        location.reload(); return;
-    }
+    if (document.getElementById('step-success') && !document.getElementById('step-success').classList.contains('hidden')) { location.reload(); return; }
     if(ticketsReservados.length > 0) await liberarTickets();
     document.getElementById('checkoutModal').classList.add('hidden');
     document.body.style.overflow = 'auto';
 }
 
 window.mostrarPaso = function(paso) {
-    for(let i=1; i<=5; i++) {
-        const el = document.getElementById(`step-${i}`);
-        if(el) el.classList.add('hidden');
-    }
+    for(let i=1; i<=5; i++) { const el = document.getElementById(`step-${i}`); if(el) el.classList.add('hidden'); }
     const stepEl = document.getElementById(`step-${paso}`);
     if(stepEl) stepEl.classList.remove('hidden');
-    
     if(paso === 2) window.updateTotal();
     if(paso === 4) renderPaymentDetails();
-
     window.updateModalHeader();
 }
 
 window.updateModalHeader = function() {
-    const titles = ["Método de Pago", "Cantidad de Boletos", "Datos Personales", "Realizar Pago", "Confirmar"];
+    const titles = ["Método de Pago", "Cantidad", "Tus Datos", "Pago", "Confirmar"];
     const icons = ["solar:card-bold-duotone", "solar:ticket-bold-duotone", "solar:user-bold-duotone", "solar:bill-check-bold-duotone", "solar:upload-track-bold-duotone"];
-    
     document.getElementById('header-title').innerText = titles[currentStep - 1] || "Finalizar";
     document.getElementById('header-step').innerText = `Paso ${currentStep} de 5`;
     document.getElementById('header-icon').setAttribute('icon', icons[currentStep - 1] || "solar:check-circle-bold");
     document.getElementById('progress-bar').style.width = `${currentStep * 20}%`;
-
     const btnBack = document.getElementById('btn-back');
-    if(btnBack) {
-        btnBack.disabled = (currentStep === 1);
-        btnBack.classList.toggle('opacity-50', currentStep === 1);
-    }
-
+    if(btnBack) { btnBack.disabled = (currentStep === 1); btnBack.classList.toggle('opacity-50', currentStep === 1); }
     const btnNext = document.getElementById('btn-next');
     if(btnNext) {
-        btnNext.innerHTML = (currentStep === 5) 
-            ? `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>` 
-            : `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`;
+        btnNext.innerHTML = (currentStep === 5) ? `Finalizar <iconify-icon icon="solar:check-circle-bold"></iconify-icon>` : `Continuar <iconify-icon icon="solar:arrow-right-bold"></iconify-icon>`;
     }
 }
 
-window.prevStep = function() {
-    if (currentStep > 1) {
-        currentStep--;
-        window.mostrarPaso(currentStep);
-    }
-}
+window.prevStep = function() { if (currentStep > 1) { currentStep--; window.mostrarPaso(currentStep); } }
 
 // ==========================================
-// 5. VALIDACIÓN DE STOCK (OPTIMIZADA)
+// 3. VALIDACIÓN DE STOCK Y RESERVA AUTOMÁTICA
 // ==========================================
 
 async function validarStockReal() {
     const raffleId = document.getElementById('raffle-id').value;
     const cantidad = parseInt(document.getElementById('custom-qty').value);
-    const min = getMin();
-    const max = getMax();
+    const min = getMin(); const max = getMax();
 
-    if (cantidad < min || cantidad > max) { 
-        Swal.fire('Error', `Cantidad permitida: ${min} a ${max}.`, 'error'); 
-        return false; 
-    }
+    if (cantidad < min || cantidad > max) { Swal.fire('Error', `Cantidad: ${min} a ${max}.`, 'error'); return false; }
     if (!raffleId || cantidad <= 0) return false;
 
-    // Liberar tickets previos si existen
     if(ticketsReservados.length > 0) await liberarTickets();
 
-    // Verificación rápida de disponibilidad TOTAL (Opcional, para no saturar)
-    // Usamos select head para ser rápidos
+    // Verificación rápida de disponibilidad
     const { count, error } = await supabaseClient
-        .from('tickets').select('*', { count: 'exact', head: true })
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
         .eq('id_sorteo', raffleId);
 
-    // Si ya se vendieron todos (o más de los que existen)
-    if (count >= totalTicketsSorteo) { 
-        window.mostrarAlertaStock(cantidad, totalTicketsSorteo - count); 
+    const disponibles = totalTicketsSorteo - count;
+    
+    if (disponibles < cantidad) { 
+        window.mostrarAlertaStock(cantidad, disponibles); 
         return false; 
     }
 
     return await reservarTicketsEnDB(cantidad, raffleId);
 }
 
-// ESTA ES LA FUNCIÓN QUE HE ARREGLADO PRINCIPALMENTE
-async function reservarTicketsEnDB(cantidad, raffleId) {
-    // 1. Obtener usuario anónimo o autenticado (necesitamos un ID temporal si no hay auth)
-    // Para simplificar, asumiremos que usamos un ID de sesión o pasamos null si la función SQL lo permite
-    // Pero lo ideal es generar los números AQUÍ en JS.
-    
-    console.log(`Generando ${cantidad} números aleatorios en JS...`);
-    
-    // Generamos números aleatorios localmente (instantáneo)
-    const numerosSeleccionados = generarNumerosAleatorios(cantidad, totalTicketsSorteo);
-    
-    // 2. Enviamos el array a la base de datos para inserción masiva
-    // Usamos la función 'comprar_tickets_masivos' que recibe el array
-    
-    // Obtenemos un ID de usuario temporal si no hay sesión (o usamos null)
+// 🔥 NÚCLEO: PEDIR A LA DB QUE ASIGNE N TICKETS LIBRES 🔥
+async function reservarTicketsEnDB(cantidadSolicitada, raffleId) {
     const { data: { session } } = await supabaseClient.auth.getSession();
-    const userId = session?.user?.id || '00000000-0000-0000-0000-000000000000'; // Fallback UUID si no hay auth obligatoria
+    const userId = session?.user?.id || '00000000-0000-0000-0000-000000000000'; 
+    
+    // Reiniciamos array local
+    ticketsReservados = [];
+
+    console.log(`Solicitando ${cantidadSolicitada} tickets al servidor...`);
 
     try {
-        const { data, error } = await supabaseClient.rpc('comprar_tickets_masivos', { 
+        // Llamada a la nueva función RPC: 'reservar_tickets_automaticos'
+        // Ya no enviamos array, solo decimos "Dame X tickets"
+        const { data, error } = await supabaseClient.rpc('reservar_tickets_automaticos', { 
             p_raffle_id: raffleId, 
             p_user_id: userId,
-            p_tickets: numerosSeleccionados,
-            p_estado: 'reservado'
+            p_cantidad: cantidadSolicitada,
+            p_total_tickets: totalTicketsSorteo // Para saber si el rango es 0-9999 o 0-99999
         });
 
         if (error) {
-            console.error("RPC Error:", error);
-            // Si el error es timeout, sugerir menos cantidad
-            if(error.message && error.message.includes("timeout")) {
-                Swal.fire('Tiempo agotado', 'Son muchos tickets, intenta con una cantidad menor.', 'warning');
-            } else {
-                Swal.fire('Lo sentimos', 'Hubo un error al reservar. Intenta de nuevo.', 'warning');
-            }
+            console.error("Error RPC:", error);
+            Swal.fire('Error', 'Error al asignar tickets. Intenta de nuevo.', 'error');
             return false;
         }
 
         if (!data.success) {
-            console.warn("Fallo lógico:", data.message);
-            // Si falló porque estaban ocupados, reintentamos automáticamente UNA vez
-            // (Opcional: aquí podrías poner un bucle simple de reintento)
-            Swal.fire('Ocupados', 'Algunos números seleccionados ya estaban ocupados. Intenta de nuevo.', 'info');
+            console.warn("Fallo en BD:", data.message);
+            Swal.fire('Aviso', data.message || 'No se pudieron reservar los tickets.', 'warning');
             return false;
         }
 
-        // Si éxito, la función debe devolvernos o confirmarnos
-        // Necesitamos reconstruir el array de objetos ticketsReservados para que el resto del código funcione
-        // Como hicimos un INSERT, ahora sabemos que esos números son nuestros.
-        // Hacemos una consulta rápida para obtener sus IDs reales (necesarios para el update luego)
-        
-        const { data: ticketsConfirmados, error: errFetch } = await supabaseClient
-            .from('tickets')
-            .select('id, numero_boleto')
-            .eq('id_sorteo', raffleId)
-            .eq('user_id', userId)
-            .eq('estado', 'reservado')
-            .in('numero_boleto', numerosSeleccionados); // Filtramos por los que acabamos de pedir
-
-        if (errFetch || !ticketsConfirmados) {
-            console.error("Error recuperando tickets insertados", errFetch);
-            return false;
-        }
-
-        // Mapeamos al formato que espera tu sistema (numero_boleto -> numero)
-        ticketsReservados = ticketsConfirmados.map(t => ({ id: t.id, numero: t.numero_boleto }));
-        
-        console.log(`Reservados ${ticketsReservados.length} tickets exitosamente.`);
+        // Éxito: Guardamos los tickets asignados en memoria
+        ticketsReservados = data.tickets || [];
+        console.log(`Asignados exitosamente: ${ticketsReservados.length}`);
         return true;
 
     } catch (err) {
-        console.error("Error crítico en reserva:", err);
-        Swal.fire('Error', 'Error de conexión. Revisa tu internet.', 'error');
+        console.error("Error crítico:", err);
+        Swal.fire('Error', 'Error de conexión.', 'error');
         return false;
     }
 }
 
 window.mostrarAlertaStock = function(pedidos, disponibles) {
     document.getElementById('stock-pedido-val').innerText = pedidos;
-    // Si disponibles es negativo (por error de cálculo), poner 0
     document.getElementById('stock-disponible-val').innerText = Math.max(0, disponibles);
     document.getElementById('modal-stock-sutil').classList.remove('hidden');
 }
 window.cerrarAlertaStock = function() { document.getElementById('modal-stock-sutil').classList.add('hidden'); }
 
 // ==========================================
-// 6. CONTROL DE PASOS
+// 4. CONTROL DE PASOS
 // ==========================================
 
 window.nextStep = async function() {
@@ -472,7 +355,7 @@ window.nextStep = async function() {
     else if(currentStep === 2) {
         const btn = document.getElementById('btn-next');
         const oldText = btn.innerHTML;
-        btn.innerHTML = 'Verificando... <iconify-icon icon="line-md:loading-loop" class="animate-spin"></iconify-icon>'; 
+        btn.innerHTML = 'Asignando... <iconify-icon icon="line-md:loading-loop" class="animate-spin"></iconify-icon>'; 
         btn.disabled = true;
         
         const check = await validarStockReal();
@@ -491,13 +374,12 @@ window.nextStep = async function() {
         procesarCompraFinal();
         return;
     }
-
     if (currentStep < 5) { currentStep++; window.mostrarPaso(currentStep); }
 };
 
 function iniciarTimer() {
     clearInterval(intervaloTimer);
-    let timeLeft = 1200; // 20 Minutos
+    let timeLeft = 1200; 
     document.getElementById('timer-container').classList.remove('hidden');
     intervaloTimer = setInterval(() => {
         let min = Math.floor(timeLeft / 60); let sec = timeLeft % 60;
@@ -505,7 +387,7 @@ function iniciarTimer() {
         if (timeLeft <= 0) {
             clearInterval(intervaloTimer);
             liberarTickets();
-            Swal.fire({ title: 'Tiempo Agotado', text: 'Se liberaron tus boletos.', icon: 'error' }).then(() => location.reload());
+            Swal.fire({ title: 'Tiempo Agotado', text: 'Boletos liberados al pool.', icon: 'error' }).then(() => location.reload());
         }
         timeLeft--;
     }, 1000);
@@ -514,13 +396,13 @@ function iniciarTimer() {
 async function liberarTickets() {
     if (ticketsReservados.length === 0) return;
     const ids = ticketsReservados.map(t => t.id);
-    // Borramos los tickets reservados (ya que son inserts temporales)
+    // Borrar físicamente para que regresen al pool disponible
     await supabaseClient.from('tickets').delete().in('id', ids);
     ticketsReservados = [];
 }
 
 // ==========================================
-// 7. RENDERIZADO DE INFO DE PAGO
+// 5. RENDERIZADO DE PAGO Y FINALIZAR
 // ==========================================
 
 function renderPaymentDetails() {
@@ -549,10 +431,6 @@ window.previewImage = function(input) {
         document.getElementById('file-preview').classList.remove('hidden');
     }
 }
-
-// ==========================================
-// 8. PROCESAR COMPRA FINAL (BATCHING)
-// ==========================================
 
 async function procesarCompraFinal() {
     const ref = document.getElementById('input-referencia').value;
@@ -591,18 +469,18 @@ async function procesarCompraFinal() {
 
         if (error) throw error;
 
-        // 2. Actualizar Tickets a "pendiente" asociados a la orden
+        // 2. Actualizar Tickets a "pendiente" (BATCHING)
         const ids = ticketsReservados.map(t => t.id);
         const numeros = ticketsReservados.map(t => t.numero);
         
-        // Ahora usamos 'pendiente' en lugar de 'reservado'
         await actualizarEnLotes(ids, { estado: 'pendiente', id_orden: orden.id });
 
         ticketsReservados = [];
         clearInterval(intervaloTimer);
         Swal.close();
 
-        // UI Final
+        // UI Final con PAD Start visual (ej: 5 -> 0005) si lo deseas
+        // Simplemente mostramos el número tal cual viene de BD
         let numerosHtml = '';
         if(numeros.length > 20) {
             numerosHtml = numeros.slice(0, 20).map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('') + `<span class="text-xs text-gray-500 font-bold ml-2">... y ${numeros.length - 20} más.</span>`;
@@ -618,12 +496,12 @@ async function procesarCompraFinal() {
 
     } catch (err) {
         console.error(err);
-        Swal.fire('Error', 'Hubo un error enviando la orden. Intenta de nuevo.', 'error');
+        Swal.fire('Error', 'Error enviando orden. Intenta de nuevo.', 'error');
     }
 }
 
 // ==========================================
-// 9. NAVEGACIÓN Y EXTRAS
+// 6. EXTRAS (Menú, Consultas)
 // ==========================================
 window.toggleMenu = function() {
     const menu = document.getElementById('side-menu');
@@ -642,7 +520,6 @@ window.menuAction = function(action) {
     if (action === 'verify') { document.getElementById('view-home').classList.remove('hidden'); window.abrirModalVerificar(); }
 }
 window.navigateTo = function(view) { window.menuAction(view); }
-
 window.abrirModalVerificar = function() { document.getElementById('checkTicketsModal').classList.remove('hidden'); }
 window.cerrarModalVerificar = function() { document.getElementById('checkTicketsModal').classList.add('hidden'); }
 
@@ -650,27 +527,20 @@ window.consultarTicketsReales = async function() {
     const cedulaInput = document.getElementById('cedula-consult');
     const cedula = cedulaInput ? cedulaInput.value : '';
     if(!cedula) return Swal.fire('Error', 'Ingresa tu cédula', 'warning');
-    
     const div = document.getElementById('ticket-results');
     div.innerHTML = '<p class="text-center text-gray-400 py-4">Buscando...</p>';
     div.classList.remove('hidden');
-
     const { data: ordenes } = await supabaseClient.from('ordenes').select('*').eq('cedula', cedula).order('created_at', {ascending:false});
-    
     if(!ordenes || ordenes.length === 0) {
-        div.innerHTML = '<p class="text-center text-gray-400 p-4">No se encontraron compras con esa cédula.</p>'; return;
+        div.innerHTML = '<p class="text-center text-gray-400 p-4">No se encontraron compras.</p>'; return;
     }
-
     let html = '';
     for (let orden of ordenes) {
-        const { data: tickets } = await supabaseClient.from('tickets').select('numero_boleto').eq('id_orden', orden.id).limit(20);
-        let nums = tickets ? tickets.map(t => `<span class="bg-gray-100 px-1 rounded border">${t.numero_boleto}</span>`).join(' ') : 'Pendientes';
-        
+        const { data: tickets } = await supabaseClient.from('tickets').select('numero').eq('id_orden', orden.id).limit(20);
+        let nums = tickets ? tickets.map(t => `<span class="bg-gray-100 px-1 rounded border">${t.numero}</span>`).join(' ') : 'Pendientes';
         if(orden.cantidad_boletos > 20) nums += ` <span class="text-[10px] text-gray-400">(+${orden.cantidad_boletos - 20})</span>`;
-
         let color = orden.estado === 'aprobado' ? 'green' : (orden.estado === 'rechazado' ? 'red' : 'yellow');
         let estado = orden.estado === 'aprobado' ? 'APROBADO' : (orden.estado === 'rechazado' ? 'RECHAZADO' : 'VERIFICANDO');
-
         html += `
             <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm relative overflow-hidden mb-2">
                 <div class="absolute top-0 right-0 w-4 h-full bg-${color}-500"></div>
