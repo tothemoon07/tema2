@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN FINAL CON ESTADÍSTICAS FINANCIERAS
+// admin_panel.js - VERSIÓN FINAL: SOPORTE PARA LOTES MASIVOS (4000+ TICKETS)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -84,7 +84,7 @@ async function loadDashboardData() {
             document.getElementById('raffle-title').dataset.precio = sorteo.precio_boleto; 
             
             loadTicketStats(sorteo.id);
-            loadFinancialStats(sorteo.id); // Nueva función para cargar finanzas
+            loadFinancialStats(sorteo.id);
 
             if(currentTab === 'bloqueado') {
                 loadBlockedGroups(sorteo.id);
@@ -95,7 +95,7 @@ async function loadDashboardData() {
             if (refreshInterval) clearInterval(refreshInterval);
             refreshInterval = setInterval(() => {
                 loadTicketStats(sorteo.id);
-                loadFinancialStats(sorteo.id); // Refrescar finanzas periódicamente
+                loadFinancialStats(sorteo.id);
                 if(currentTab === 'bloqueado') loadBlockedGroups(sorteo.id, true);
             }, 5000); 
 
@@ -147,11 +147,9 @@ async function loadTicketStats(sorteoId) {
     lastPendingCount = pend;
 }
 
-// NUEVA FUNCIÓN: CALCULAR ESTADÍSTICAS FINANCIERAS
 async function loadFinancialStats(sorteoId) {
     if(!sorteoId) return;
 
-    // Traer solo ordenes aprobadas (ventas reales)
     const { data: ventas, error } = await supabaseClient
         .from('ordenes')
         .select('monto_total, metodo_pago')
@@ -164,13 +162,10 @@ async function loadFinancialStats(sorteoId) {
     let totalUsd = 0;
 
     ventas.forEach(v => {
-        // Detectar si es Bs (Pago Móvil o Transferencia)
         const esBolivares = v.metodo_pago === 'pago_movil' || v.metodo_pago === 'transferencia';
-        
         if (esBolivares) {
             totalBs += v.monto_total;
         } else {
-            // Asumimos que el resto (Zelle, Binance, Zinli, etc.) son en dólares
             totalUsd += v.monto_total; 
         }
     });
@@ -422,21 +417,86 @@ async function loadOrders(estado, isAutoRefresh = false) {
     tbody.innerHTML = html;
 }
 
+// ==========================================
+// AQUÍ ESTÁ EL CAMBIO IMPORTANTE: LOGICA DE LOTES
+// ==========================================
 window.approveOrder = async function(id) {
     if(!confirm("¿Aprobar orden?")) return;
+    
+    // Obtenemos la orden
     const { data: orden } = await supabaseClient.from('ordenes').select('cantidad_boletos').eq('id', id).single();
+    
+    // Verificamos si ya tiene tickets asignados (por si fue una aprobación directa sin pasar por rechazo)
     const { count } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('id_orden', id);
     
+    // Si NO tiene tickets asignados (caso: reactivar orden rechazada), hay que buscarlos
     if (count < orden.cantidad_boletos) {
          const raffleId = document.getElementById('raffle-title').dataset.id;
-         const { data: newTickets } = await supabaseClient.from('tickets').select('id').eq('id_sorteo', raffleId).eq('estado', 'disponible').limit(orden.cantidad_boletos);
-         if (newTickets.length < orden.cantidad_boletos) return Swal.fire('Error', 'Stock insuficiente para aprobar esta orden.', 'error');
-         const ids = newTickets.map(t => t.id);
-         await supabaseClient.from('tickets').update({ estado: 'vendido', id_orden: id }).in('id', ids);
+         
+         // 1. Verificamos disponibilidad TOTAL primero para no fallar a la mitad
+         const { count: totalDisponible } = await supabaseClient
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('id_sorteo', raffleId)
+            .eq('estado', 'disponible');
+
+         if(totalDisponible < orden.cantidad_boletos) {
+            return Swal.fire('Error', 'No hay suficientes tickets disponibles en el sistema para reactivar esta orden.', 'error');
+         }
+
+         // 2. PROCESAMIENTO POR LOTES (BATCHING)
+         // Esto evita el error con órdenes grandes (ej: 4950 tickets)
+         Swal.fire({ 
+            title: 'Procesando...', 
+            html: 'Asignando tickets masivos, por favor espera un momento.', 
+            didOpen: () => Swal.showLoading(), 
+            allowOutsideClick: false 
+         });
+         
+         let remaining = orden.cantidad_boletos;
+         const batchSize = 1000; // Supabase suele limitar a 1000 filas por defecto
+
+         try {
+             while(remaining > 0) {
+                const take = Math.min(remaining, batchSize);
+                
+                // Pedimos un lote de IDs disponibles
+                const { data: batchTickets, error: fetchError } = await supabaseClient
+                    .from('tickets')
+                    .select('id')
+                    .eq('id_sorteo', raffleId)
+                    .eq('estado', 'disponible')
+                    .limit(take);
+
+                if(fetchError || !batchTickets || batchTickets.length === 0) {
+                     throw new Error("Error recuperando tickets durante el proceso.");
+                }
+
+                const ids = batchTickets.map(t => t.id);
+                
+                // Actualizamos este lote
+                const { error: updateError } = await supabaseClient
+                    .from('tickets')
+                    .update({ estado: 'vendido', id_orden: id })
+                    .in('id', ids);
+
+                if(updateError) throw updateError;
+
+                remaining -= ids.length; // Restamos lo procesado
+             }
+         } catch (e) {
+             console.error(e);
+             return Swal.fire('Error', 'Hubo un problema procesando los lotes: ' + e.message, 'error');
+         }
+
     } else {
+        // Lógica normal: Ya tiene tickets reservados (estado 'bloqueado' o similar), solo cambiamos estado
         await supabaseClient.from('tickets').update({ estado: 'vendido' }).eq('id_orden', id);
     }
+
+    // Finalmente actualizamos la orden
     await supabaseClient.from('ordenes').update({ estado: 'aprobado' }).eq('id', id);
+    
     loadDashboardData();
     Swal.fire('Aprobado', 'Orden procesada correctamente.', 'success');
 }
@@ -526,7 +586,6 @@ window.viewProof = function(url) {
 window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); }
 window.logout = async function() { await supabaseClient.auth.signOut(); window.location.href = 'admin_login.html'; }
 
-// ... (El resto de funciones como loadActiveRaffle, processNewRaffle, searchWinner, etc. siguen aquí abajo iguales al archivo anterior. Te paso el archivo completo para evitar confusión).
 async function loadActiveRaffle() {
     const { data: sorteo } = await supabaseClient.from('sorteos').select('*').eq('estado', 'activo').single();
     if(sorteo) {
