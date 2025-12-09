@@ -8,8 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
@@ -26,15 +27,20 @@
         .toggle-checkbox:checked { right: 0; border-color: #10b981; }
         .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
 
-        /* Estilos para la tarjeta dorada */
-        .gold-card-bg {
-            background: radial-gradient(circle at center, #FDE68A 0%, #D97706 100%);
+        /* NUEVO ESTILO TARJETA DORADA DE LUJO */
+        .luxury-gold-bg {
+            background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
             position: relative;
             overflow: hidden;
+            border: 2px solid #fff;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), inset 0 0 20px rgba(255,255,255,0.5);
         }
-        .gold-pattern {
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        .luxury-gold-bg::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.2) 100%);
+            pointer-events: none;
         }
+        .text-shadow-gold { text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body class="text-slate-600 h-screen overflow-hidden flex">
@@ -92,7 +98,7 @@
         <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 custom-scroll">
 
             <div id="view-dashboard" class="fade-in">
-                <div class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                 <div class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800" id="raffle-title">Cargando...</h2>
                         <p class="text-sm text-slate-500">Gestión de ventas en tiempo real</p>
@@ -163,56 +169,95 @@
                 </div>
             </div>
 
-            <div id="view-winner" class="hidden fade-in max-w-4xl mx-auto">
+            <div id="view-winner" class="hidden fade-in max-w-5xl mx-auto">
                 <div class="mb-8 text-center">
                     <h2 class="text-2xl font-bold text-slate-800">Buscar Ganador</h2>
-                    <p class="text-slate-500">Genera la tarjeta oficial del ganador para Instagram</p>
+                    <p class="text-slate-500">Encuentra el ticket ganador y contacta al cliente.</p>
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8 max-w-lg mx-auto">
                     <div class="flex gap-2">
-                        <input type="text" id="winner-search-input" placeholder="Número del Ticket (Ej: 2938)" class="flex-1 border border-slate-300 rounded-xl px-4 py-3 text-lg font-bold font-mono tracking-wider focus:ring-2 focus:ring-amber-500 outline-none text-center">
+                        <input type="text" id="winner-search-input" placeholder="Número (Ej: 2938)" class="flex-1 border border-slate-300 rounded-xl px-4 py-3 text-lg font-bold font-mono tracking-wider focus:ring-2 focus:ring-amber-500 outline-none text-center">
                         <button onclick="searchWinner()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3 rounded-xl transition shadow-lg shadow-amber-200">
                             <i class="fa-solid fa-search"></i>
                         </button>
                     </div>
                 </div>
 
-                <div id="winner-result-container" class="hidden flex flex-col md:flex-row gap-8 items-center justify-center">
+                <div id="winner-result-container" class="hidden flex flex-col md:flex-row gap-8 items-start justify-center">
                     
-                    <div id="winner-card-node" class="w-[320px] h-[400px] gold-card-bg gold-pattern rounded-2xl shadow-2xl relative flex flex-col items-center justify-center text-center p-6 border-4 border-yellow-200 select-none">
-                        <div class="absolute top-0 left-0 w-full h-full opacity-30 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
-                        
-                        <div class="z-10 bg-white/20 backdrop-blur-sm p-4 rounded-xl border border-white/40 w-full">
-                            <h3 class="text-white font-bold uppercase tracking-widest text-sm mb-2 drop-shadow-md">¡Felicidades!</h3>
+                    <div class="flex flex-col items-center space-y-4">
+                        <h3 class="font-bold text-slate-700 text-center">Tarjeta para Compartir</h3>
+                        <div id="winner-card-node" class="w-[280px] h-[420px] luxury-gold-bg rounded-3xl shadow-2xl relative flex flex-col items-center text-center p-6 select-none border-[3px] border-white/80 justify-between z-10">
+                             <button onclick="downloadWinnerCard()" class="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full transition backdrop-blur-sm z-20" title="Descargar Imagen">
+                                <iconify-icon icon="solar:download-minimalistic-bold" width="20"></iconify-icon>
+                            </button>
+
+                            <div class="mt-4">
+                                <iconify-icon icon="solar:crown-bold" class="text-white drop-shadow-sm" width="40"></iconify-icon>
+                                <h3 class="text-white font-extrabold uppercase tracking-widest text-sm mb-2 text-shadow-gold">¡Felicidades!</h3>
+                                <p class="text-amber-100 font-medium text-xs uppercase tracking-wide mb-1">Ticket Ganador</p>
+                            </div>
                             
-                            <div class="bg-white text-amber-600 font-black text-5xl font-mono py-2 px-6 rounded-lg shadow-lg mb-4 tracking-wider inline-block transform scale-110">
+                            <div class="bg-white/95 text-amber-600 font-black text-6xl font-mono py-3 px-8 rounded-2xl shadow-lg tracking-wider transform scale-110 border-2 border-amber-200/50">
                                 <span id="card-number">0000</span>
                             </div>
 
-                            <p class="text-white font-medium text-xs uppercase tracking-wide mb-1">Ganador del Sorteo</p>
-                            <h2 id="card-raffle-name" class="text-white font-bold text-lg leading-tight mb-4 drop-shadow-md">Gran Rifa</h2>
+                            <div class="mb-4">
+                                <p class="text-amber-100 text-[10px] uppercase font-bold mb-1">Cliente Ganador</p>
+                                <h4 id="card-client-name" class="text-white font-extrabold text-2xl truncate px-2 text-shadow-gold leading-tight">Nombre Cliente</h4>
+                                <div class="w-16 h-0.5 bg-white/50 mx-auto my-3 rounded-full"></div>
+                                <h2 id="card-raffle-name" class="text-white font-bold text-sm uppercase tracking-wider text-shadow-gold">Nombre del Sorteo</h2>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 text-center max-w-[280px]">Haz clic en el icono de la esquina para descargar.</p>
+                    </div>
 
-                            <div class="border-t border-white/30 pt-3 mt-2">
-                                <p class="text-amber-100 text-xs uppercase font-bold mb-1">Cliente</p>
-                                <h4 id="card-client-name" class="text-white font-extrabold text-xl truncate drop-shadow-md">Nombre Cliente</h4>
-                                <p id="card-client-location" class="text-white/80 text-xs font-semibold mt-1">Venezuela</p>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 w-full max-w-md">
+                        <h3 class="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-user-check text-emerald-500"></i> Datos del Ganador
+                        </h3>
+                        
+                        <div class="space-y-4 text-sm text-slate-600 mb-6">
+                            <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-semibold">Ticket:</span>
+                                <span id="detail-ticket" class="font-mono font-bold text-slate-800 bg-slate-100 px-2 rounded">--</span>
+                            </div>
+                             <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-semibold">Sorteo ID:</span>
+                                <span id="detail-raffle-id" class="font-mono text-xs">--</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-semibold">Nombre:</span>
+                                <span id="detail-name" class="font-bold text-slate-800 select-all">--</span>
+                            </div>
+                             <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-semibold">Cédula/ID:</span>
+                                <span id="detail-cedula" class="font-bold select-all">--</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-semibold">Teléfono:</span>
+                                <span id="detail-phone" class="font-bold select-all">--</span>
+                            </div>
+                             <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-semibold">Email:</span>
+                                <span id="detail-email" class="select-all truncate max-w-[200px]">--</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-100 pb-2">
+                                <span class="font-semibold">Método Pago:</span>
+                                <span id="detail-method" class="capitalize">--</span>
+                            </div>
+                             <div class="flex justify-between items-center">
+                                <span class="font-semibold">Comprobante:</span>
+                                <button id="detail-proof-btn" class="text-indigo-600 hover:underline text-xs font-bold" onclick="">Ver Imagen</button>
                             </div>
                         </div>
 
-                        <div class="absolute bottom-4 text-amber-900/40 text-[10px] font-bold uppercase tracking-[0.2em]">
-                            Capi Rifas Oficial
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 w-full max-w-xs text-center">
-                        <h3 class="font-bold text-slate-700 mb-4">Acciones</h3>
-                        <p class="text-sm text-slate-500 mb-4">Esta tarjeta está lista para publicar en tus historias o perfil.</p>
+                        <a id="btn-whatsapp" href="#" target="_blank" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl hover:bg-emerald-600 transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 text-lg mb-3">
+                            <i class="fa-brands fa-whatsapp text-2xl"></i> Contactar Ganador
+                        </a>
                         
-                        <button onclick="downloadWinnerCard()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition flex items-center justify-center gap-2 mb-3">
-                            <i class="fa-solid fa-download"></i> Descargar Imagen
-                        </button>
-                        <button onclick="document.getElementById('winner-result-container').classList.add('hidden')" class="w-full text-slate-400 font-bold text-sm hover:text-slate-600">
+                        <button onclick="document.getElementById('winner-result-container').classList.add('hidden'); document.getElementById('winner-search-input').value = '';" class="w-full text-slate-500 font-bold text-sm hover:bg-slate-50 py-2 rounded-lg transition">
                             Nueva Búsqueda
                         </button>
                     </div>
@@ -220,7 +265,7 @@
             </div>
 
             <div id="view-active-raffle" class="hidden fade-in max-w-5xl mx-auto">
-                <h2 class="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-200 pb-4">Editar Sorteo Activo</h2>
+                 <h2 class="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-200 pb-4">Editar Sorteo Activo</h2>
                 
                 <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-6">
                     <form id="form-config-sorteo" class="space-y-6">
