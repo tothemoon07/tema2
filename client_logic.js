@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN "POOL OFICIAL" (SELECCIÓN BASE DE DATOS)
+// client_logic.js - VERSIÓN "PRE-GENERATED POOL" (CORRECTA)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -11,16 +11,15 @@ let intervaloTimer;
 let currentStep = 1;
 let activeCurrency = 'Bs';
 let selectedMethodData = null;
-let totalTicketsSorteo = 10000; // Se actualiza al cargar el sorteo
+let totalTicketsSorteo = 10000; 
 
 // ==========================================
 // 1. CARGA DE DATOS (INIT)
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("Iniciando sistema Lottery Pool...");
+    console.log("Iniciando sistema Pre-Generated Pool...");
 
-    // 1. Cargar datos del sorteo activo
     const { data: sorteo, error } = await supabaseClient
         .from('sorteos')
         .select('*')
@@ -28,12 +27,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         .single();
 
     if (sorteo) {
-        // IMPORTANTE: Aquí definimos el universo de la lotería (ej. 1000, 10000, 100000)
         if (sorteo.total_tickets) totalTicketsSorteo = sorteo.total_tickets;
 
         if(document.getElementById('raffle-id')) document.getElementById('raffle-id').value = sorteo.id;
         
-        // Cargar Precios
         if(document.getElementById('price-bs')) document.getElementById('price-bs').value = sorteo.precio_boleto;
         if(document.getElementById('min-bs')) document.getElementById('min-bs').value = sorteo.min_compra_bs || 1;
         if(document.getElementById('max-bs')) document.getElementById('max-bs').value = sorteo.max_compra_bs || 500;
@@ -42,7 +39,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if(document.getElementById('min-usd')) document.getElementById('min-usd').value = sorteo.min_compra_usd || 1;
         if(document.getElementById('max-usd')) document.getElementById('max-usd').value = sorteo.max_compra_usd || 100;
 
-        // UI
         setText('landing-title', sorteo.titulo);
         setText('landing-date', new Date(sorteo.fecha_sorteo).toLocaleDateString());
         setText('landing-price-display', `Bs. ${sorteo.precio_boleto} / $${sorteo.precio_usd || 0}`);
@@ -75,14 +71,15 @@ async function actualizarEnLotes(ids, updates) {
 }
 
 async function updateFomoBar(raffleId) {
-    // Calculamos porcentaje real basado en tickets vendidos vs universo total
-    const { count: ocupados } = await supabaseClient
+    // CORRECCIÓN: Contamos los que NO están disponibles (reservados + vendidos)
+    const { count: vendidos } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
-        .eq('id_sorteo', raffleId);
+        .eq('id_sorteo', raffleId)
+        .neq('estado', 'disponible'); // <--- CLAVE: Solo contamos los que NO están disponibles
 
     if (totalTicketsSorteo > 0) {
-        const porcentaje = ((ocupados / totalTicketsSorteo) * 100).toFixed(2); 
+        const porcentaje = ((vendidos / totalTicketsSorteo) * 100).toFixed(2); 
         const bar = document.getElementById('fomo-bar');
         const text = document.getElementById('fomo-text');
         if (bar) bar.style.width = `${porcentaje}%`;
@@ -102,21 +99,18 @@ async function limpiarBloqueosHuerfanos() {
 
         if(zombies && zombies.length > 0) {
             const ids = zombies.map(t => t.id);
-            const BATCH_SIZE = 50;
-            for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-                const batch = ids.slice(i, i + BATCH_SIZE);
-                // ALERTA: Aquí borramos el registro para que el número vuelva al pool disponible
-                await supabaseClient.from('tickets').delete().in('id', batch);
-            }
-            console.log(`🧹 ${zombies.length} tickets regresados al pool.`);
+            // CORRECCIÓN: NO borramos, actualizamos a 'disponible' y quitamos usuario
+            await actualizarEnLotes(ids, { estado: 'disponible', user_id: null });
+            console.log(`🧹 ${zombies.length} tickets regresados a disponible.`);
         }
     } catch (e) { console.warn("Auto-limpieza error silencioso:", e); }
 }
 
 window.addEventListener('beforeunload', function (e) {
     if (ticketsReservados.length > 0) {
+        // Al salir, liberamos los tickets (update a disponible)
         const ids = ticketsReservados.map(t => t.id);
-        supabaseClient.from('tickets').delete().in('id', ids).then(() => console.log("Tickets liberados al salir"));
+        actualizarEnLotes(ids, { estado: 'disponible', user_id: null });
     }
 });
 
@@ -182,7 +176,7 @@ window.selectMethod = function(methodStr, card) {
 
 function disablePurchaseButtons() {
     document.querySelectorAll('button[onclick="abrirModalCompra()"]').forEach(b => { 
-        b.disabled = true; b.innerHTML = 'NO DISPONIBLE'; b.classList.replace('bg-red-500','bg-gray-400');
+        b.disabled = true; b.innerHTML = 'AGOTADO'; b.classList.replace('bg-red-500','bg-gray-400');
     });
 }
 
@@ -264,7 +258,7 @@ window.updateModalHeader = function() {
 window.prevStep = function() { if (currentStep > 1) { currentStep--; window.mostrarPaso(currentStep); } }
 
 // ==========================================
-// 3. VALIDACIÓN DE STOCK Y RESERVA AUTOMÁTICA
+// 3. VALIDACIÓN DE STOCK Y RESERVA (POOL EXISTENTE)
 // ==========================================
 
 async function validarStockReal() {
@@ -277,14 +271,13 @@ async function validarStockReal() {
 
     if(ticketsReservados.length > 0) await liberarTickets();
 
-    // Verificación rápida de disponibilidad
-    const { count, error } = await supabaseClient
+    // CORRECCIÓN: Contamos los que SÍ están disponibles
+    const { count: disponibles, error } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
-        .eq('id_sorteo', raffleId);
+        .eq('id_sorteo', raffleId)
+        .eq('estado', 'disponible'); // <--- CLAVE
 
-    const disponibles = totalTicketsSorteo - count;
-    
     if (disponibles < cantidad) { 
         window.mostrarAlertaStock(cantidad, disponibles); 
         return false; 
@@ -293,39 +286,35 @@ async function validarStockReal() {
     return await reservarTicketsEnDB(cantidad, raffleId);
 }
 
-// 🔥 NÚCLEO: PEDIR A LA DB QUE ASIGNE N TICKETS LIBRES 🔥
+// 🔥 NÚCLEO: ACTUALIZAR TICKETS EXISTENTES 🔥
 async function reservarTicketsEnDB(cantidadSolicitada, raffleId) {
     const { data: { session } } = await supabaseClient.auth.getSession();
     const userId = session?.user?.id || '00000000-0000-0000-0000-000000000000'; 
     
-    // Reiniciamos array local
     ticketsReservados = [];
 
-    console.log(`Solicitando ${cantidadSolicitada} tickets al servidor...`);
+    console.log(`Reservando ${cantidadSolicitada} tickets del pool...`);
 
     try {
-        // Llamada a la nueva función RPC: 'reservar_tickets_automaticos'
-        // Ya no enviamos array, solo decimos "Dame X tickets"
         const { data, error } = await supabaseClient.rpc('reservar_tickets_automaticos', { 
             p_raffle_id: raffleId, 
             p_user_id: userId,
             p_cantidad: cantidadSolicitada,
-            p_total_tickets: totalTicketsSorteo // Para saber si el rango es 0-9999 o 0-99999
+            p_total_tickets: totalTicketsSorteo
         });
 
         if (error) {
             console.error("Error RPC:", error);
-            Swal.fire('Error', 'Error al asignar tickets. Intenta de nuevo.', 'error');
+            Swal.fire('Error', 'Error al asignar tickets.', 'error');
             return false;
         }
 
         if (!data.success) {
             console.warn("Fallo en BD:", data.message);
-            Swal.fire('Aviso', data.message || 'No se pudieron reservar los tickets.', 'warning');
+            Swal.fire('Stock Limitado', data.message, 'warning');
             return false;
         }
 
-        // Éxito: Guardamos los tickets asignados en memoria
         ticketsReservados = data.tickets || [];
         console.log(`Asignados exitosamente: ${ticketsReservados.length}`);
         return true;
@@ -396,8 +385,8 @@ function iniciarTimer() {
 async function liberarTickets() {
     if (ticketsReservados.length === 0) return;
     const ids = ticketsReservados.map(t => t.id);
-    // Borrar físicamente para que regresen al pool disponible
-    await supabaseClient.from('tickets').delete().in('id', ids);
+    // CORRECCIÓN: Update a disponible
+    await actualizarEnLotes(ids, { estado: 'disponible', user_id: null });
     ticketsReservados = [];
 }
 
@@ -469,7 +458,7 @@ async function procesarCompraFinal() {
 
         if (error) throw error;
 
-        // 2. Actualizar Tickets a "pendiente" (BATCHING)
+        // 2. Actualizar Tickets a "pendiente"
         const ids = ticketsReservados.map(t => t.id);
         const numeros = ticketsReservados.map(t => t.numero);
         
@@ -479,8 +468,7 @@ async function procesarCompraFinal() {
         clearInterval(intervaloTimer);
         Swal.close();
 
-        // UI Final con PAD Start visual (ej: 5 -> 0005) si lo deseas
-        // Simplemente mostramos el número tal cual viene de BD
+        // UI Final
         let numerosHtml = '';
         if(numeros.length > 20) {
             numerosHtml = numeros.slice(0, 20).map(n => `<span class="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-lg text-sm border border-red-200">${n}</span>`).join('') + `<span class="text-xs text-gray-500 font-bold ml-2">... y ${numeros.length - 20} más.</span>`;
