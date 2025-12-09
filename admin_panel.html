@@ -97,7 +97,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
                         <div><p class="text-xs text-slate-400 uppercase font-bold">Disponibles</p><p class="text-slate-800 font-bold text-2xl" id="stat-available">--</p></div>
                         <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fa-solid fa-ticket"></i></div>
@@ -125,6 +125,28 @@
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between relative overflow-hidden">
                         <div><p class="text-xs text-slate-400 uppercase font-bold">En Proceso</p><p class="text-rose-500 font-bold text-2xl" id="stat-blocked">--</p></div>
                         <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center"><i class="fa-solid fa-cart-shopping"></i></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-gradient-to-br from-blue-50 to-white p-5 rounded-xl shadow-sm border border-blue-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-blue-400 uppercase font-bold tracking-wider">Total Ventas (Bs)</p>
+                            <p class="text-blue-800 font-black text-3xl mt-1" id="stat-total-bs">Bs. 0,00</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl shadow-sm">
+                            <span class="font-bold">Bs</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-emerald-50 to-white p-5 rounded-xl shadow-sm border border-emerald-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-emerald-400 uppercase font-bold tracking-wider">Total Ventas ($)</p>
+                            <p class="text-emerald-800 font-black text-3xl mt-1" id="stat-total-usd">$ 0.00</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl shadow-sm">
+                            <i class="fa-solid fa-dollar-sign"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -171,7 +193,6 @@
                 </div>
 
                 <div id="winner-result-container" class="hidden flex justify-center">
-                    
                     <div class="bg-white rounded-2xl shadow-xl border border-amber-200 overflow-hidden max-w-md w-full relative">
                         <button onclick="downloadWinnerCard()" class="absolute top-4 right-4 bg-white/80 p-2 rounded-full text-amber-600 hover:text-amber-700 hover:bg-white transition shadow-sm z-10" title="Descargar Imagen">
                             <i class="fa-solid fa-download"></i>
