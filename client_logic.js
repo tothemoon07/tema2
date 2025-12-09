@@ -1,4 +1,4 @@
-// client_logic.js - VERSIÓN "PRE-GENERATED POOL" (CORRECTA)
+// client_logic.js - VERSIÓN FINAL CORREGIDA (LÍMITES + TIMER + ADMIN SYNC)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -71,12 +71,12 @@ async function actualizarEnLotes(ids, updates) {
 }
 
 async function updateFomoBar(raffleId) {
-    // CORRECCIÓN: Contamos los que NO están disponibles (reservados + vendidos)
+    // Cuenta todo lo que NO está disponible (incluye bloqueado y vendido)
     const { count: vendidos } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('id_sorteo', raffleId)
-        .neq('estado', 'disponible'); // <--- CLAVE: Solo contamos los que NO están disponibles
+        .neq('estado', 'disponible');
 
     if (totalTicketsSorteo > 0) {
         const porcentaje = ((vendidos / totalTicketsSorteo) * 100).toFixed(2); 
@@ -93,22 +93,20 @@ async function limpiarBloqueosHuerfanos() {
         const { data: zombies } = await supabaseClient
             .from('tickets')
             .select('id')
-            .eq('estado', 'reservado') 
+            .eq('estado', 'bloqueado') // CORRECCIÓN: Busca 'bloqueado' para coincidir con Admin
             .lt('created_at', hace20min) 
             .is('id_orden', null);
 
         if(zombies && zombies.length > 0) {
             const ids = zombies.map(t => t.id);
-            // CORRECCIÓN: NO borramos, actualizamos a 'disponible' y quitamos usuario
             await actualizarEnLotes(ids, { estado: 'disponible', user_id: null });
-            console.log(`🧹 ${zombies.length} tickets regresados a disponible.`);
+            console.log(`🧹 ${zombies.length} tickets bloqueados liberados.`);
         }
     } catch (e) { console.warn("Auto-limpieza error silencioso:", e); }
 }
 
 window.addEventListener('beforeunload', function (e) {
     if (ticketsReservados.length > 0) {
-        // Al salir, liberamos los tickets (update a disponible)
         const ids = ticketsReservados.map(t => t.id);
         actualizarEnLotes(ids, { estado: 'disponible', user_id: null });
     }
@@ -213,7 +211,7 @@ window.updateTotal = function() {
     let text = symbol + total.toLocaleString('es-VE', {minimumFractionDigits: 2});
     ['step2-total', 'step4-total', 'success-total'].forEach(id => { const el = document.getElementById(id); if(el) el.innerText = text; });
     const hint = document.getElementById('currency-limits-hint');
-    if(hint) hint.innerText = `Límites: ${getMin()} - ${getMax()}`;
+    if(hint) hint.innerText = `Límites (${activeCurrency}): ${getMin()} - ${getMax()}`;
 }
 
 window.abrirModalCompra = function() {
@@ -258,25 +256,29 @@ window.updateModalHeader = function() {
 window.prevStep = function() { if (currentStep > 1) { currentStep--; window.mostrarPaso(currentStep); } }
 
 // ==========================================
-// 3. VALIDACIÓN DE STOCK Y RESERVA (POOL EXISTENTE)
+// 3. VALIDACIÓN DE STOCK Y RESERVA
 // ==========================================
 
 async function validarStockReal() {
     const raffleId = document.getElementById('raffle-id').value;
     const cantidad = parseInt(document.getElementById('custom-qty').value);
-    const min = getMin(); const max = getMax();
+    
+    // CORRECCIÓN LÍMITES: Leemos los límites justo ahora para asegurar que sean de la moneda actual
+    const min = getMin(); 
+    const max = getMax();
 
-    if (cantidad < min || cantidad > max) { Swal.fire('Error', `Cantidad: ${min} a ${max}.`, 'error'); return false; }
+    if (cantidad < min) { Swal.fire('Atención', `La compra mínima para ${activeCurrency} es de ${min} boletos.`, 'warning'); return false; }
+    if (cantidad > max) { Swal.fire('Atención', `La compra máxima para ${activeCurrency} es de ${max} boletos.`, 'warning'); return false; }
+    
     if (!raffleId || cantidad <= 0) return false;
 
     if(ticketsReservados.length > 0) await liberarTickets();
 
-    // CORRECCIÓN: Contamos los que SÍ están disponibles
     const { count: disponibles, error } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('id_sorteo', raffleId)
-        .eq('estado', 'disponible'); // <--- CLAVE
+        .eq('estado', 'disponible');
 
     if (disponibles < cantidad) { 
         window.mostrarAlertaStock(cantidad, disponibles); 
@@ -286,7 +288,7 @@ async function validarStockReal() {
     return await reservarTicketsEnDB(cantidad, raffleId);
 }
 
-// 🔥 NÚCLEO: ACTUALIZAR TICKETS EXISTENTES 🔥
+// 🔥 NÚCLEO: RESERVAR TICKETS 🔥
 async function reservarTicketsEnDB(cantidadSolicitada, raffleId) {
     const { data: { session } } = await supabaseClient.auth.getSession();
     const userId = session?.user?.id || '00000000-0000-0000-0000-000000000000'; 
@@ -342,6 +344,7 @@ window.nextStep = async function() {
         if(!selectedMethodData) { Swal.fire({ icon: 'warning', text: 'Elige un método.' }); return; }
     }
     else if(currentStep === 2) {
+        // PASO 2: CANTIDAD -> RESERVAR
         const btn = document.getElementById('btn-next');
         const oldText = btn.innerHTML;
         btn.innerHTML = 'Asignando... <iconify-icon icon="line-md:loading-loop" class="animate-spin"></iconify-icon>'; 
@@ -351,13 +354,16 @@ window.nextStep = async function() {
         
         btn.innerHTML = oldText; btn.disabled = false;
         if (!check) return; 
+
+        // CORRECCIÓN TIMER: Inicia aquí porque ya tenemos los tickets
+        iniciarTimer();
     }
     else if(currentStep === 3) {
         const name = document.getElementById('input-name').value;
         const cedula = document.getElementById('input-cedula').value;
         const phone = document.getElementById('input-phone').value;
         if(!name || !cedula || !phone) { Swal.fire({ icon: 'warning', text: 'Faltan datos.' }); return; }
-        iniciarTimer(); 
+        // Ya no iniciamos timer aquí
     }
     else if (currentStep === 5) {
         procesarCompraFinal();
@@ -385,7 +391,6 @@ function iniciarTimer() {
 async function liberarTickets() {
     if (ticketsReservados.length === 0) return;
     const ids = ticketsReservados.map(t => t.id);
-    // CORRECCIÓN: Update a disponible
     await actualizarEnLotes(ids, { estado: 'disponible', user_id: null });
     ticketsReservados = [];
 }
