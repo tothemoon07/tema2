@@ -1,4 +1,4 @@
-// admin_panel.js - VERSIÓN FINAL CON BUSCADOR DE GANADORES + TARJETA DORADA
+// admin_panel.js - VERSIÓN FINAL CON BUSCADOR DE GANADORES (TARJETA COMPACTA + CONTACTO)
 
 const SUPABASE_URL = 'https://tpzuvrvjtxuvmyusjmpq.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwenV2cnZqdHh1dm15dXNqbXBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDMwMDAsImV4cCI6MjA4MDExOTAwMH0.YcGZLy7W92H0o0TN4E_v-2PUDtcSXhB-D7x7ob6TTp4';
@@ -29,7 +29,6 @@ window.toggleSidebar = function() {
 }
 
 window.switchView = function(view) {
-    // Agregamos 'winner' a la lista de vistas
     ['dashboard', 'active-raffle', 'new-raffle', 'payments', 'winner'].forEach(v => {
         document.getElementById(`view-${v}`).classList.add('hidden');
         const nav = document.getElementById(`nav-${v}`);
@@ -759,7 +758,7 @@ window.deletePaymentMethod = async function(id) {
 }
 
 // ==========================================
-// 4. NUEVAS FUNCIONES: BUSCAR GANADOR
+// 4. NUEVAS FUNCIONES: BUSCAR GANADOR (TARJETA COMPACTA)
 // ==========================================
 
 window.searchWinner = async function() {
@@ -791,7 +790,7 @@ window.searchWinner = async function() {
     // 2. Buscar datos de la Orden (Dueño)
     const { data: orden } = await supabaseClient
         .from('ordenes')
-        .select('nombre, telefono') // Solo necesitamos nombre y telefono (opcional para ubicación)
+        .select('*') // Traemos todo para mostrar la info completa
         .eq('id', ticket.id_orden)
         .single();
 
@@ -801,25 +800,36 @@ window.searchWinner = async function() {
 
     Swal.close();
 
-    // 3. Rellenar la Tarjeta
+    // 3. Rellenar la Tarjeta Compacta
     document.getElementById('card-number').innerText = num;
     document.getElementById('card-raffle-name').innerText = raffleName;
     document.getElementById('card-client-name').innerText = orden.nombre;
-    // Opcional: Podrías poner la ciudad si la tuvieras, por defecto puse Venezuela
-    // document.getElementById('card-client-location').innerText = ... 
+    document.getElementById('card-client-cedula').innerText = orden.cedula;
+    document.getElementById('card-client-phone').innerText = orden.telefono;
+    document.getElementById('card-client-email').innerText = orden.email;
+    document.getElementById('card-client-method').innerText = orden.metodo_pago.replace('_', ' ');
 
-    // 4. Mostrar el contenedor
+    // 4. Configurar botón de WhatsApp
+    const whatsappLink = `https://wa.me/${orden.telefono.replace(/\+/g, '')}`;
+    document.getElementById('btn-contact-whatsapp').href = whatsappLink;
+
+    // 5. Mostrar el contenedor
     document.getElementById('winner-result-container').classList.remove('hidden');
 }
 
 window.downloadWinnerCard = function() {
     const node = document.getElementById('winner-card-node');
     
-    html2canvas(node, { scale: 2, backgroundColor: null }).then(canvas => {
+    // Ocultar botón de descarga temporalmente para la foto
+    const btn = node.querySelector('button');
+    btn.style.display = 'none';
+
+    html2canvas(node, { scale: 3, backgroundColor: null }).then(canvas => {
         const link = document.createElement('a');
         link.download = `Ganador_Ticket_${document.getElementById('card-number').innerText}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
+        btn.style.display = 'block'; // Volver a mostrar el botón
     });
 }
 
